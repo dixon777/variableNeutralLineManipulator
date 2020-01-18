@@ -1,0 +1,9 @@
+{
+    "python.pythonPath": "C:\\Program Files\\Python37\\python.exe",
+    "python.testing.pytestArgs": [
+        "mathematical_model"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true
+}
