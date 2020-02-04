@@ -14,24 +14,3 @@ def allWithin(a,b,threshold=0.0001) -> bool:
     return np.all(np.abs(np.array(a) - np.array(b)) < threshold)
 
 
-def binarySearchCompute(func, lowerBound, upperBound, threshold=0.0001, **kwargs):
-    result = (threshold + 1,)
-    while abs(result[0]) > threshold:
-        guess = (lowerBound+upperBound)/2
-        result = func(guess, **kwargs)
-        if result[0] > 0:
-            lowerBound = guess
-        else:
-            upperBound = guess
-    return result
-
-def binarySearchIterator(func, lowerBound, upperBound, threshold=0.0001, **kwargs):
-    result = (threshold + 1,)
-    while abs(result[0]) > threshold:
-        guess = (lowerBound+upperBound)/2
-        result = func(guess, **kwargs)
-        yield result[1]
-        if result[0] > 0:
-            lowerBound = guess
-        else:
-            upperBound = guess

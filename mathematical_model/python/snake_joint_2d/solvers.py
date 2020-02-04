@@ -5,6 +5,40 @@ from snake_joint_2d.force_components import *
 from snake_joint_2d.displacement_components import *
 from snake_joint_2d.helper_functions import *
 
+class NotWithinBoundError(BaseException):
+    def __init__(self, lowerValue, upperValue, cut):
+        self.lowerValue = lowerValue
+        self.upperValue = upperValue
+        self.cut = cut
+
+
+def binarySearchIterator(func, lowerBound, upperBound, threshold=0.0001, checkBounds=True, yieldIteratively=False, **kwargs):
+    if(checkBounds):
+        upperResult = func(upperBound, **kwargs)
+        lowerResult = func(lowerBound, **kwargs)
+        if abs(upperResult[0]) <= threshold:
+            return upperResult
+        elif abs(lowerResult[0]) <= threshold:
+            return lowerResult
+        if (upperResult[0] > threshold and lowerResult[0] > threshold) or (upperResult[0] < -threshold and lowerResult[0] < -threshold):
+            raise NotWithinBoundError(lowerValue=lowerResult[0], upperValue=upperResult[0], cut=0)
+        
+    result = (threshold + 1,)
+    while abs(result[0]) > threshold:
+        guess = (lowerBound+upperBound)/2
+        result = func(guess, **kwargs)
+        
+        if yieldIteratively:
+            yield result[1]
+            
+        if result[0] > 0:
+            lowerBound = guess
+        else:
+            upperBound = guess
+    
+    if not yieldIteratively:
+        return result
+
 def defineEndPieceIteractiveFunc(tensionLeftBeforeCableGuide, tensionRightBeforeCableGuide, curvatureAngle, curvatureRadius, frictionCoefficient, length):
     kl_r = endPieceKnobDisplacementFromCentroid(length=length, curvatureRadius=curvatureRadius, curvatureAngle=curvatureAngle, isLeft=True)
     kr_r = endPieceKnobDisplacementFromCentroid(length=length, curvatureRadius=curvatureRadius, curvatureAngle=curvatureAngle, isLeft=False)
@@ -158,7 +192,7 @@ def computeIterator(tensionLeft, tensionRight, curvatureRadius, curvatureAngle, 
         
         # Evalute end piece
         # returnResultNormalFrictionOnly: pass down to defineEndPieceIteractiveFunc()
-        for (indexSmallIte, res) in enumerate(binarySearchIterator(defineEndPieceIteractiveFunc(tensionLeftBeforeCableGuide=tensionLeftBeforeEndPieceCableGuide, tensionRightBeforeCableGuide=tensionRightBeforeEndPieceCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2, returnResultNormalFrictionOnly=False)):
+        for (indexSmallIte, res) in enumerate(binarySearchIterator(defineEndPieceIteractiveFunc(tensionLeftBeforeCableGuide=tensionLeftBeforeEndPieceCableGuide, tensionRightBeforeCableGuide=tensionRightBeforeEndPieceCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2, yieldIteratively=True,returnResultNormalFrictionOnly=False)):
             jointBendingAngles[-1] = res["jointBendingAngle"]
             lastN = sum(res["Nb"][0])
             lastFr = sum(res["Frb"][0])
@@ -169,7 +203,7 @@ def computeIterator(tensionLeft, tensionRight, curvatureRadius, curvatureAngle, 
         tensionLeftAfterCableGuide = tensionLeftBeforeEndPieceCableGuide
         tensionRightAfterCableGuide = tensionRightBeforeEndPieceCableGuide
         for i in range(numJoints-2, -1, -1):
-            for (indexSmallIte, res) in enumerate(binarySearchIterator(defineIntermediatePieceIteractiveFunc(tensionLeftAfterCableGuide=tensionLeftAfterCableGuide, tensionRightAfterCableGuide=tensionRightAfterCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length, distalJointBendingAngle= jointBendingAngles[i+1], distalNormalMagnitude= lastN, distalFrictionMagnitude= lastFr), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2, returnResultNormalFrictionOnly=False)):
+            for (indexSmallIte, res) in enumerate(binarySearchIterator(defineIntermediatePieceIteractiveFunc(tensionLeftAfterCableGuide=tensionLeftAfterCableGuide, tensionRightAfterCableGuide=tensionRightAfterCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length, distalJointBendingAngle= jointBendingAngles[i+1], distalNormalMagnitude= lastN, distalFrictionMagnitude= lastFr), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2, yieldIteratively=True, returnResultNormalFrictionOnly=False)):
                 jointBendingAngles[i] = res["jointBendingAngle"]
                 lastN = sum(res["Nb"][0])
                 lastFr = sum(res["Frb"][0])
@@ -203,7 +237,7 @@ def compute(tensionLeft, tensionRight, curvatureRadius, curvatureAngle, numJoint
         
         # Evalute end piece
         # lastN, lastFr, jointBendingAngles[-1] = computeEndPieceAngleIteratively(tensionLeftBeforeCableGuide=tensionLeftBeforeEndPieceCableGuide, tensionRightBeforeCableGuide=tensionRightBeforeEndPieceCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length)
-        _, jointBendingAngles[-1],lastN, lastFr = binarySearchCompute(defineEndPieceIteractiveFunc(tensionLeftBeforeCableGuide=tensionLeftBeforeEndPieceCableGuide, tensionRightBeforeCableGuide=tensionRightBeforeEndPieceCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2)
+        _, jointBendingAngles[-1],lastN, lastFr = binarySearchIterator(defineEndPieceIteractiveFunc(tensionLeftBeforeCableGuide=tensionLeftBeforeEndPieceCableGuide, tensionRightBeforeCableGuide=tensionRightBeforeEndPieceCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2)
 
         # Evaluate from second end piece to the first piece
         tensionLeftAfterCableGuide = tensionLeftBeforeEndPieceCableGuide
@@ -211,7 +245,7 @@ def compute(tensionLeft, tensionRight, curvatureRadius, curvatureAngle, numJoint
         for i in range(numJoints-2, -1, -1):
             
             # lastN, lastFr, jointBendingAngles[i] = computeIntermediatePieceAngleIteratively(tensionLeftAfterCableGuide=tensionLeftAfterCableGuide, tensionRightAfterCableGuide=tensionRightAfterCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length, distalJointBendingAngle= jointBendingAngles[i+1], distalNormalMagnitude= lastN, distalFrictionMagnitude= lastFr)
-            _, jointBendingAngles[i],lastN, lastFr = binarySearchCompute(defineIntermediatePieceIteractiveFunc(tensionLeftAfterCableGuide=tensionLeftAfterCableGuide, tensionRightAfterCableGuide=tensionRightAfterCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length, distalJointBendingAngle= jointBendingAngles[i+1], distalNormalMagnitude= lastN, distalFrictionMagnitude= lastFr), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2)
+            _, jointBendingAngles[i],lastN, lastFr = binarySearchIterator(defineIntermediatePieceIteractiveFunc(tensionLeftAfterCableGuide=tensionLeftAfterCableGuide, tensionRightAfterCableGuide=tensionRightAfterCableGuide, curvatureAngle=curvatureAngle, curvatureRadius=curvatureRadius, frictionCoefficient=frictionCoefficient, length=length, distalJointBendingAngle= jointBendingAngles[i+1], distalNormalMagnitude= lastN, distalFrictionMagnitude= lastFr), lowerBound=-curvatureAngle/2, upperBound=curvatureAngle/2)
             tensionLeftAfterCableGuide =  tensionLoadToHold(tensionLeftAfterCableGuide, frictionCoefficient, sum(jointBendingAngles[i:i+2])/2)
             tensionRightAfterCableGuide = tensionLoadToHold(tensionRightAfterCableGuide, frictionCoefficient,  sum(jointBendingAngles[i:i+2])/2)
    
