@@ -118,11 +118,11 @@ class StateResult():
 
         self.error = error
         
-    def getTF(self, ringIndex=-1, side="b"):
+    def getTF(self, ringIndex=-1, side="c"):
         """
             side = "b": bottom, "c": center, "tr": top in ring frame, "td": top in top curve orientation
         """
-        side = "b" if side is None else side
+        side = "c" if side is None else side
         c = np.identity(4)
         for s in self.states[:ringIndex]:
             c = np.matmul(c, getTFProximalTopToDistalBottom(s.bottomJointAngle, s.ring.bottomCurveRadius))

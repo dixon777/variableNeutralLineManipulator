@@ -1,8 +1,3 @@
-# from snake_joint_model_iterative_solvers import compute
-# import math
-# print(compute(tensionLeft=5, tensionRight=4.2, curveRadius=2, curvatureAngle=math.pi/2,
-#               numJoints=3, length=3, fricCoef=0.0, initJointBendingAngles=[0, 0, 0, ]))
-
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -12,94 +7,9 @@ from variable_neutral_line_manipulator.entities import *
 from variable_neutral_line_manipulator.math_components.vector_computation import *
 from variable_neutral_line_manipulator.states import *
 from variable_neutral_line_manipulator.solvers import *
+from variable_neutral_line_manipulator.display.display import *
+from variable_neutral_line_manipulator.display.ranges import *
 
-class Range1d(object):
-    def __init__(self):
-        self.min = None
-        self.max = None
-        
-    @property
-    def bound(self):
-        if self.min is None or self.max is None:
-            return None
-        return (self.min, self.max)
-        
-    @property
-    def total(self):
-        if self.min is None:
-            return self.max
-        elif self.max is None:
-            return self.min
-        return self.max + self.min
-    
-    @property
-    def avg(self):
-        total = self.total
-        return None if total is None else total/2
-            
-    
-    @property
-    def diff(self):
-        if self.min is None:
-            return self.max
-        elif self.max is None:
-            return -self.min
-        return self.max - self.min
-    
-    def update(self, vals):
-        if not isinstance(vals, (list, tuple)):
-            vals = (vals,)
-        for v in vals:
-            if self.min is None or self.min > v:
-                self.min = v
-            elif self.max is None or self.max < v:
-                self.max = v
-                
-    def __repr__(self):
-        return f"bound({self.min}, {self.max})"
-                
-class Range3d(object):
-    def __init__(self):
-        self.ranges = (Range1d(), Range1d(), Range1d())
-    
-    @property
-    def x(self):
-        return self.ranges[0]
-
-    @property
-    def y(self):
-        return self.ranges[1]
-
-    @property
-    def z(self):
-        return self.ranges[2]
-        
-    def update(self, x=(), y=(), z=()):
-        self.updateX(x)
-        self.updateY(y)
-        self.updateZ(z)
-        
-    def updateX(self, vals):
-        self.ranges[0].update(vals)
-        
-    def updateY(self, vals):
-        self.ranges[1].update(vals)
-        
-    def updateZ(self, vals):
-        self.ranges[2].update(vals)
-        
-    def __repr__(self):
-        return f"range3d[x: {self.x}, y: {self.y}, z: {self.z}]"
-
-def enforceRange(ax, range3d: Range3d):
-    maxDiff = 0.5* max(r.diff for r in range3d.ranges)
-    g = np.mgrid[-1:2:2, -1:2:2, -1:2:2]
-    
-    for i, j, k in zip(maxDiff*g[0].flatten() + range3d.x.avg, 
-                       maxDiff*g[1].flatten() + range3d.y.avg, 
-                       maxDiff*g[2].flatten() + range3d.z.avg):
-        print(i,j,k)
-        ax.plot((i,), (j,), (k,), 'w')
     
 def plotFreeBody(ax, state, TFCenter=np.identity(4), range3d: Range3d = None, plotForce=True, plotMoment=False):
     arrow_length_ratio = 0.1
@@ -140,11 +50,11 @@ def main():
                 curveRadius=3
                 )
     ],
-        fricCoefRingCable=0.1)
+        fricCoefRingCable=0.0)
 
-    funcEnd = defineBottomJointAngleFunc(rings[-1],
-                                         distalRingState=None,
-                                         knobTensions=[2, 1])
+    # funcEnd = defineBottomJointAngleFunc(rings[-1],
+    #                                      distalRingState=None,
+    #                                      knobTensions=[2, 1])
     
     res = computeFromEndTensions(rings, endTensions=[[3, 0.2],[2,1]])
     
@@ -152,24 +62,38 @@ def main():
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, projection='3d')
+    plotRings(ax, res)
     # plotFreeBody(ax, res.states[-2], 
     #              range3d=range3d,
     #                 plotForce=True)
-    for i, s in enumerate(res.states):
-        plotFreeBody(ax, s, 
-                     res.getTF(i, "c"),
-                     range3d,
-                     plotForce=True)
+    # for i, s in enumerate(res.states):
+    #     plotFreeBody(ax, s, 
+    #                  res.getTF(i, "c"),
+    #                  range3d,
+    #                  plotForce=True)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
     # ax.set_xlim(range3d.x.bound)
     # ax.set_ylim(range3d.y.bound)
     # ax.set_zlim(range3d.z.bound)
-    print(range3d)
-    enforceRange(ax, range3d)
+    # enforceRange(ax, range3d)
     plt.show()
 
+def main2():
+    
+    ring = RingGeometry(2, 1, 0.3, 1.5, 1, 1.5)
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
+    t = np.identity(4)
+    a = math.pi/3
+    t[1:3,1:3] = ((math.cos(a), -math.sin(a)), (math.sin(a), math.cos(a)))
+    plotRing(ax, ring, transform=t, angleDivision=40) 
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.show()
+    
 
 if __name__ == "__main__":
     main()
