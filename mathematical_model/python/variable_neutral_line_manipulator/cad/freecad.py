@@ -16,7 +16,9 @@ _featureClassMapping = {
     "Pad": "PartDesign::Pad",
     "Pocket": "PartDesign::Pocket",
     "Plane": "PartDesign::Plane",
-    "Fillet":"PartDesign::Fillet",
+    "Fillet": "PartDesign::Fillet",
+    "Cylinder": "Part::Cylinder",
+    "Cut": "Part::Cut",
 }
 
 def _createCylinder(doc, obj, cylindricalRadius, length, hasTopCurve, hasBottomCurve, addition=0.001):
@@ -195,6 +197,23 @@ def _applyFilletToHoles(doc, obj, radius):
     # Before fillets, Face1 = Cylindrical face, Face2 = Top surface, Face3 = Bottom surface, Face(4-end) = Cylindrical surface of drilled holes
     fillet.Base = (lastFeature, [f"Face{i}" for i in range(3, len(lastFeature.Shape.Faces))])    
     
+def _cutCenterHole(doc, obj, radius, length):
+    """
+        Generate a center hole
+        Must be called after _applyFilletToHoles() to avoid face renaming issue of FreeCAD (originated from Opencascade)
+    """
+    cylinder = doc.addObject(_featureClassMapping["Cylinder"], "centerHoleCylinder")
+    cylinder.Radius = f"{radius} mm"
+    cylinder.Height = f"{length} mm"
+    cylinder.Placement = App.Placement(
+        App.Vector(0,0,-length/2),
+        App.Rotation(App.Vector(0,0,1),0),
+        App.Vector(0,0,1)
+    )
+    cut = doc.addObject(_featureClassMapping["Cut"], "centerHoleCut")
+    cut.Base = obj
+    cut.Tool = cylinder
+    
     
 def _generateRingObj(doc,
                ringGeometry,
@@ -218,10 +237,13 @@ def _generateRingObj(doc,
         _cutThroughHole(doc, obj, tg.orientationRF(ringGeometry.orientationBF), tg.distFromAxis, tg.radius)
 
     _applyFilletToHoles(doc, obj, ringGeometry.tendonGuideFilletRadius)
+    
+    if ringGeometry.centerHoleRadius:
+        _cutCenterHole(doc, obj, ringGeometry.centerHoleRadius, ringGeometry.length)
+        
     doc.recompute()
     
     
-    return obj
 
 
 def _saveDoc(doc, dirName, fileName):
@@ -245,7 +267,8 @@ def generateRings(ringGeometries, savedSrcDirPath=None, exportObjDirPath=None):
     for i, rg in enumerate(ringGeometries):
         s = f"ring{i}"
         doc = App.newDocument(s)
-        obj = _generateRingObj(doc, rg, s)
+        _generateRingObj(doc, rg, s)
+        obj = doc.Objects[-1]
         print(f"Object Generation \'{s}\' is completed")
         if savedSrcDirPath:
             path = _saveDoc(doc, savedSrcDirPath, s)
@@ -269,13 +292,14 @@ def main():
         bottomCurveRadius = 3,
         topCurveRadius = 3.5,
         tendonGuideFilletRadius=0.08,
+        centerHoleRadius=0.3,
         tendonGuideGeometries=[
             TendonGuideGeometry(
                 distFromAxis=1.8,
                 orientationBF=i*math.pi/4,
                 radius=0.5,                
             ) for i in range(8)
-        ]
+        ],
     )
     dirName =  os.path.dirname(__file__)
     generateRings([rg]*2, dirName, dirName)

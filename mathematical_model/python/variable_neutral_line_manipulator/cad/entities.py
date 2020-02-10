@@ -23,6 +23,7 @@ class RingGeometry():
                  topOrientationRF=None, 
                  topCurveRadius=None,
                  tendonGuideFilletRadius=0,
+                 centerHoleRadius=0,
                  ):
         self.length = length
         self.cylindricalRadius = cylindricalRadius
@@ -32,6 +33,7 @@ class RingGeometry():
         self.topCurveRadius = topCurveRadius
         self.tendonGuideGeometries = [] if tendonGuideGeometries is None else tendonGuideGeometries
         self.tendonGuideFilletRadius = tendonGuideFilletRadius
+        self.centerHoleRadius = centerHoleRadius
         
         
     @property
