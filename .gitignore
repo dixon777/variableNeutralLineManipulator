@@ -7,3 +7,6 @@
 *.code-workspace
 *.FCStd
 *.obj
+.pytest_cache
+__pycache__/
+*.py[cod]
