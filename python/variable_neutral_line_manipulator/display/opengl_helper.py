@@ -1,9 +1,14 @@
-import os
+import os, copy
 
 import numpy as np
 
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
+from OpenGL.GLUT import glutReportErrors
+from OpenGL.GLU import gluErrorString
+
+def GLDecode(s):
+    return s.decode("UTF-8")
 
 class UniformVariable():
     def __init__(self, loc, initVal: np.ndarray):
@@ -33,16 +38,17 @@ class UniformVariable():
             if shouldResetChanged:
                 self.hasChanged = False
         
-
+        
 class Renderer():
     def __init__(self, meshes, shaderProgram, uniformMap={}):
         self.shaderProgram = shaderProgram
-        self.uniformMap = uniformMap
+        self.uniformMap = copy.deepcopy(uniformMap)
         self.meshes = meshes
         
         self.VBO = None
         self.IBO = None
-        self.vertexOffsets = []
+        self.vertexByteOffsets = []
+        self.indexByteOffsets = []
         
         self.setupBuf()
         
@@ -80,7 +86,7 @@ class Renderer():
         vertexOffset = 0
         for vtd in vertexData:
             glBufferSubData(GL_ARRAY_BUFFER, vertexOffset, vtd.nbytes, vtd)
-            self.vertexOffsets.append(vertexOffset)
+            self.vertexByteOffsets.append(vertexOffset)
             vertexOffset += vtd.nbytes
         
         # Store index data buffer
@@ -88,11 +94,15 @@ class Renderer():
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sum([d.nbytes for d in indexData]), None, GL_STATIC_DRAW)
         indexOffset = 0
         for idd in indexData:
+            # Entries in element array sub data are automatically offset to the corresponding vertex arry sub data
+            # Therefore, no need to adjust the output
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, indexOffset, idd.nbytes, idd)
+            self.indexByteOffsets.append(indexOffset)
             indexOffset += idd.nbytes
         
+        
         # Configure array attri
-        for m, offset in zip(meshes, self.vertexOffsets):
+        for m, offset in zip(meshes, self.vertexByteOffsets):
             glBindBuffer(GL_ARRAY_BUFFER, self.VBO)
             m.setupArrayAttrib(offset)
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.IBO)
@@ -107,12 +117,13 @@ class Renderer():
         
     def draw(self):
         glUseProgram(self.shaderProgram)
-        for m, offset in zip(self.meshes, self.vertexOffsets):
+        for m, offset in zip(self.meshes, self.indexByteOffsets):
             m.draw(offset, lambda: self._inputUniform())
         
         for uv in self.uniformMap.values():
             uv.resetChangeFlag(False)
         glUseProgram(0)
+
 
 class Mesh():
     def __init__(self, vertices, 
@@ -121,7 +132,7 @@ class Mesh():
         self.VAO = None
         self.vertices = vertices
         self.indices = indices
-        self.uniformMap = uniformMap
+        self.uniformMap = copy.deepcopy(uniformMap)
         
     def getVertexBufferData(self) -> np.ndarray:
         return np.concatenate(self.vertices, axis=1).flatten()
@@ -143,15 +154,17 @@ class Mesh():
             glVertexAttribPointer(i, propertyItemCount, GL_FLOAT, GL_FALSE, vertexItemCount*itemsize, ctypes.c_void_p(propertyByteOffset))
             propertyByteOffset += propertyItemCount*itemsize
 
-    def draw(self, indexByteOffset=0, activity=None):
+    def draw(self, indexByteOffset=0, updateCB=None):
         if self.VAO is None:
             raise Exception()
         glBindVertexArray(self.VAO)
-        if activity is not None:
-            activity()
+        if updateCB is not None:
+            updateCB()
         for uv in self.uniformMap.values():
             uv.inputGPU()
         glDrawElements(GL_TRIANGLES, self.indices.size, GL_UNSIGNED_INT, ctypes.c_void_p(indexByteOffset))
+        glBindVertexArray(0)
+        
         
     def updateUniform(self, key, value):
         uv = self.uniformMap.get(key)
@@ -164,10 +177,10 @@ class Mesh():
        
 def getGLInfo():
     return f"""
-        Vendor: {glGetString(GL_VENDOR).decode("utf-8")}
-        Renderer: {glGetString(GL_RENDERER).decode("utf-8")},
-        OpenGL version: {glGetString(GL_VERSION).decode("utf-8")},
-        Shader version: {glGetString(GL_SHADING_LANGUAGE_VERSION).decode("utf-8")}
+        Vendor: {GLDecode(glGetString(GL_VENDOR))}
+        Renderer: {GLDecode(glGetString(GL_RENDERER))},
+        OpenGL version: {GLDecode(glGetString(GL_VERSION))},
+        Shader version: {GLDecode(glGetString(GL_SHADING_LANGUAGE_VERSION))}
     """
 
 
@@ -211,9 +224,38 @@ def compileShadersFromFiles(vPath, fPath):
         loadShader(vPath),
         loadShader(fPath)
     )
-    
 
-  
+def createTriangleBufferDebug1():
+    v = 0.2*np.array((-1, -1, 0,
+                    1, -1, 0,
+                    0, 1, 0), dtype=np.float32)
+    c = np.array((
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1
+    ), dtype=np.float32)
+    e = np.array((
+        0,1,2
+    ), dtype=np.uint32)
+    
+    return np.reshape(v,(-1,3)),np.reshape(c,(-1,3)),e
+
+def createTriangleBufferDebug2():
+    v = 0.1*np.array((-1, -1, 0,
+                    1, -1, 0,
+                    -1, 1, 0,
+                    1, 1, 0), dtype=np.float32)
+    c = np.array((
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1,
+        1, 0, 0
+    ), dtype=np.float32)
+    e = np.array((
+        0,1,2,2,1,3,
+    ), dtype=np.uint32)
+    
+    return np.reshape(v,(-1,3)),np.reshape(c,(-1,3)),e
 
 
 # def main():

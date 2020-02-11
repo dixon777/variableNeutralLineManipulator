@@ -1,4 +1,4 @@
-import math, os,logging
+import math, os, logging
 
 import numpy as np
 import pyrr
@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QOpenGLWidget, QSlider,
 from OpenGL.GL import *
 
 from opengl_helper import *
-
+ 
 logging.getLogger().setLevel(logging.INFO)
 
 class GLWidget(QOpenGLWidget):
@@ -89,21 +89,31 @@ class GLWidget(QOpenGLWidget):
         logging.debug("initializeGL")
         logging.info(getGLInfo())
         
-        shaderProgram = self.compileShaderProgram()
-        v,c,e = self.createTriangleBuffer()
-        self.configBuffer([v,c], e)
-        self.indexArraySize = e.size
+        dirName = os.path.dirname(__file__)
+        shaderProgram =  compileShadersFromFiles(
+            os.path.join(dirName, "shaders", "simple.vs"),
+            os.path.join(dirName, "shaders", "simple.fs")
+        )
+        v, c, e = createTriangleBufferDebug1()
+        v2, c2, e2 = createTriangleBufferDebug2()
         
-        uniformMap = {key: UniformVariable(glGetUniformLocation(shaderProgram, key), m) for key, m in zip((
-            "transform", "view", "projection"
+        overallUniformMap = {key: UniformVariable(glGetUniformLocation(shaderProgram, key), m) for key, m in zip((
+            "view", "projection",
         ), (
-            np.identity(4, dtype="float32"),
-            pyrr.matrix44.create_from_translation(
-                               np.array((0,0, -3)), dtype=np.float32
-                           ),
+            pyrr.matrix44.create_from_translation(np.array((0,0, -3)), dtype=np.float32),
             np.identity(4, dtype="float32"),
         ))}
-        self.renderer = Renderer([Mesh(vertices=[v,c],indices=e,),], shaderProgram, uniformMap)
+        meshUniformMap = {
+            key: UniformVariable(glGetUniformLocation(shaderProgram, key), m) for key, m in zip((
+            "transform",
+        ), (
+            np.identity(4, dtype="float32"),
+        ))
+        }
+        self.renderer = Renderer([
+            Mesh(vertices=[v,c],indices=e, uniformMap=meshUniformMap),
+            Mesh(vertices=[v2,c2],indices=e2, uniformMap=meshUniformMap),
+        ], shaderProgram, overallUniformMap)
 
         self.renderer.useProgram()
         glClearColor(0,0.1,0.1,1)
@@ -112,8 +122,11 @@ class GLWidget(QOpenGLWidget):
         logging.debug("paintGL")
         self.renderer.useProgram()
         glClear(GL_COLOR_BUFFER_BIT)
-        self.renderer.updateUniform("transform", pyrr.matrix44.create_from_translation(
+        self.renderer.meshes[0].updateUniform("transform", pyrr.matrix44.create_from_translation(
             np.array((self.x, self.y, self.z), dtype=np.float32)
+        ))
+        self.renderer.meshes[1].updateUniform("transform", pyrr.matrix44.create_from_translation(
+            np.array((-self.x, -self.y, self.z), dtype=np.float32)
         ))
         self.renderer.draw()
 
@@ -132,49 +145,8 @@ class GLWidget(QOpenGLWidget):
     def minimumSizeHint(self):
         return QSize(50,50)
     
-    def compileShaderProgram(self):
-        dirName = os.path.dirname(__file__)
-        return compileShadersFromFiles(
-            os.path.join(dirName, "shaders", "simple.vs"),
-            os.path.join(dirName, "shaders", "simple.fs")
-        )
-    
-    def createTriangleBuffer(self):
-        v = 0.1*np.array((-1, -1, 0,
-                      1, -1, 0,
-                      -1, 1, 0,
-                      1, 1, 0), dtype=np.float32)
-        c = np.array((
-            1, 0, 0,
-            0, 1, 0,
-            0, 0, 1,
-            1, 0, 0
-        ), dtype=np.float32)
-        e = np.array((
-            0,1,2,2,1,3,
-        ), dtype=np.uint32)
-        
-        return np.reshape(v,(-1,3)),np.reshape(c,(-1,3)),e
-    
-    def configBuffer(self, vs, e):
-        VBO = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, VBO)
-        concatenated = np.concatenate(vs, axis=1)
-        glBufferData(GL_ARRAY_BUFFER, concatenated.nbytes, concatenated.flatten(), GL_STATIC_DRAW)
-        
-        
-        
-        itemsize = concatenated.itemsize
-        strife = itemsize*concatenated.shape[1]
-        rowItemOffset = 0
-        for i, v in enumerate(vs):
-            glEnableVertexAttribArray(i)
-            glVertexAttribPointer(i, v.shape[1], GL_FLOAT, GL_FALSE, strife, ctypes.c_void_p(rowItemOffset*itemsize))
-            rowItemOffset += v.shape[1]
-            
-        IBO = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, e.nbytes, e, GL_STATIC_DRAW)
+
+
         
  
 
