@@ -13,32 +13,32 @@ Based on the frame aligned with the bottom curvature orientation
 #     return ringLength/2 - curveRadius if isTop else curveRadius - ringLength/2
     
 
-# Not required for model with tendon in the cable guide removed
+# Not required for model with tendons within tendon guide as part of free body
 def evalKnobDisp(ringLength: float, 
                 knobLength: float,
-                horizontalDispFromCableToAxis: float,
-                cableOrientationRF: float) -> np.ndarray:
+                horizontalDispFromTendonToAxis: float,
+                tendonOrientationRF: float) -> np.ndarray:
     """
         Evaluate displacement from ring center to knob
     """
     return np.array((
-        horizontalDispFromCableToAxis*math.cos(cableOrientationRF),
-        horizontalDispFromCableToAxis*math.sin(cableOrientationRF),
+        horizontalDispFromTendonToAxis*math.cos(tendonOrientationRF),
+        horizontalDispFromTendonToAxis*math.sin(tendonOrientationRF),
         knobLength - ringLength/2
     ))
 
 def evalTopGuideEndDisp(ringLength: float,
                         topCurveRadius: float,
-                        horizontalDispFromCableToAxis: float,
-                        cableOrientationRF: float,
+                        horizontalDispFromTendonToAxis: float,
+                        tendonOrientationRF: float,
                         topOrientationRF: float) -> np.ndarray:
     """
         Evaluate displacement from ring center to any top end of tendon guide
     """
-    horizontalDispAlongCurve = horizontalDispFromCableToAxis*math.sin(cableOrientationRF - topOrientationRF)
+    horizontalDispAlongCurve = horizontalDispFromTendonToAxis*math.sin(tendonOrientationRF - topOrientationRF)
     return np.array((
-        horizontalDispFromCableToAxis*math.cos(cableOrientationRF),
-        horizontalDispFromCableToAxis*math.sin(cableOrientationRF),
+        horizontalDispFromTendonToAxis*math.cos(tendonOrientationRF),
+        horizontalDispFromTendonToAxis*math.sin(tendonOrientationRF),
         math.sqrt(topCurveRadius**2 - horizontalDispAlongCurve**2) + ringLength/2 - topCurveRadius
     ))
 
@@ -46,15 +46,15 @@ def evalTopGuideEndDisp(ringLength: float,
     
 def evalBottomGuideEndDisp(ringLength: float,
                             bottomCurveRadius: float,
-                            horizontalDispFromCableToAxis: float,
-                            cableOrientationRF: float)-> np.ndarray:
+                            horizontalDispFromTendonToAxis: float,
+                            tendonOrientationRF: float)-> np.ndarray:
     """
         Evaluate displacement from ring center to any bottom end of tendon guide
     """
-    horizontalDispAlongCurve = horizontalDispFromCableToAxis*math.sin(cableOrientationRF)
+    horizontalDispAlongCurve = horizontalDispFromTendonToAxis*math.sin(tendonOrientationRF)
     return np.array((
-        horizontalDispFromCableToAxis*math.cos(cableOrientationRF),
-        horizontalDispFromCableToAxis*math.sin(cableOrientationRF),
+        horizontalDispFromTendonToAxis*math.cos(tendonOrientationRF),
+        horizontalDispFromTendonToAxis*math.sin(tendonOrientationRF),
         -math.sqrt(bottomCurveRadius**2 - horizontalDispAlongCurve**2) + bottomCurveRadius - ringLength/2
     ))
     

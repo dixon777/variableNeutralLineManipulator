@@ -4,9 +4,9 @@ import math
 import numpy as np
 
 
-class CableLocation():
+class TendonLocation():
     """
-        Hold cable location details along the arm
+        Hold tendon location details along the arm
         Current configuration assumes that it is identical through every ring
         
         orientationBF = Orientation in base frame
@@ -30,23 +30,23 @@ class Ring():
                  bottomCurveRadius: float = None,
                  topCurveRadius: float = None,
                  topOrientationRF: float = None,
-                 knobCableLocations: List[CableLocation] = [],
-                 fricCoefRingCable: float = 0.0):
+                 knobTendonLocations: List[TendonLocation] = [],
+                 fricCoefRingTendon: float = 0.0):
         self.length = float(length)
         self.bottomCurveRadius = None if bottomCurveRadius is None else float(bottomCurveRadius)
         self.topCurveRadius = None if topCurveRadius is None else float(topCurveRadius)
         self.orientationBF = float(orientationBF)
         self.topOrientationRF =  None if topOrientationRF is None else float(topOrientationRF)
-        self.knobCableLocations = knobCableLocations
-        self.fricCoefRingCable = float(fricCoefRingCable)
+        self.knobTendonLocations = knobTendonLocations
+        self.fricCoefRingTendon = float(fricCoefRingTendon)
 
     def numKnobs(self):
-        return len(self.knobCableLocations)
+        return len(self.knobTendonLocations)
 
 
 class Segment():
     """
-        Define each manipulator segments' parameters. Each segment has a set of cable knobs attached to its end ring
+        Define each manipulator segments' parameters. Each segment has a set of tendon knobs attached to its end ring
         For N joints, the segment consists of: j1, r1, j2, r2, ..., j(n-1), r(n-1), j(n), r(n), where j and r are the annotations
         for joint and ring
         Should be passed into class Arm for composition of full arm
@@ -55,14 +55,14 @@ class Segment():
                  numJoints: float,
                  ringLength: float,
                  orientationBF: float,
-                 cableHorizontalDistFromAxis: float,
+                 tendonHorizontalDistFromAxis: float,
                  knobLength: float,
                  curveRadius: float):
         self.is1DoF = is1DoF
         self.numJoints = int(numJoints)
         self.ringLength = float(ringLength)
         self.orientationBF = float(orientationBF)
-        self.cableHorizontalDistFromAxis = float(cableHorizontalDistFromAxis)
+        self.tendonHorizontalDistFromAxis = float(tendonHorizontalDistFromAxis)
         self.knobLength = float(knobLength)
         self.curveRadius = float(curveRadius)
 
@@ -75,25 +75,25 @@ class Segment():
     def getCurveRadius(self, i):
         return self.curveRadius if isinstance(self.curveRadius, float) else self.curveRadius[i]
 
-    def getKnobCableLocations(self, i):
+    def getKnobTendonLocations(self, i):
         if i+1 < self.numJoints:
             return []
 
-        cableOrientationsBF = self.orientationBF + \
+        tendonOrientationsBF = self.orientationBF + \
             np.array((-math.pi/2, math.pi/2)
                      if self.is1DoF else (-math.pi/2, 0, math.pi/2, math.pi))
-        return [CableLocation(orientationBF=cableOrientation,
-                              horizontalDistFromAxis=self.cableHorizontalDistFromAxis,
+        return [TendonLocation(orientationBF=tendonOrientation,
+                              horizontalDistFromAxis=self.tendonHorizontalDistFromAxis,
                               knobLength=self.knobLength,
-                              ) for cableOrientation in cableOrientationsBF]
+                              ) for tendonOrientation in tendonOrientationsBF]
 
 
-def generateRings(segments: List[Segment], fricCoefRingCable=0.0) -> List[Ring]:
+def generateRings(segments: List[Segment], fricCoefRingTendon=0.0) -> List[Ring]:
     rings = []
     for segmentIndex, segment in enumerate(segments):
         for jointIndex in range(segment.numJoints):
             rings.append(Ring(
-                fricCoefRingCable=fricCoefRingCable,
+                fricCoefRingTendon=fricCoefRingTendon,
                 length=segment.getRingLength(jointIndex),
                 orientationBF=segment.getOrientationBF(jointIndex),
                 bottomCurveRadius=segment.getCurveRadius(jointIndex),
@@ -103,7 +103,7 @@ def generateRings(segments: List[Segment], fricCoefRingCable=0.0) -> List[Ring]:
                 topOrientationRF=segment.getOrientationBF(jointIndex+1) - segment.getOrientationBF(jointIndex) if jointIndex+1 < segment.numJoints else
                 segments[segmentIndex+1].getOrientationBF(0) - segment.getOrientationBF(jointIndex) if segmentIndex+1 < len(segments) else
                 None,
-                knobCableLocations=segment.getKnobCableLocations(jointIndex),
+                knobTendonLocations=segment.getKnobTendonLocations(jointIndex),
             ))
     return rings
 

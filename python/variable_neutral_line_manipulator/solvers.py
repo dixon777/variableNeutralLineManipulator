@@ -54,99 +54,99 @@ def NewtonSolver(func, xInit=0.0, xDiff=0.001, threshold=0.001, **kwargs):
     return fx
 
 
-def _evalBottomJointAngleIndependentComponent(ring: Ring, cableStates: List[CableState], distalRingState: RingState = None):
+def _evalBottomJointAngleIndependentComponent(ring: Ring, tendonStates: List[TendonState], distalRingState: RingState = None):
     c = Component()
-    for cs in cableStates:
+    for cs in tendonStates:
         c += Component(
-            topCableReactionForce(
+            topGuideForceComp(
                 ring, cs, None if distalRingState is None else distalRingState.bottomJointAngle),
-            topCableDisplacement(ring, cs)
+            topGuideDisp(ring, cs)
         )
 
     if distalRingState:
         c += Component(
-            topReactionComponent(ring, distalRingState.bottomJointAngle,
+            topReactionComp(ring, distalRingState.bottomJointAngle,
                                  distalRingState.bottomContactReactionComponent.force),
             topReactionDisplacement(
                 ring, distalRingState.bottomJointAngle),
-            topReactionComponent(ring, distalRingState.bottomJointAngle,
+            topReactionComp(ring, distalRingState.bottomJointAngle,
                                  distalRingState.bottomContactReactionComponent.moment)
         )
     return c
 
 
-def _evalBottomJointAngleDependentComponentFunc(ring: Ring, cableStates: List[CableState]):
-    disps = [bottomCableDisplacement(ring, cs) for cs in cableStates]
+def _evalBottomJointAngleDependentComponentFunc(ring: Ring, tendonStates: List[TendonState]):
+    disps = [bottomGuideDisp(ring, cs) for cs in tendonStates]
 
     def __compute(bottomJointAngle):
         c = Component()
-        for disp, cs in zip(disps, cableStates):
+        for disp, cs in zip(disps, tendonStates):
             c += Component(
-                bottomCableReactionForce(ring, cs, bottomJointAngle),
+                bottomGuideForceComp(ring, cs, bottomJointAngle),
                 disp
             )
         return c
     return __compute
 
 
-def _getBottomJointAngleIndependentComponents(ring: Ring, cableStates: List[CableState], distalRingState: RingState = None):
+def _getBottomJointAngleIndependentComponents(ring: Ring, tendonStates: List[TendonState], distalRingState: RingState = None):
     components = []
-    for cs in cableStates:
+    for cs in tendonStates:
         components.append(Component(
-            topCableReactionForce(
+            topGuideForceComp(
                 ring, cs, None if distalRingState is None else distalRingState.bottomJointAngle),
-            topCableDisplacement(ring, cs)
+            topGuideDisp(ring, cs)
         ))
 
     if distalRingState:
         components.append(Component(
-            topReactionComponent(ring, distalRingState.bottomJointAngle,
+            topReactionComp(ring, distalRingState.bottomJointAngle,
                                  distalRingState.bottomContactReactionComponent.force),
             topReactionDisplacement(
                 ring, distalRingState.bottomJointAngle),
-            topReactionComponent(ring, distalRingState.bottomJointAngle,
+            topReactionComp(ring, distalRingState.bottomJointAngle,
                                  distalRingState.bottomContactReactionComponent.moment)
         ))
     return components
 
 
-def _getBottomJointAngleDependentComponentFunc(ring: Ring, cableStates: List[CableState]):
-    disps = [bottomCableDisplacement(ring, cs) for cs in cableStates]
+def _getBottomJointAngleDependentComponentFunc(ring: Ring, tendonStates: List[TendonState]):
+    disps = [bottomGuideDisp(ring, cs) for cs in tendonStates]
 
     def __compute(bottomJointAngle):
         return [Component(
-                bottomCableReactionForce(ring, cs, bottomJointAngle),
+                bottomGuideForceComp(ring, cs, bottomJointAngle),
                 disp
-                ) for disp, cs in zip(disps, cableStates)]
+                ) for disp, cs in zip(disps, tendonStates)]
     return __compute
 
 
-def evalBottomAngleBound(ring: Ring, cableStates: List[CableState]):
+def evalBottomAngleBound(ring: Ring, tendonStates: List[TendonState]):
     minAngle = 0
     maxAngle = 0
-    for cs in cableStates:
-        horizontalDist = (cs.cableLocation.horizontalDistFromAxis *
-                          math.sin(cs.cableLocation.orientationBF - ring.orientationBF))
+    for cs in tendonStates:
+        horizontalDist = (cs.tendonLocation.horizontalDistFromAxis *
+                          math.sin(cs.tendonLocation.orientationBF - ring.orientationBF))
         angle = math.asin(horizontalDist/ring.bottomCurveRadius)
         minAngle = angle if angle < minAngle else minAngle
         maxAngle = angle if angle > maxAngle else maxAngle
     return (minAngle, maxAngle)
 
 
-def computeAllCableStates(ring: Ring, distalRingState: RingState, knobTensions: List[float]):
-    cableStates = CableState.createKnobs(
-        ring.knobCableLocations, knobTensions if knobTensions else [])
+def computeAllTendonStates(ring: Ring, distalRingState: RingState, knobTensions: List[float]):
+    tendonStates = TendonState.createKnobs(
+        ring.knobTendonLocations, knobTensions if knobTensions else [])
     if distalRingState is not None:
-        cableStates += distalRingState.getCableStatesProximalRing()
-    return cableStates
+        tendonStates += distalRingState.getTendonStatesProximalRing()
+    return tendonStates
 
 
 def defineBottomJointAngleFunc(ring: Ring, distalRingState: RingState = None, knobTensions: List[float] = []) -> RingState:
-    cableStates = computeAllCableStates(ring, distalRingState, knobTensions)
+    tendonStates = computeAllTendonStates(ring, distalRingState, knobTensions)
     independentComponent = _evalBottomJointAngleIndependentComponent(
-        ring, cableStates, distalRingState)
+        ring, tendonStates, distalRingState)
     dependentComponentFunc = _evalBottomJointAngleDependentComponentFunc(
-        ring, cableStates)
+        ring, tendonStates)
 
     def __compute(bottomJointAngle):
         sumComponent = (independentComponent +
@@ -155,7 +155,7 @@ def defineBottomJointAngleFunc(ring: Ring, distalRingState: RingState = None, kn
                                         bottomReactionDisplacement(ring, bottomJointAngle))
         reactionTorque = -(sumComponent.moment +
                            pointForceComponent.momentByForce)
-        return reactionTorque[0], RingState(ring, cableStates, ContactReactionComponent(pointForceComponent.force, reactionTorque), bottomJointAngle, distalRingState)
+        return reactionTorque[0], RingState(ring, tendonStates, ContactReactionComponent(pointForceComponent.force, reactionTorque), bottomJointAngle, distalRingState)
 
     return __compute
 
@@ -172,7 +172,7 @@ def computeFromEndTensions(rings: List[float], endTensions: List[List[float]]) -
         func = defineBottomJointAngleFunc(r, distalRingState, endTension)
         try:
             checkBounds(func, evalBottomAngleBound(
-                r, computeAllCableStates(r, distalRingState, endTension)))
+                r, computeAllTendonStates(r, distalRingState, endTension)))
         except Exception as error:
             return StateResult(mostProximalRingState=distalRingState)
         res, distalRingState = NewtonSolver(

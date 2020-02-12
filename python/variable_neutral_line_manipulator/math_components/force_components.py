@@ -1,58 +1,66 @@
 import math
 
 import numpy as np
+import pyrr.matrix44 as m4
 
-from . import vector_computation as vc
-
-
+# Not required if model is assumed frictionless between ring and tendon
 def evalCapstan(tensionEnd: float, fricCoef: float, totalAngle: float) -> float:
+    """
+        Evaluate Capstan equ.
+        @param tensionEnd = Resultant tension
+    """
     return tensionEnd*math.exp(fricCoef*totalAngle)
 
+# Not required for model with tendons within tendon guide as part of free body
+# def evalTopTendonGuideComp(tensionInRing: float,
+#                           fricCoef: float,
+#                           topJointAngle: float,
+#                           topOrientationRF: float):
+#     halfJointAngle = topJointAngle/2
+#     tensionLoad = evalCapstan(tensionInRing, fricCoef, -halfJointAngle)
+#     return np.array((
+#         tensionLoad*math.sin(halfJointAngle)*math.sin(topOrientationRF),
+#         -tensionLoad*math.sin(halfJointAngle)*math.cos(topOrientationRF),
+#         tensionLoad*math.cos(halfJointAngle) - tensionInRing
+#     ))
 
-def evalTopCableGuideComp(tensionInRing: float,
-                          fricCoef: float,
-                          topJointAngle: float,
-                          topOrientationRF: float):
-    halfJointAngle = topJointAngle/2
-    tensionLoad = evalCapstan(tensionInRing, fricCoef, -halfJointAngle)
-    return np.array((
-        tensionLoad*math.sin(halfJointAngle)*math.sin(topOrientationRF),
-        -tensionLoad*math.sin(halfJointAngle)*math.cos(topOrientationRF),
-        tensionLoad*math.cos(halfJointAngle) - tensionInRing
-    ))
 
-
-def evalBottomCableGuideComp(tensionInRing: float,
-                             fricCoef: float,
-                             bottomJointAngle: float) -> np.ndarray:
-    halfJointAngle = bottomJointAngle/2
-    tensionHold = evalCapstan(tensionInRing, fricCoef, halfJointAngle)
-    return np.array((
-        0,
-        -tensionHold*math.sin(halfJointAngle),
-        tensionInRing - tensionHold*math.cos(halfJointAngle)
-    ))
+# def evalBottomTendonGuideComp(tensionInRing: float,
+#                              fricCoef: float,
+#                              bottomJointAngle: float) -> np.ndarray:
+#     halfJointAngle = bottomJointAngle/2
+#     tensionHold = evalCapstan(tensionInRing, fricCoef, halfJointAngle)
+#     return np.array((
+#         0,
+#         -tensionHold*math.sin(halfJointAngle),
+#         tensionInRing - tensionHold*math.cos(halfJointAngle)
+#     ))
 
 
 def evalKnobComp(tension: float):
+    """
+        Evaluate force component at a knob in ring's frame
+    """
     return np.array((0, 0, -tension))
 
 
-def evalTopContactComp(DRBottomContactCompDRF: np.ndarray,
+def changeContactCompFrame(DRBottomContactCompDRF: np.ndarray,
                        topJointAngle: float,
                        topOrientationRF: float) -> np.ndarray:
-    return np.dot(vc.getRMFromAxis((0, 0, 1), topOrientationRF), np.dot(vc.getRMFromAxis((1, 0, 0), topJointAngle), -DRBottomContactCompDRF))
+    """
+        Change distal ring's bottom reaction in distal ring's frame to ring's top reaction in ring's frame
+    """
+    return np.dot(m4.create_from_axis_rotation((0, 0, 1), topOrientationRF), 
+                  np.dot(m4.create_from_axis_rotation((1, 0, 0), topJointAngle), -DRBottomContactCompDRF))
 
 
-"""
-    Include cable in the wire guide as part of the free body
-"""
-
-
-def evalTopCableGuideCompWithCable(tensionInRing: float,
+def evalTopGuideCompWithTendon(tensionInRing: float,
                             topJointAngle: float,
                             topOrientationRF: float,
                             fricCoef: float) -> np.ndarray:
+    """
+        Evaluate force component at any top end of tendon guide
+    """
     halfJointAngle = topJointAngle/2
     tensionLoad = evalCapstan(tensionInRing, fricCoef, halfJointAngle)
     return np.array((
@@ -62,9 +70,12 @@ def evalTopCableGuideCompWithCable(tensionInRing: float,
     ))
 
 
-def evalBottomCableGuideCompWithCable(tensionInRing: float,
+def evalBottomGuideCompWithTendon(tensionInRing: float,
                              bottomJointAngle: float,
                              fricCoef: float) -> np.ndarray:
+    """
+        Evaluate force component at any bottom end of tendon guide
+    """
     halfJointAngle = bottomJointAngle/2
     tensionHold = evalCapstan(tensionInRing, fricCoef, -halfJointAngle)
     return np.array((
@@ -77,27 +88,36 @@ def evalBottomCableGuideCompWithCable(tensionInRing: float,
 """
 For visualization
 """
-# def evalBottomContactComp(forceComponent:np.ndarray,
-#                         bottomJointAngle:float,
-#                         cableOrientationInRF: float,
-#                         isTop:bool):
-#     if not isTop:
-#         a = np.dot(vc.getRMFromAxis((1,0,0), bottomJointAngle/2), forceComponent)
-#     else:
-#         a = np.dot(vc.getRMFromAxis((1,0,0), -bottomJointAngle/2), np.dot(vc.getRMFromAxis((0,0,1), -cableOrientationInRF),forceComponent))
-#     return {"N": a[2], "Fa": a[0], "Fc": a[1]}
+def getBottomNormalFrictionScalars(jointAngle:float,
+                                   forceComp:np.ndarray=None,
+                                   momentComp:np.ndarray=None):
+    d = {}
+    if forceComp:
+        a = np.dot(m4.create_from_axis_rotation((1,0,0), jointAngle/2), forceComp)
+        d += {"Fr": a[0], "Fc": a[1], "N": a[2]}
+        
+    if momentComp:
+        a = np.dot(m4.create_from_axis_rotation((1,0,0), jointAngle/2), forceComp)
+        d += {"Frm": a[0], "Fcm": a[1], "Nm": a[2]}
+    return d
+    
+# def getTopNormalFrictionScalars(comp:np.ndarray,
+#                                 jointAngle:float,
+#                                 tendonOrientationRF: float):
+#     a = np.dot(m4.create_from_axis_rotation((1,0,0), -jointAngle/2), np.dot(m4.create_from_axis_rotation((0,0,1), -tendonOrientationRF),comp))
+#     return {"Fr": a[0], "Fc": a[1], "N": a[2]}
 
 # def compute3dReactionMomentFromRFComponent(momentComponent: np.ndarray,
 #                                             jointAngle:float,
-#                                             cableOrientationInRF: float,
+#                                             tendonOrientationInRF: float,
 #                                             isTop:bool):
 #     if  np.size(momentComponent,axis=0) == 2:
 #         np.append(momentComponent, 0)
 
 #     if not isTop:
-#         a = np.dot(vc.getRMFromAxis((1,0,0), jointAngle/2), momentComponent)
+#         a = np.dot(m4.create_from_axis_rotation((1,0,0), jointAngle/2), momentComponent)
 #     else:
-#         a = np.dot(vc.getRMFromAxis((1,0,0), -jointAngle/2), np.dot(vc.getRMFromAxis((0,0,1), -cableOrientationInRF),momentComponent))
+#         a = np.dot(m4.create_from_axis_rotation((1,0,0), -jointAngle/2), np.dot(m4.create_from_axis_rotation((0,0,1), -tendonOrientationInRF),momentComponent))
 #     return {"Nm": a[2], "Fcm": a[1]}
 """
     Instead of treating normal and frictional forces independently, they are combined and represeneted in force components and moment component respectively

@@ -7,22 +7,22 @@ from .math_components.displacement_components import *
 from .math_components.vector_computation import *
 
 
-class CableState():
+class TendonState():
     """
-        Record the parameters of all cables running through the ring
+        Record the parameters of all tendons running through the ring
     """
 
-    def __init__(self, cableLocation: CableLocation, tensionInRing: float, isKnob: bool):
-        self.cableLocation = cableLocation
+    def __init__(self, tendonLocation: TendonLocation, tensionInRing: float, isKnob: bool):
+        self.tendonLocation = tendonLocation
         self.tensionInRing = tensionInRing
         self.isKnob = isKnob
 
     @staticmethod
-    def createKnobs(knobCableLocations: List[CableLocation], tensionsInRing: List[float]):
-        return [CableState(cableLocation=cl, tensionInRing=t, isKnob=True) for t, cl in zip(tensionsInRing, knobCableLocations)]
+    def createKnobs(knobTendonLocations: List[TendonLocation], tensionsInRing: List[float]):
+        return [TendonState(tendonLocation=cl, tensionInRing=t, isKnob=True) for t, cl in zip(tensionsInRing, knobTendonLocations)]
 
     def toProximalRingState(self, fricCoef, jointAngle):
-        return CableState(cableLocation=self.cableLocation,
+        return TendonState(tendonLocation=self.tendonLocation,
                           tensionInRing=evalCapstan(
                               tensionEnd=self.tensionInRing, fricCoef=fricCoef, totalAngle=jointAngle),
                           isKnob=False)
@@ -37,11 +37,11 @@ class ContactReactionComponent(ForceMomentComponent):
         super().__init__(force, moment)
 
     def toProximalRingState(self, jointAngle, orientationDiffRF):
-        return ContactReactionComponent(force=evalTopContactComp(
+        return ContactReactionComponent(force=changeContactCompFrame(
             DRBottomContactCompDRF=self.force,
             topJointAngle=jointAngle,
             topOrientationRF=orientationDiffRF),
-            moment=evalTopContactComp(
+            moment=changeContactCompFrame(
             DRBottomContactCompDRF=self.moment,
             topJointAngle=jointAngle,
             topOrientationRF=orientationDiffRF))
@@ -50,12 +50,12 @@ class ContactReactionComponent(ForceMomentComponent):
 class RingState():
     def __init__(self,
                  ring: Ring,
-                 cableStates: List[CableState],
+                 tendonStates: List[TendonState],
                  bottomContactReactionComponent: ContactReactionComponent,
                  bottomJointAngle: float,
                  distalRingState=None):
         self.ring = ring
-        self.cableStates = cableStates
+        self.tendonStates = tendonStates
         self.bottomContactReactionComponent = bottomContactReactionComponent
         self.bottomJointAngle = bottomJointAngle
         self.distalRingState = distalRingState
@@ -64,30 +64,30 @@ class RingState():
     def topJointAngle(self):
         return self.distalRingState.bottomJointAngle
 
-    def getCableStatesProximalRing(self):
+    def getTendonStatesProximalRing(self):
         jointAngle = self.bottomJointAngle
-        fricCoefRingCable = self.ring.fricCoefRingCable
-        return [cs.toProximalRingState(fricCoef=fricCoefRingCable, jointAngle=jointAngle) for cs in self.cableStates]
+        fricCoefRingTendon = self.ring.fricCoefRingTendon
+        return [cs.toProximalRingState(fricCoef=fricCoefRingTendon, jointAngle=jointAngle) for cs in self.tendonStates]
 
     def getVectorComponents(self):
-        from .math_wrapper import topCableReactionForce, \
-            topCableDisplacement, bottomCableReactionForce, bottomCableDisplacement, bottomReactionDisplacement,  \
+        from .math_wrapper import topTendonReactionForce, \
+            topTendonDisplacement, bottomTendonReactionForce, bottomTendonDisplacement, bottomReactionDisplacement,  \
             topReactionComponent, topReactionDisplacement
         ring = self.ring
         components = []
 
-        # cable
-        for cs in self.cableStates:
+        # tendon
+        for cs in self.tendonStates:
             components.append(Component(
-                topCableReactionForce(
+                topTendonReactionForce(
                     ring, cs, None if cs.isKnob else self.topJointAngle),
-                topCableDisplacement(ring, cs)
+                topTendonDisplacement(ring, cs)
             ))
 
             components.append(Component(
-                bottomCableReactionForce(
+                bottomTendonReactionForce(
                     ring, cs, self.bottomJointAngle),
-                bottomCableDisplacement(ring, cs)
+                bottomTendonDisplacement(ring, cs)
             ))
 
         # reaction
@@ -144,5 +144,5 @@ class StateResult():
             raise NotImplementedError()    
      
 
-    def computeCableLengths(self) -> List[List[float]]:
+    def computeTendonLengths(self) -> List[List[float]]:
         return None
