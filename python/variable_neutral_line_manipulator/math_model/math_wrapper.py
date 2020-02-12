@@ -1,5 +1,7 @@
-from .entities import *
-from .states import *
+import numpy as np
+
+from .force_comp import *
+from .disp_comp import *
 
 
 def topGuideForceComp(ring: Ring, tendonState: TendonState, topJointAngle: float):

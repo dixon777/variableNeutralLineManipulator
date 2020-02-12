@@ -3,10 +3,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 import math
-from variable_neutral_line_manipulator.entities import *
-from variable_neutral_line_manipulator.math_components.vector_computation import *
-from variable_neutral_line_manipulator.states import *
-from variable_neutral_line_manipulator.solvers import *
+from variable_neutral_line_manipulator.math_model.entities import *
+from variable_neutral_line_manipulator.math_model.states import *
+from variable_neutral_line_manipulator.math_model.solvers import *
 from variable_neutral_line_manipulator.display.display import *
 from variable_neutral_line_manipulator.display.ranges import *
 

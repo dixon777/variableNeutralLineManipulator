@@ -1,10 +1,10 @@
 import numpy as np
+import pyrr.matrix44 as m4
 
 from .entities import *
 from .vector_components import *
-from .math_components.force_components import *
-from .math_components.displacement_components import *
-from .math_components.vector_computation import *
+from .helper_functions import *
+from .force_comp import changeContactCompFrame
 
 
 class TendonState():
@@ -107,6 +107,12 @@ class RingState():
             ))
 
         return components
+    
+def getTFProximalTopToDistalBottom(jointAngle: float, curveRadius: float):
+    rot = m4.create_from_axis_rotation((1,0,0), jointAngle/2)
+    return np.matmul(rot, 
+                     m4.create_from_translation((0,0,2*curveRadius*(1-math.cos(jointAngle/2)))) +
+                     rot) # Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
 
 class StateResult():
     def __init__(self, mostProximalRingState: RingState, error=None):
@@ -116,7 +122,7 @@ class StateResult():
             self.states.append(state)
             state = state.distalRingState
 
-        self.error = error
+        self.error = error # Not used
         
     def getTF(self, ringIndex=-1, side="c"):
         """
@@ -126,23 +132,26 @@ class StateResult():
         c = np.identity(4)
         for s in self.states[:ringIndex]:
             c = np.matmul(c, getTFProximalTopToDistalBottom(s.bottomJointAngle, s.ring.bottomCurveRadius))
-            c = np.matmul(np.matmul(c, composeTF(t=(0,0, s.ring.length))),  composeTF(RM=getRMFromAxis((0,0,1), s.ring.topOrientationRF)))
+            # Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
+            c = np.matmul(c, m4.create_from_translation((0,0, s.ring.length)) + 
+                          m4.create_from_axis_rotation((0,0,1), s.ring.topOrientationRF))
+
         
         s = self.states[ringIndex]
         c = np.matmul(c, getTFProximalTopToDistalBottom(s.bottomJointAngle, s.ring.bottomCurveRadius))
         if side == "b":
             return c
         elif side == "c":
-            return np.matmul(c, composeTF(t=(0,0, s.ring.length/2)))
+            return np.matmul(c, m4.create_from_translation((0,0, s.ring.length/2)))
 
-        c = np.matmul(c, composeTF(t=(0,0, s.ring.length)))
+        c = np.matmul(c, m4.create_from_translation((0,0, s.ring.length)))
         if side == "tr":
             return c
         elif side == "td":
-            return np.matmul(c, composeTF(RM=getRMFromAxis((0,0,1), s.ring.topOrientationRF)))
-        else:
-            raise NotImplementedError()    
+            return np.matmul(c, m4.create_from_axis_rotation((0,0,1), s.ring.topOrientationRF))
+        
+        raise NotImplementedError()    
      
 
     def computeTendonLengths(self) -> List[List[float]]:
-        return None
+        raise NotImplementedError()

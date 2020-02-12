@@ -3,13 +3,9 @@ import math
 import numpy as np
 import pyrr.matrix44 as m4
 
-# Not required if model is assumed frictionless between ring and tendon
-def evalCapstan(tensionEnd: float, fricCoef: float, totalAngle: float) -> float:
-    """
-        Evaluate Capstan equ.
-        @param tensionEnd = Resultant tension
-    """
-    return tensionEnd*math.exp(fricCoef*totalAngle)
+from .helper_functions import evalCapstan
+
+
 
 # Not required for model with tendons within tendon guide as part of free body
 # def evalTopTendonGuideComp(tensionInRing: float,
