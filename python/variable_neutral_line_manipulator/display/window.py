@@ -3,7 +3,7 @@ import math, os, logging
 import numpy as np
 import pyrr
 
-from PyQt5.QtCore import pyqtSignal, QPoint, QSize, Qt
+from PyQt5.QtCore import pyqtSignal, QPoint, QSize, QTimer, Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QOpenGLWidget, QSlider,
                              QWidget)
@@ -27,7 +27,24 @@ class GLWidget(QOpenGLWidget):
         self.acc_x = 0
         self.acc_y = 0
         
+        self.scale = 1.0
+        
+        self.timer = QTimer()
+        self.timer.setSingleShot(False)
+        self.timer.setInterval(15)
+        self.timer.timeout.connect(lambda: self._tick())
+        self.timer.start()
+        
         self.setFocusPolicy(Qt.StrongFocus)
+        
+    def _tick(self):
+        axis = np.array((1,1,1))
+        self.setRotation(pyrr.matrix44.create_from_axis_rotation(
+            axis/np.linalg.norm(axis),
+            0.05,
+            dtype=np.float32
+        ))
+        self.update()
         
     def setVal(self, attr, val):
         if not np.array_equal(val, self.__dict__[attr]):
@@ -84,6 +101,10 @@ class GLWidget(QOpenGLWidget):
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Shift:
             self.inTranslateMode = False
+    
+    def wheelEvent(self, event):
+        self.setVal("scale", self.scale + 0.1 * (1 if event.angleDelta().y() > 0 else -1))
+    
         
     def initializeGL(self):
         logging.debug("initializeGL")
@@ -94,50 +115,67 @@ class GLWidget(QOpenGLWidget):
             os.path.join(dirName, "shaders", "simple.vs"),
             os.path.join(dirName, "shaders", "simple.fs")
         )
-        v, c, e = createTriangleBufferDebug1()
-        v2, c2, e2 = createTriangleBufferDebug2()
-        
+        # v, c, vi = createTriangleBufferDebug1()
+        # v2, c2, e2 = createTriangleBufferDebug2()
+        # v, n, vi, ni = loadObj(os.path.join(dirName, "ring0.obj"))
+        v, c, vi = createCubeBufferDebug()
         overallUniformMap = {key: UniformVariable(glGetUniformLocation(shaderProgram, key), m) for key, m in zip((
-            "view", "projection",
+            "view", "projection"
         ), (
-            pyrr.matrix44.create_from_translation(np.array((0,0, -3)), dtype=np.float32),
-            np.identity(4, dtype="float32"),
+            pyrr.matrix44.create_from_translation(
+            np.array((0,0,-5), dtype=np.float32)),
+            np.identity(4, dtype=np.float32),
         ))}
         meshUniformMap = {
             key: UniformVariable(glGetUniformLocation(shaderProgram, key), m) for key, m in zip((
-            "transform",
+            "model",
         ), (
-            np.identity(4, dtype="float32"),
+            np.identity(4, dtype=np.float32),
         ))
         }
         self.renderer = Renderer([
-            Mesh(vertices=[v,c],indices=e, uniformMap=meshUniformMap),
-            Mesh(vertices=[v2,c2],indices=e2, uniformMap=meshUniformMap),
+            Mesh(vertices=[v,c,],indices=vi, uniformMap=meshUniformMap),
         ], shaderProgram, overallUniformMap)
 
         self.renderer.useProgram()
-        glClearColor(0,0.1,0.1,1)
+        glClearColor(0,0.1,1,1)
+        glEnable(GL_DEPTH_TEST)
         
     def paintGL(self):
         logging.debug("paintGL")
         self.renderer.useProgram()
         glClear(GL_COLOR_BUFFER_BIT)
-        self.renderer.meshes[0].updateUniform("transform", pyrr.matrix44.create_from_translation(
+        self.renderer.meshes[0].updateUniform("model", np.matmul(self.rot, pyrr.matrix44.create_from_translation(
             np.array((self.x, self.y, self.z), dtype=np.float32)
-        ))
-        self.renderer.meshes[1].updateUniform("transform", pyrr.matrix44.create_from_translation(
-            np.array((-self.x, -self.y, self.z), dtype=np.float32)
-        ))
+        )))
+        
+        width = self.width()
+        height = self.height()
+        multiplier = self.scale
+        maxSide = max((width,height))
+        self.renderer.updateUniform("projection", pyrr.matrix44.create_orthogonal_projection(
+                        -multiplier/maxSide*width,
+                        multiplier/maxSide*width,
+                        -multiplier/maxSide*height,
+                        multiplier/maxSide*height,
+                        0,
+                        100, dtype=np.float32
+                    ))
+        
+       
         self.renderer.draw()
 
     def resizeGL(self, width, height):
         logging.debug("resizeGL")
-        self.renderer.updateUniform("projection", pyrr.matrix44.create_perspective_projection(
-                               30,
-                               width/height,
-                               0.1,
-                               10, dtype=np.float32
-                           ))
+        # self.renderer.updateUniform("projection", pyrr.matrix44.create_perspective_projection(
+        #                        120,
+        #                        self.width()/self.height(),
+        #                        0.1,
+        #                        100, dtype=np.float32
+        #                    ))
+        
+        
+        
         
     def sizeHint(self):
         return QSize(1280,720)

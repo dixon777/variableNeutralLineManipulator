@@ -19,7 +19,8 @@ class UniformVariable():
             t = self.value.dtype
             if t == np.float32 or t == np.float64:
                 self.input = lambda val: glUniformMatrix4fv(self.loc, 1, GL_FALSE, val)
-        
+            
+                
     @property
     def val(self):
         return self.value
@@ -29,7 +30,7 @@ class UniformVariable():
             self.value = val
             self.hasChanged = True
             
-    def resetChangeFlag(self, val):
+    def setChangeFlag(self, val):
         self.hasChanged = val
     
     def inputGPU(self, shouldResetChanged=True):
@@ -121,7 +122,7 @@ class Renderer():
             m.draw(offset, lambda: self._inputUniform())
         
         for uv in self.uniformMap.values():
-            uv.resetChangeFlag(False)
+            uv.setChangeFlag(False)
         glUseProgram(0)
 
 
@@ -162,7 +163,7 @@ class Mesh():
             updateCB()
         for uv in self.uniformMap.values():
             uv.inputGPU()
-        glDrawElements(GL_TRIANGLES, self.indices.size, GL_UNSIGNED_INT, ctypes.c_void_p(indexByteOffset))
+        glDrawElements(GL_TRIANGLE_STRIP, self.indices.size, GL_UNSIGNED_INT, ctypes.c_void_p(indexByteOffset))
         glBindVertexArray(0)
         
         
@@ -185,8 +186,8 @@ def getGLInfo():
 
 
 def loadObj(path):
-    v = []
-    n = []
+    vertex = []
+    normal = []
     vi = []
     ni = []
     for line in open(path, 'r'):
@@ -198,16 +199,22 @@ def loadObj(path):
         
         prefix = values[0]
         if prefix == 'v':
-            v.append(values[1:4])
+            vertex.append([float(v) for v in values[1:4]])
         elif prefix == 'vn':
-            n.append(values[1:4])  
+            normal.append([float(v) for v in values[1:4]])  
         elif prefix == 'f':
+            v_arr = []
             for v in values[1:4]:
                 w = v.split('//')
-                vi.append(int(w[0])-1)
-                ni.append(int(w[1])-1)
+                v_arr.append(int(w[0])-1)
+                # vi.append(int(w[0])-1)
+                # ni.append(int(w[1])-1)
+            vi.append(v_arr)
         
-    return v,n,vi,ni
+    return (np.array(vertex, dtype=np.float32), 
+            np.array(normal, dtype=np.float32),
+            np.array(vi, dtype=np.uint32),
+            np.array(ni, dtype=np.uint32))
 
 def loadShader(path):
     with open(path, "rb") as f:
@@ -224,6 +231,21 @@ def compileShadersFromFiles(vPath, fPath):
         loadShader(vPath),
         loadShader(fPath)
     )
+    
+def createCubeBufferDebug():
+    v = 0.1*np.mgrid[-1:2:2, -1:2:2, -1:2:2]
+    v = np.reshape(v, (3,-1)).transpose().astype(np.float32)
+    c = np.random.uniform(size=v.shape).astype(np.float32)
+    c = np.reshape(c, (-1,3))
+    e = np.array((
+        0,1,2,3,
+        0,1,4,5,
+        0,2,4,6,
+        1,3,5,7,
+        2,3,6,7,
+        4,5,6,7
+    ), dtype=np.uint32)
+    return v, c, e
 
 def createTriangleBufferDebug1():
     v = 0.2*np.array((-1, -1, 0,
@@ -272,5 +294,5 @@ def createTriangleBufferDebug2():
 #     # glBindBuffer(GL_ARRAY_BUFFER, VBO)
 #     # glBufferData(GL_ARRAY_BUFFER, )
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    createCubeBufferDebug()
