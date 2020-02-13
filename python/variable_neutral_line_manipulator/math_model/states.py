@@ -1,5 +1,4 @@
 import numpy as np
-import pyrr.matrix44 as m4
 
 from .entities import *
 from .vector_components import *
@@ -7,22 +6,21 @@ from .helper_functions import *
 from .force_comp import changeContactCompFrame
 
 
-class TendonState():
+class TendonModelState():
     """
         Record the parameters of all tendons running through the ring
     """
-
-    def __init__(self, tendonLocation: TendonLocation, tensionInRing: float, isKnob: bool):
-        self.tendonLocation = tendonLocation
+    def __init__(self, tendonModel: TendonModel, tensionInRing: float, isKnob: bool):
+        self.tendonModel = tendonModel
         self.tensionInRing = tensionInRing
         self.isKnob = isKnob
 
     @staticmethod
-    def createKnobs(knobTendonLocations: List[TendonLocation], tensionsInRing: List[float]):
-        return [TendonState(tendonLocation=cl, tensionInRing=t, isKnob=True) for t, cl in zip(tensionsInRing, knobTendonLocations)]
+    def createKnobs(knobTendonModels: List[TendonModel], tensionsInRing: List[float]):
+        return [TendonModelState(tendonModel=cl, tensionInRing=t, isKnob=True) for t, cl in zip(tensionsInRing, knobTendonModels)]
 
     def toProximalRingState(self, fricCoef, jointAngle):
-        return TendonState(tendonLocation=self.tendonLocation,
+        return TendonModelState(tendonModel=self.tendonModel,
                           tensionInRing=evalCapstan(
                               tensionEnd=self.tensionInRing, fricCoef=fricCoef, totalAngle=jointAngle),
                           isKnob=False)
@@ -32,7 +30,6 @@ class ContactReactionComponent(ForceMomentComponent):
     """
         Record the reactions
     """
-
     def __init__(self, force=np.zeros(3), moment=np.zeros(3)):
         super().__init__(force, moment)
 
@@ -47,15 +44,15 @@ class ContactReactionComponent(ForceMomentComponent):
             topOrientationRF=orientationDiffRF))
 
 
-class RingState():
+class RingModelState():
     def __init__(self,
-                 ring: Ring,
-                 tendonStates: List[TendonState],
+                 ring: RingModel,
+                 tendonModelStates: List[TendonModelState],
                  bottomContactReactionComponent: ContactReactionComponent,
                  bottomJointAngle: float,
                  distalRingState=None):
         self.ring = ring
-        self.tendonStates = tendonStates
+        self.tendonModelStates = tendonModelStates
         self.bottomContactReactionComponent = bottomContactReactionComponent
         self.bottomJointAngle = bottomJointAngle
         self.distalRingState = distalRingState
@@ -64,10 +61,10 @@ class RingState():
     def topJointAngle(self):
         return self.distalRingState.bottomJointAngle
 
-    def getTendonStatesProximalRing(self):
+    def getTendonModelStatesProximalRing(self):
         jointAngle = self.bottomJointAngle
         fricCoefRingTendon = self.ring.fricCoefRingTendon
-        return [cs.toProximalRingState(fricCoef=fricCoefRingTendon, jointAngle=jointAngle) for cs in self.tendonStates]
+        return [cs.toProximalRingState(fricCoef=fricCoefRingTendon, jointAngle=jointAngle) for cs in self.tendonModelStates]
 
     def getVectorComponents(self):
         from .math_wrapper import topTendonReactionForce, \
@@ -77,28 +74,28 @@ class RingState():
         components = []
 
         # tendon
-        for cs in self.tendonStates:
-            components.append(Component(
+        for cs in self.tendonModelStates:
+            components.append(VectorComponent(
                 topTendonReactionForce(
                     ring, cs, None if cs.isKnob else self.topJointAngle),
                 topTendonDisplacement(ring, cs)
             ))
 
-            components.append(Component(
+            components.append(VectorComponent(
                 bottomTendonReactionForce(
                     ring, cs, self.bottomJointAngle),
                 bottomTendonDisplacement(ring, cs)
             ))
 
         # reaction
-        components.append(Component(
+        components.append(VectorComponent(
             self.bottomContactReactionComponent.force,
             bottomReactionDisplacement(ring, self.bottomJointAngle),
             self.bottomContactReactionComponent.moment
         ))
 
         if self.distalRingState:
-            components.append(Component(
+            components.append(VectorComponent(
                 topReactionComponent(self.ring, self.topJointAngle,
                                      self.distalRingState.bottomContactReactionComponent.force),
                 topReactionDisplacement(self.ring, self.topJointAngle),
@@ -109,13 +106,13 @@ class RingState():
         return components
     
 def getTFProximalTopToDistalBottom(jointAngle: float, curveRadius: float):
-    rot = m4.create_from_axis_rotation((1,0,0), jointAngle/2)
+    rot = m4MatrixRotation((1.0,0,0), jointAngle/2)
     return np.matmul(rot, 
-                     m4.create_from_translation((0,0,2*curveRadius*(1-math.cos(jointAngle/2)))) +
+                     m4MatrixTranslation((0.0,0,2*curveRadius*(1-math.cos(jointAngle/2)))) +
                      rot) # Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
 
 class StateResult():
-    def __init__(self, mostProximalRingState: RingState, error=None):
+    def __init__(self, mostProximalRingState: RingModelState, error=None):
         state = mostProximalRingState
         self.states = []
         while state:
@@ -133,8 +130,8 @@ class StateResult():
         for s in self.states[:ringIndex]:
             c = np.matmul(c, getTFProximalTopToDistalBottom(s.bottomJointAngle, s.ring.bottomCurveRadius))
             # Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
-            c = np.matmul(c, m4.create_from_translation((0,0, s.ring.length)) + 
-                          m4.create_from_axis_rotation((0,0,1), s.ring.topOrientationRF))
+            c = np.matmul(c, m4MatrixTranslation((0.0,0, s.ring.length)) + 
+                          m4MatrixRotation((0,0,1.0), s.ring.topOrientationRF))
 
         
         s = self.states[ringIndex]
@@ -142,13 +139,13 @@ class StateResult():
         if side == "b":
             return c
         elif side == "c":
-            return np.matmul(c, m4.create_from_translation((0,0, s.ring.length/2)))
+            return np.matmul(c, m4MatrixTranslation((0,0, s.ring.length/2)))
 
-        c = np.matmul(c, m4.create_from_translation((0,0, s.ring.length)))
+        c = np.matmul(c, m4MatrixTranslation((0,0, s.ring.length)))
         if side == "tr":
             return c
         elif side == "td":
-            return np.matmul(c, m4.create_from_axis_rotation((0,0,1), s.ring.topOrientationRF))
+            return np.matmul(c, m4MatrixRotation((0,0,1.0), s.ring.topOrientationRF))
         
         raise NotImplementedError()    
      

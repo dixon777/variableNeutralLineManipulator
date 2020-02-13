@@ -1,9 +1,8 @@
 import math
 
 import numpy as np
-import pyrr.matrix44 as m4
 
-from .helper_functions import evalCapstan
+from .helper_functions import *
 
 
 
@@ -46,8 +45,8 @@ def changeContactCompFrame(DRBottomContactCompDRF: np.ndarray,
     """
         Change distal ring's bottom reaction in distal ring's frame to ring's top reaction in ring's frame
     """
-    return np.dot(m4.create_from_axis_rotation((0, 0, 1), topOrientationRF), 
-                  np.dot(m4.create_from_axis_rotation((1, 0, 0), topJointAngle), -DRBottomContactCompDRF))
+    return np.dot(m3MatrixRotation((0, 0, 1.0), topOrientationRF), 
+                  np.dot(m3MatrixRotation((1.0, 0, 0), topJointAngle), -DRBottomContactCompDRF))
 
 
 def evalTopGuideCompWithTendon(tensionInRing: float,
@@ -89,18 +88,18 @@ def getBottomNormalFrictionScalars(jointAngle:float,
                                    momentComp:np.ndarray=None):
     d = {}
     if forceComp:
-        a = np.dot(m4.create_from_axis_rotation((1,0,0), jointAngle/2), forceComp)
+        a = np.dot(m4MatrixRotation((1.0,0,0), jointAngle/2), forceComp)
         d += {"Fr": a[0], "Fc": a[1], "N": a[2]}
         
     if momentComp:
-        a = np.dot(m4.create_from_axis_rotation((1,0,0), jointAngle/2), forceComp)
+        a = np.dot(m4MatrixRotation((1.0,0,0), jointAngle/2), forceComp)
         d += {"Frm": a[0], "Fcm": a[1], "Nm": a[2]}
     return d
     
 # def getTopNormalFrictionScalars(comp:np.ndarray,
 #                                 jointAngle:float,
 #                                 tendonOrientationRF: float):
-#     a = np.dot(m4.create_from_axis_rotation((1,0,0), -jointAngle/2), np.dot(m4.create_from_axis_rotation((0,0,1), -tendonOrientationRF),comp))
+#     a = np.dot(m4MatrixRotation((1.0,0,0), -jointAngle/2), np.dot(m4MatrixRotation((0,0,1.0), -tendonOrientationRF),comp))
 #     return {"Fr": a[0], "Fc": a[1], "N": a[2]}
 
 # def compute3dReactionMomentFromRFComponent(momentComponent: np.ndarray,
@@ -111,9 +110,9 @@ def getBottomNormalFrictionScalars(jointAngle:float,
 #         np.append(momentComponent, 0)
 
 #     if not isTop:
-#         a = np.dot(m4.create_from_axis_rotation((1,0,0), jointAngle/2), momentComponent)
+#         a = np.dot(m4MatrixRotation((1,0,0,0), jointAngle/2), momentComponent)
 #     else:
-#         a = np.dot(m4.create_from_axis_rotation((1,0,0), -jointAngle/2), np.dot(m4.create_from_axis_rotation((0,0,1), -tendonOrientationInRF),momentComponent))
+#         a = np.dot(m4MatrixRotation((1,0,0,0), -jointAngle/2), np.dot(m4MatrixRotation((0,0,1.0), -tendonOrientationInRF),momentComponent))
 #     return {"Nm": a[2], "Fcm": a[1]}
 """
     Instead of treating normal and frictional forces independently, they are combined and represeneted in force components and moment component respectively

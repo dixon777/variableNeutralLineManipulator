@@ -1,10 +1,9 @@
 import numpy as np
 
-
 class ForceMomentComponent():
     def __init__(self, force=None, moment=None):
-        self.force = np.zeros(3) if force is None else force
-        self.moment = np.zeros(3) if moment is None else moment
+        self.force = np.zeros(3) if force is None else np.array(force)
+        self.moment = np.zeros(3) if moment is None else np.array(moment)
 
     @property
     def flat(self):
@@ -19,7 +18,9 @@ class ForceMomentComponent():
         return np.concatenate((np.zeros(3), self.moment))
 
     def __radd__(self, other):
-        if isinstance(other, ForceMomentComponent):
+        if other.__class__ == VectorComponent:
+            return ForceMomentComponent(force=self.force + other.force, moment=self.moment + other.sumMoment)
+        elif isinstance(other, ForceMomentComponent):
             return ForceMomentComponent(force=self.force + other.force, moment=self.moment + other.moment)
         elif isinstance(other, (int, float)):
             return ForceMomentComponent(force=self.force, moment=self.moment)
@@ -28,11 +29,13 @@ class ForceMomentComponent():
     def __add__(self, other):
         return self.__radd__(other)
 
+    def __repr__(self):
+        return f"force: {self.force}, moment: {self.moment} [{self.__class__.__name__}]"
 
-class Component(ForceMomentComponent):
+class VectorComponent(ForceMomentComponent):
     def __init__(self, force: np.ndarray = None, disp: np.ndarray = None, moment: np.ndarray = None):
         super().__init__(force, moment)
-        self.disp = np.zeros(3) if disp is None else disp
+        self.disp = np.zeros(3) if disp is None else np.array(disp)
 
     @property
     def momentByForce(self):
@@ -50,10 +53,13 @@ class Component(ForceMomentComponent):
         return self.__radd__(other)
 
     def __radd__(self, other):
-        if isinstance(other, ForceMomentComponent):
-            return ForceMomentComponent(force=self.force + other.force, moment=self.sumMoment + other.moment)
-        elif isinstance(other, Component):
+        if other.__class__ == VectorComponent:
             return ForceMomentComponent(force=self.force + other.force, moment=self.sumMoment + other.sumMoment)
+        elif other.__class__ == ForceMomentComponent:
+            return ForceMomentComponent(force=self.force + other.force, moment=self.sumMoment + other.moment)
         elif isinstance(other, (int, float)):
             return ForceMomentComponent(force=self.force, moment=self.sumMoment)
         raise NotImplementedError()
+    
+    def __repr__(self):
+        return f"force: {self.force}, disp: {self.disp}, moment: {self.moment} [{self.__class__.__name__}]"
