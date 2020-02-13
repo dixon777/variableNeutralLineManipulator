@@ -3,16 +3,16 @@ import math, random as rd
 import numpy as np
 import pytest
 
-from ..displacement_components import *
+from ..disp_comp import *
 
 
-def test_evalDispBetweenCenters():
-    curveRadius = 5
-    ringLength = 4
-    res = evalDispBetweenCenters(curveRadius, ringLength, isTop=True)
-    assert(res == ringLength/2-curveRadius)
-    res = evalDispBetweenCenters(curveRadius, ringLength, isTop=False)
-    assert(res == curveRadius-ringLength/2)
+# def test_evalDispBetweenCenters():
+#     curveRadius = 5
+#     ringLength = 4
+#     res = evalDispBetweenCenters(curveRadius, ringLength, isTop=True)
+#     assert(res == ringLength/2-curveRadius)
+#     res = evalDispBetweenCenters(curveRadius, ringLength, isTop=False)
+#     assert(res == curveRadius-ringLength/2)
 
 # # def test_evalHorizontalDispFromCableToAxis():
 #     # curvatureRadius = 5
@@ -62,8 +62,7 @@ def test_evalDispBetweenCenters():
 #             y,
 #             z + evalDispBetweenCenters(ringLength=ringLength, curvatureRadius=curvatureRadius, isTop=isTop)
 #         ))))
-
-
+    
 def test_evalTopContactDisp():
     ringLength = rd.random()*100
     curveRadius = rd.random()*100
@@ -78,7 +77,7 @@ def test_evalTopContactDisp():
     assert(all(res==np.array((
         curveRadius*math.sin(jointAngle/2)*math.sin(topOrientationRF),
         -curveRadius*math.sin(jointAngle/2)*math.cos(topOrientationRF),
-        curveRadius*math.cos(jointAngle/2) + evalDispBetweenCenters(curveRadius, ringLength, True)
+        curveRadius*math.cos(jointAngle/2) + ringLength/2 - curveRadius
     ))))
     
             
