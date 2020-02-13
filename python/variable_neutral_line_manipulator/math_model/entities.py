@@ -19,6 +19,11 @@ class TendonModel():
         self.orientationBF = orientationBF
         self.horizontalDistFromAxis = horizontalDistFromAxis
         self.knobLength = knobLength
+        
+    def __repr__(self):
+        return (f"{self.__class__.__name__}:"
+                f"orientation base frame = {self.orientationBF}\n"
+               f"horizontalDistFromAxis = {self.horizontalDistFromAxis}\n")
 
 
 class RingModel():
@@ -44,6 +49,18 @@ class RingModel():
 
     def numKnobs(self):
         return len(self.knobTendonModels)
+    
+    def __repr__(self):
+        tmStr = "\n  ".join([str(tm) for tm in self.knobTendonModels])
+        return (f"{self.__class__.__name__}:"
+                f"length = {self.length}\n"
+                f"orientation base frame = {self.orientationBF}\n"
+               f"bottomCurveRadius = {self.bottomCurveRadius}\n"
+               f"topCurveRadius = {self.topCurveRadius}\n"
+               
+               f"topOrientationRF = {self.topOrientationRF}\n"
+               f"fricCoefRingTendon = {self.fricCoefRingTendon}\n"
+               f"knobTensionModels:\n" + tmStr)
 
 
 class SegmentModel():
@@ -88,6 +105,15 @@ class SegmentModel():
                               horizontalDistFromAxis=self.tendonHorizontalDistFromAxis,
                               knobLength=self.knobLength,
                               ) for tendonOrientation in tendonOrientationsBF]
+        
+    def __repr__(self):
+        return (f"{self.__class__.__name__}:"
+                f"is 1 DoF = {self.is1DoF}\n"
+               f"num joints = {self.numJoints}\n"
+               f"ring length = {self.ringLength}\n"
+               f"orientation base frame = {self.orientationBF}\n"
+               f"Curve radius = {self.curveRadius}\n"
+               f"Tendone horizontal dist from axis = {self.tendonHorizontalDistFromAxis}\n")
 
 
 def generateRingModels(segments: List[SegmentModel], fricCoefRingTendon=0.0) -> List[RingModel]:
@@ -110,6 +136,4 @@ def generateRingModels(segments: List[SegmentModel], fricCoefRingTendon=0.0) -> 
     return rings
 
 
-
-            
             

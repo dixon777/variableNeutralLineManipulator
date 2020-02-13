@@ -1,233 +1,319 @@
 import math, os, logging
+from uuid import UUID
 
 import numpy as np
 import pyrr
 
 from PyQt5.QtCore import pyqtSignal, QPoint, QSize, QTimer, Qt
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QOpenGLWidget, QSlider,
-                             QWidget)
+from PyQt5.QtGui import QColor, QDoubleValidator, QIcon, QIntValidator
+from PyQt5.QtWidgets import QApplication, QCheckBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLineEdit, QOpenGLWidget, QPushButton, QScrollArea, QSlider, QTextEdit, QVBoxLayout, QWidget
+
+from .state_management import StateManagement
+
+def removeFromLayout(layout, i):
+    count = layout.count()
+    i = i if i >= 0 else count + i
+    if i >= count or i < 0:
+        return False
+    item = layout.itemAt(i)
+    if item is None:
+        return False
+    widget = item.widget()
+    if widget is None:
+        layout.removeItem(item)
+    else:
+        layout.removeWidget(widget)
+        widget.setParent(None)
+
+def safeInt(v, default=0):
+    try:
+        v = int(v)
+    except:
+        v = int(default)
+    return v
+          
+def safeFloat(v, default=0.0):
+    try:
+        v = float(v)
+    except:
+        v = float(default)
+    return v
+
+class QNumEdit(QLineEdit):
+    def __init__(self, initVal=0, textChangeCB=None, parent=None):
+        super().__init__(str(initVal), parent=parent)
+        self.textChanged.connect(textChangeCB)
+        
 
 
-from OpenGL.GL import *
+class QIntEdit(QNumEdit):
+    def __init__(self, initVal=0, minVal=None, maxVal=None, textChangeCB=None, parent=None):
+        super().__init__(initVal, textChangeCB=textChangeCB, parent=parent)
+        self.setValidator(QIntValidator(safeInt(minVal), safeInt(maxVal)))
+        
+class QFloatEdit(QNumEdit):
+    def __init__(self, initVal=0.0, minVal=None, maxVal=None, decimal=None, textChangeCB=None, parent=None):
+        super().__init__(initVal, textChangeCB=textChangeCB, parent=parent)
+        self.setValidator(QDoubleValidator(safeFloat(minVal), safeFloat(maxVal), safeInt(decimal)))
+        
 
-from opengl_helper import *
- 
-logging.getLogger().setLevel(logging.INFO)
 
-class GLWidget(QOpenGLWidget):
-    xChange = pyqtSignal(int)
-    yChange = pyqtSignal(int)
+class ConfigWidget(QWidget):
+    def __init__(self, idModelPair, parent=None, flags=Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+        self.id, self.model = idModelPair
+        self.formLayout = QFormLayout()
+        self._configForm()
+        
+        box = QGroupBox(f"{self.id}")
+        box.setLayout(self.formLayout)
+        
+        removedButton = QPushButton(QIcon.fromTheme("list-remove"), "Remove")
+        removedButton.clicked.connect(lambda: StateManagement().removeSegmentConfigSrc.on_next(self.id))
+        
+        mainLayout = QHBoxLayout()
+        mainLayout.addWidget(box)
+        mainLayout.addWidget(removedButton)
+        self.setLayout(mainLayout)
+        
+    def _configForm(self):
+        pairs = {
+            "is 1 DoF?:": QCheckBox(),
+            "No. of joints:": QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textChangeCB=self._updateNumJoints),
+            "Ring length (mm):": QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textChangeCB=self._updateRingLength),
+            "Orientation (deg):": QFloatEdit(self.model.orientationBF,  minVal=-180, maxVal=180, decimal=2, textChangeCB=lambda s: self._updateOrientationBF(s)),
+            "Curve radius (mm):": QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textChangeCB=lambda s: self._updateCurveRadius(s)),
+            "Tendon distance from axis (mm):":QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textChangeCB=lambda s: self._updateTendonDistFromAxis(s)),
+        }
+        for k, v in pairs.items():
+            self.formLayout.addRow(k, v)
+            if isinstance(v, QCheckBox):
+                v.setChecked(self.model.is1DoF)
+                v.stateChanged.connect(self._updateIs1DoF)
+            
+    def _notifyUpdate(self):
+        StateManagement().updateSegmentSrc.on_next((self.id, self.model))
+        
+        
+    def _updateIs1DoF(self,s):
+        self.model.is1DoF = s
+        self._notifyUpdate()
+                   
+    def _updateNumJoints(self,s):
+        self.model.numJoints = safeInt(s)
+        self._notifyUpdate()
+        
+    def _updateRingLength(self,s):
+        self.model.ringLength = safeFloat(s)
+        self._notifyUpdate()
+        
+    def _updateOrientationBF(self,s):
+        self.model.orientationBF = safeFloat(s)
+        self._notifyUpdate()
+        
+    def _updateCurveRadius(self,s):
+        self.model.curveRadius = safeFloat(s)
+        self._notifyUpdate()
+        
+    def _updateTendonDistFromAxis(self,s):
+        self.model.tendonHorizontalDistFromAxis = safeFloat(s)
+        self._notifyUpdate()
+        
+        
+        
+class ConfigListWidget(QWidget):
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent=parent, flags=flags)
-        self.x = 0
-        self.y = 0
-        self.z = 0
-        self.rot = np.identity(4, dtype=np.float32)
-        self.acc_x = 0
-        self.acc_y = 0
         
-        self.scale = 1.0
+        self.idSegmentConfigWidgetMap = {}
         
-        self.timer = QTimer()
-        self.timer.setSingleShot(False)
-        self.timer.setInterval(15)
-        self.timer.timeout.connect(lambda: self._tick())
-        self.timer.start()
+        self.mainLayout = QVBoxLayout()
+        self.mainLayout.setAlignment(Qt.AlignTop)
+        self.buttonGroupLayout = QHBoxLayout()
+        self._configButtonGroupLayout()
         
-        self.setFocusPolicy(Qt.StrongFocus)
+        self.segmentConfigListLayout = QVBoxLayout()
+        self.segmentConfigListLayout.setAlignment(Qt.AlignTop)
+        wrapperWidget = QWidget()
+        wrapperWidget.setLayout(self.segmentConfigListLayout)
+        scrollArea = QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(wrapperWidget)
         
-    def _tick(self):
-        axis = np.array((1,1,1))
-        self.setRotation(pyrr.matrix44.create_from_axis_rotation(
-            axis/np.linalg.norm(axis),
-            0.05,
-            dtype=np.float32
-        ))
-        self.update()
-        
-    def setVal(self, attr, val):
-        if not np.array_equal(val, self.__dict__[attr]):
-            self.__dict__[attr] = val
-            self.update()
-            logging.debug(f"{attr} = {val}")
-            
-        
-    def setX(self, val):
-        self.setVal("x", val)
-    
-    def setY(self, val):
-        self.setVal("y", val)
-            
-    def setZ(self, val):
-        self.setVal("z", val)
-            
-    def setRotation(self, mat):
-        self.setVal("rot", np.matmul(mat,self.rot))
-        
-    def mousePressEvent(self, event):
-        self.lastPos = event.pos()
-        
-    def mouseMoveEvent(self, event):
-        dx = event.x() - self.lastPos.x()
-        dy = event.y() - self.lastPos.y()
-        
-        if event.buttons() & Qt.LeftButton:
-            v = np.array((dy,dx,0))
-            v = v/np.linalg.norm(v)
-            mat = pyrr.matrix44.create_from_axis_rotation(
-                v,
-                math.sqrt(dx**2 + dy**2)/20,
-            )
-            self.setRotation(mat)
-            
-        elif event.buttons() & Qt.RightButton:
-            self.acc_x += dx
-            self.acc_y -= dy
-            translateRatio = 20
-            self.xChange.emit(self.x*20 + self.acc_x // translateRatio)
-            self.yChange.emit(self.y*20 + self.acc_y // translateRatio)
-            self.acc_x %= translateRatio
-            self.acc_y %= translateRatio
-
-        self.lastPos = event.pos()
-        
-        
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Shift:
-            self.inTranslateMode = True
-    
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Shift:
-            self.inTranslateMode = False
-    
-    def wheelEvent(self, event):
-        self.setVal("scale", self.scale + 0.1 * (1 if event.angleDelta().y() > 0 else -1))
-    
-        
-    def initializeGL(self):
-        logging.debug("initializeGL")
-        logging.info(getGLInfo())
-        
-        dirName = os.path.dirname(__file__)
-        shaderProgram =  compileShadersFromFiles(
-            os.path.join(dirName, "shaders", "simple.vs"),
-            os.path.join(dirName, "shaders", "simple.fs")
-        )
-        # v, c, vi = createTriangleBufferDebug1()
-        # v2, c2, e2 = createTriangleBufferDebug2()
-        # v, n, vi, ni = loadObj(os.path.join(dirName, "ring0.obj"))
-        v, c, vi = createCubeBufferDebug()
-        overallUniformMap = {key: UniformVariable(glGetUniformLocation(shaderProgram, key), m) for key, m in zip((
-            "view", "projection"
-        ), (
-            pyrr.matrix44.create_from_translation(
-            np.array((0,0,-5), dtype=np.float32)),
-            np.identity(4, dtype=np.float32),
-        ))}
-        meshUniformMap = {
-            key: UniformVariable(glGetUniformLocation(shaderProgram, key), m) for key, m in zip((
-            "model",
-        ), (
-            np.identity(4, dtype=np.float32),
-        ))
-        }
-        self.renderer = Renderer([
-            Mesh(vertices=[v,c,],indices=vi, uniformMap=meshUniformMap),
-        ], shaderProgram, overallUniformMap)
-
-        self.renderer.useProgram()
-        glClearColor(0,0.1,1,1)
-        glEnable(GL_DEPTH_TEST)
-        
-    def paintGL(self):
-        logging.debug("paintGL")
-        self.renderer.useProgram()
-        glClear(GL_COLOR_BUFFER_BIT)
-        self.renderer.meshes[0].updateUniform("model", np.matmul(self.rot, pyrr.matrix44.create_from_translation(
-            np.array((self.x, self.y, self.z), dtype=np.float32)
-        )))
-        
-        width = self.width()
-        height = self.height()
-        multiplier = self.scale
-        maxSide = max((width,height))
-        self.renderer.updateUniform("projection", pyrr.matrix44.create_orthogonal_projection(
-                        -multiplier/maxSide*width,
-                        multiplier/maxSide*width,
-                        -multiplier/maxSide*height,
-                        multiplier/maxSide*height,
-                        0,
-                        100, dtype=np.float32
-                    ))
-        
+        self.generateButton = QPushButton(QIcon(), "Generate Manipulator")
+        self.generateButton.clicked.connect(lambda: StateManagement().generateSegmentsSrc.on_next(None))
        
-        self.renderer.draw()
+        
+        self.mainLayout.addLayout(self.buttonGroupLayout)
+        self.mainLayout.addWidget(scrollArea)
+        self.mainLayout.addWidget(self.generateButton)
+        self.setLayout(self.mainLayout)
+        
+        StateManagement().addSegmentConfigSink.subscribe(on_next=lambda idModelPair: self._addSegmentConfig(idModelPair))
+        StateManagement().removeSegmentConfigSink.subscribe(on_next=lambda key: self._removeSegmentConfig(key))
+        
+    def _configButtonGroupLayout(self):
+        addButton = QPushButton("Add Segment Config")
+        addButton.clicked.connect(lambda: StateManagement().addSegmentConfigSrc.on_next(None))
 
-    def resizeGL(self, width, height):
-        logging.debug("resizeGL")
-        # self.renderer.updateUniform("projection", pyrr.matrix44.create_perspective_projection(
-        #                        120,
-        #                        self.width()/self.height(),
-        #                        0.1,
-        #                        100, dtype=np.float32
-        #                    ))
+        self.buttonGroupLayout.addWidget(addButton)
         
+    def _addSegmentConfig(self, idModelPair):
+        self.idSegmentConfigWidgetMap[idModelPair[0]] = ConfigWidget(idModelPair)
+        self.segmentConfigListLayout.addWidget(self.idSegmentConfigWidgetMap[idModelPair[0]])
         
+    def _removeSegmentConfig(self, val):
+        if isinstance(val, UUID):
+            w = self.idSegmentConfigWidgetMap.get(val)
+            if w:
+                w.setParent(None)
+                self.segmentConfigListLayout.removeWidget(w)
+                del self.idSegmentConfigWidgetMap[val]
+                
+        # elif isinstance(val, (QWidget)):
+        #     val.setParent(None)
+        #     self.segmentConfigListLayout.removeWidget(val)
+        # else:
+        #     removeFromLayout(self.segmentConfigListLayout, -1)
         
-        
-    def sizeHint(self):
-        return QSize(1280,720)
-      
     def minimumSizeHint(self):
-        return QSize(50,50)
+        return QSize(400,300)
     
-
-
+class TensionInputWidget(QWidget):
+    def __init__(self, index, ring, knobTendonModels, parent=None, flags=Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+        self.formLayout = QFormLayout()
+        self.index = index
+        self.knobTendonModels = knobTendonModels
+        self._configFormLayout()
         
- 
+        box = QGroupBox(f"{self.index}")
+        box.setLayout(self.formLayout)
+        
+        mainLayout = QHBoxLayout()
+        mainLayout.addWidget(box)
+        self.setLayout(mainLayout)
+        
+    def _configFormLayout(self):
+        for i, tm in enumerate(self.knobTendonModels):
+            print((self.index, i))
+            w = QFloatEdit(0, 0, 100, 2, self._setUpdateTensionCB((self.index, i)))
+            self.formLayout.addRow(f"{math.degrees(tm.orientationBF)} deg:", w)
+            
+    def _setUpdateTensionCB(self, indicePair):
+        return lambda v: self._updateTension(indicePair, safeFloat(v))
+    
+    def _updateTension(self, indexPair, value):
+        print(indexPair)
+        StateManagement().updateTensionsSrc.on_next((indexPair, value))
+        
+        
+class TensionInputListWidget(QWidget):
+    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+        
+        self.inputListLayout = QVBoxLayout()
+        self.inputListLayout.setAlignment(Qt.AlignTop)
+        wrapperWidget = QWidget()
+        wrapperWidget.setLayout(self.inputListLayout)
+        scrollArea = QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(wrapperWidget)
+        
+        computeButton = QPushButton("Compute Static State")
+        computeButton.clicked.connect(StateManagement().computeTensionsSrc.on_next)
+        
+        self.mainLayout = QVBoxLayout()
+        self.mainLayout.setAlignment(Qt.AlignTop)
+        self.mainLayout.addWidget(scrollArea)
+        self.mainLayout.addWidget(computeButton)
+        self.setLayout(self.mainLayout)
+        
+        
+        StateManagement().retriveKnobTendonModels.subscribe(self._renewInputs)
+    
+    def _renewInputs(self, knobTendonModelCompositeList):
+        l = []
+        for i in range(self.inputListLayout.count()):
+            item = self.inputListLayout.itemAt(i)
+            if item is None:
+                continue
+            w = item.widget()
+            if isinstance(w, TensionInputWidget):
+                l.append(w)
+                
+        for w in l:
+            w.setParent(None)
+            self.inputListLayout.removeWidget(w)
+            
+            
+        for i, (r, tms) in enumerate(knobTendonModelCompositeList):
+            w = TensionInputWidget(i, r, tms)            
+            self.inputListLayout.addWidget(w)
+            
+    def minimumSizeHint(self):
+        return QSize(400,300)
+    
+class ResultGraphWidget(QWidget):
+    """
+        For graphs
+    """
+    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+    
+    def minimumSize(self):
+        return QSize(400,300)
 
+class ResultTextWidget(QWidget):
+    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+        self.mainLayout = QVBoxLayout()
+        self.text = QTextEdit("Result:\n Not computed yet")
+        
+        self.mainLayout.addWidget(self.text)
+        self.setLayout(self.mainLayout)
+        
+        StateManagement().computeTensionsSink.subscribe(self._showResult)
+        
+        
+    
+    def _showResult(self, res):
+        self.text.setText(f"Result:\n")
+        if res.error:
+            self.text.append(f"Error: {res.error.__repr__()}")
+            return
+        self.text.append("  Joint angles:")
+        for i, s in enumerate(res.states):
+            self.text.append(f"    {i}: {math.degrees(s.bottomJointAngle)} deg")
+        self.text.append(f"  TF:\n{res.getTF()}")
+        
+        
 class Window(QWidget):
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent=parent, flags=flags)
-        self.bound = (-10,10)
         
-        self.glWidget = GLWidget()
-        self.sliders = [self.createSlider() for _ in range(3)]
+        layout = QGridLayout()
+        layout.addWidget(ResultGraphWidget(),0,0)
+        layout.addWidget(ResultTextWidget(), 1,0)
+        layout.addWidget(ConfigListWidget(),0,1)
+        layout.addWidget(TensionInputListWidget(),1,1)
+        self.setLayout(layout)
         
-        diff = self.bound[1] - self.bound[0]
-        self.sliders[0].valueChanged.connect(lambda v: self.glWidget.setX(float(v)/ diff))
-        self.sliders[1].valueChanged.connect(lambda v: self.glWidget.setY(float(v)/ diff))
-        self.sliders[2].valueChanged.connect(lambda v: self.glWidget.setZ(float(v)/ diff))
-        self.glWidget.xChange.connect(self.sliders[0].setValue)
-        self.glWidget.yChange.connect(self.sliders[1].setValue)
 
-        mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.glWidget)
-        for s in self.sliders:
-            mainLayout.addWidget(s)
-        self.setLayout(mainLayout)    
+class App():
+    @staticmethod
+    def run():
+        import sys
+        app = QApplication(sys.argv)
+        w = Window()
+        w.show()
+        return app.exec_()
+    
         
-        self.setWindowTitle("OpenGL Pure Translation Example")
-        
-        for s in self.sliders:
-            s.setValue(0)
-            
-            
-        
-    def createSlider(self):        
-        slider = QSlider(Qt.Horizontal)
-        slider.setRange(*self.bound)
-        slider.setSingleStep(1)
-        slider.setPageStep(slider.singleStep())
-        slider.setTickInterval(slider.singleStep())
-        slider.setTickPosition(QSlider.TicksBothSides)
-        return slider
-        
+def main():
+    App.run(Window)
+    
+    
+    
 if __name__ == "__main__":
-    import sys
-    app = QApplication(sys.argv)
-    win = Window()
-    win.show()
-    sys.exit(app.exec_())
+    main()

@@ -108,8 +108,8 @@ class RingModelState():
 def getTFProximalTopToDistalBottom(jointAngle: float, curveRadius: float):
     rot = m4MatrixRotation((1.0,0,0), jointAngle/2)
     return np.matmul(rot, 
-                     m4MatrixTranslation((0.0,0,2*curveRadius*(1-math.cos(jointAngle/2)))) +
-                     rot) # Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
+                     np.matmul(m4MatrixTranslation((0.0,0,2*curveRadius*(1-math.cos(jointAngle/2)))),
+                     rot)) # (Wrong) Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
 
 class StateResult():
     def __init__(self, mostProximalRingState: RingModelState, error=None):
@@ -130,8 +130,8 @@ class StateResult():
         for s in self.states[:ringIndex]:
             c = np.matmul(c, getTFProximalTopToDistalBottom(s.bottomJointAngle, s.ring.bottomCurveRadius))
             # Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
-            c = np.matmul(c, m4MatrixTranslation((0.0,0, s.ring.length)) + 
-                          m4MatrixRotation((0,0,1.0), s.ring.topOrientationRF))
+            c = np.matmul(c, np.matmul(m4MatrixTranslation((0.0,0, s.ring.length)),
+                          m4MatrixRotation((0,0,1.0), s.ring.topOrientationRF)))
 
         
         s = self.states[ringIndex]

@@ -78,7 +78,7 @@ def main():
     res = computeFromEndTensions(rings, endTensions=[[0,0],[1.1,1]])
 
     
-    print("end")
+    print(len(res.states))
     # plt.show()
     # range3d = Range3d()
 
