@@ -9,6 +9,7 @@ from PyQt5.QtGui import QColor, QDoubleValidator, QIcon, QIntValidator
 from PyQt5.QtWidgets import QApplication, QCheckBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLineEdit, QOpenGLWidget, QPushButton, QScrollArea, QSlider, QTextEdit, QVBoxLayout, QWidget
 
 from .state_management import StateManagement
+from .result_graph import ResultGraphWidget
 
 def removeFromLayout(layout, i):
     count = layout.count()
@@ -254,15 +255,7 @@ class TensionInputListWidget(QWidget):
     def minimumSizeHint(self):
         return QSize(400,300)
     
-class ResultGraphWidget(QWidget):
-    """
-        For graphs
-    """
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
-        super().__init__(parent=parent, flags=flags)
-    
-    def minimumSize(self):
-        return QSize(400,300)
+
 
 class ResultTextWidget(QWidget):
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
