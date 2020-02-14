@@ -82,7 +82,7 @@ class ConfigWidget(QWidget):
             "is 1 DoF?:": QCheckBox(),
             "No. of joints:": QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textChangeCB=self._updateNumJoints),
             "Ring length (mm):": QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textChangeCB=self._updateRingLength),
-            "Orientation (deg):": QFloatEdit(self.model.orientationBF,  minVal=-180, maxVal=180, decimal=2, textChangeCB=lambda s: self._updateOrientationBF(s)),
+            "Orientation (deg):": QFloatEdit(math.degrees(self.model.orientationBF),  minVal=-180, maxVal=180, decimal=2, textChangeCB=lambda s: self._updateOrientationBF(s)),
             "Curve radius (mm):": QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textChangeCB=lambda s: self._updateCurveRadius(s)),
             "Tendon distance from axis (mm):":QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textChangeCB=lambda s: self._updateTendonDistFromAxis(s)),
         }
@@ -109,7 +109,7 @@ class ConfigWidget(QWidget):
         self._notifyUpdate()
         
     def _updateOrientationBF(self,s):
-        self.model.orientationBF = safeFloat(s)
+        self.model.orientationBF = math.radians(safeFloat(s))
         self._notifyUpdate()
         
     def _updateCurveRadius(self,s):
