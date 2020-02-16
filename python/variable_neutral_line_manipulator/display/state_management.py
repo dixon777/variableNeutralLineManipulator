@@ -20,8 +20,10 @@ class StateManagement(metaclass=Singleton):
         self.updateSegmentSrc.subscribe(Repo().updateSegment) 
         
         self.generateSegmentsSrc = Subject()
-        self.generateSegmentsSrc.subscribe(Repo().generateSegments)
-        self.retriveKnobTendonModels = Subject()
+        self.retriveKnobTendonModels = self.generateSegmentsSrc.pipe(
+            ops.map(Repo().generateSegments)
+        )
+        self.retriveKnobTendonModels.subscribe(lambda _: None)
         
         self.updateTensionsSrc = Subject()
         self.updateTensionsSrc.subscribe(Repo().updateTensions)

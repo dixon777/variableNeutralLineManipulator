@@ -39,9 +39,7 @@ class Repo(metaclass=Singleton):
             if r.knobTendonModels:
                 knobTendonModelCompositeList.append((r, r.knobTendonModels))
                 self._knobTensionLists.append([0,]*len(r.knobTendonModels))
-                
-        from .state_management import StateManagement
-        StateManagement().retriveKnobTendonModels.on_next(knobTendonModelCompositeList)
+        return knobTendonModelCompositeList
     
     def updateTensions(self, indicesValuePair):
         indices, value = indicesValuePair
