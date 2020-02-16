@@ -23,6 +23,7 @@ class ResultGraphWidget(QWidget):
         self.ax = self.canvas.figure.subplots()
         t = np.linspace(0, 10, 501)
         self.ax.plot(t, np.tan(t), ".")
+        # self.ax.title("Not in use")
         
     def _updateGraph(self):
         self.ax.clear()

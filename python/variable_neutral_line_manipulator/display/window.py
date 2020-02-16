@@ -278,7 +278,7 @@ class ResultTextWidget(QWidget):
         self.text.append("  Joint angles:")
         for i, s in enumerate(res.states):
             self.text.append(f"    {i}: {math.degrees(s.bottomJointAngle)} deg")
-        self.text.append(f"  TF:\n{res.getTF()}")
+        self.text.append(f"  TF:\n{res.getTF(side='tr')}")
         
         
 class Window(QWidget):

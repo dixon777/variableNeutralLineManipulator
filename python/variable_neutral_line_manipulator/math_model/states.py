@@ -1,9 +1,9 @@
 import numpy as np
 
 from .entities import *
-from .vector_components import *
-from .helper_functions import *
-from .force_comp import changeContactCompFrame
+from .helpers import *
+from .force_vec import changeContactCompFrame
+from .vec_objects import *
 
 
 class TendonModelState():

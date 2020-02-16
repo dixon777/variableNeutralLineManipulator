@@ -5,9 +5,9 @@ import math as cal
 
 from .entities import *
 from .states import *
-from .vector_components import *
+from .vec_objects import *
 from .math_wrapper import *
-from .helper_functions import *
+from .helpers import *
 
 @Logger.hierarchy
 def evalBottomAngleBound(ring: RingModel, tendonStates: List[TendonModelState]):

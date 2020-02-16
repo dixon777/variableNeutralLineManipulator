@@ -1,7 +1,7 @@
 import numpy as np
 
-from .force_comp import *
-from .disp_comp import *
+from .force_vec import *
+from .disp_vec import *
 from .entities import *
 from .states import *
 
