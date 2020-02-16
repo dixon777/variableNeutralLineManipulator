@@ -17,7 +17,7 @@ class Repo(metaclass=Singleton):
     def addSegment(self):
         print(f"Add segment")
         key = uuid4()
-        self._segmentModels[key] = SegmentModel(True, 1, 1, 0.0, 1.0, 0.1, 1.0)
+        self._segmentModels[key] = SegmentModel()
         return (key, self._segmentModels[key])
     
     def removeSegment(self, key):
@@ -29,9 +29,14 @@ class Repo(metaclass=Singleton):
         print(f"Update segment: {keySegmentPair}")
         k, v = keySegmentPair
         self._segmentModels[k] = v
+        return self._segmentModels[k].validate()
         
     def generateSegments(self, _):
         print("Generate segments")
+        for v in self._segmentModels.values():
+            if not v.isValid():
+                return  Exception("Some segments' param are not valid")
+            
         self._knobTensionLists.clear()
         self._ringModels = generateRingModels(list(self._segmentModels.values()))
         knobTendonModelCompositeList = []

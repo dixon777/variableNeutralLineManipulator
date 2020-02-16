@@ -3,6 +3,14 @@ import math
 
 import numpy as np
 
+# Knob length does not alter the force effect on the free body
+
+class ErrorCollection():
+    def __init__(self, errors:dict):
+        self.errors = errors
+        
+    def __str__(self):
+        return "\n".join([f"{k}: {e}" for k,e in self.errors.items()])
 
 class TendonModel():
     """
@@ -15,12 +23,11 @@ class TendonModel():
         horizontalDistFromAxis = horizontal dist from axis
         knob length = knob length from the base frame
     """
-    def __init__(self, orientationBF: float, horizontalDistFromAxis: float, knobLength: float):
+    def __init__(self, orientationBF: float, horizontalDistFromAxis: float):
         self.orientationBF = orientationBF
         self.horizontalDistFromAxis = horizontalDistFromAxis
-        self.knobLength = knobLength
         
-    def __repr__(self):
+    def __str__(self):
         return (f"{self.__class__.__name__}:"
                 f"orientation base frame = {self.orientationBF}\n"
                f"horizontalDistFromAxis = {self.horizontalDistFromAxis}\n")
@@ -50,7 +57,7 @@ class RingModel():
     def numKnobs(self):
         return len(self.knobTendonModels)
     
-    def __repr__(self):
+    def __str__(self):
         tmStr = "\n  ".join([str(tm) for tm in self.knobTendonModels])
         return (f"{self.__class__.__name__}:"
                 f"length = {self.length}\n"
@@ -63,6 +70,45 @@ class RingModel():
                f"knobTensionModels:\n" + tmStr)
 
 
+
+class Validator():
+    def __init__(self, streamFuncs):
+        self.streamFuncs = streamFuncs
+        self.errs = {}
+        
+    @staticmethod
+    def streamCallUntilException(initVal, funcs):
+        val = initVal
+        for f in funcs:
+            temp = f(val)
+            if isinstance(temp, Exception):
+                return val, temp
+            val = temp
+        return val, None
+    
+    def validate(self, key, val):
+        funcs = self.streamFuncs.get(key)
+        if funcs is None: # if the key is not defined
+            raise KeyError("Not found")
+        res, err = self.streamCallUntilException(val, funcs)
+        self.errs[key] = err
+        return res, err
+    
+    def isValid(self):
+        for e in self.errs.values():
+            if isinstance(e, Exception):
+                return False
+        return True
+    
+    @property
+    def keys(self):
+        return self.streamFuncs.keys()
+    
+    
+    @property
+    def errors(self):
+        return ErrorCollection(self.errs)
+
 class SegmentModel():
     """
         Define each manipulator segments' parameters. Each segment has a set of tendon knobs attached to its end ring
@@ -70,20 +116,64 @@ class SegmentModel():
         for joint and ring
         Should be passed into class Arm for composition of full arm
     """
-    def __init__(self, is1DoF: bool,
-                 numJoints: float,
-                 ringLength: float,
-                 orientationBF: float,
-                 tendonHorizontalDistFromAxis: float,
-                 knobLength: float,
-                 curveRadius: float):
-        self.is1DoF = is1DoF
-        self.numJoints = int(numJoints)
-        self.ringLength = float(ringLength)
-        self.orientationBF = float(orientationBF)
-        self.tendonHorizontalDistFromAxis = float(tendonHorizontalDistFromAxis)
-        self.knobLength = float(knobLength)
-        self.curveRadius = float(curveRadius)
+    def __init__(self, is1DoF:bool=True,
+                 numJoints:float=1,
+                 ringLength:float=1.0,
+                 orientationBF:float=0.0,
+                 curveRadius: float=1.0,
+                 tendonHorizontalDistFromAxis: float=0.5):
+        
+        # For comparison between curveRadius and tendonHorizontalDistFromAxis
+        def _small(tendonHorizontalDistFromAxis,curveRadius):
+            return tendonHorizontalDistFromAxis is None or curveRadius is None or tendonHorizontalDistFromAxis < curveRadius
+        
+        self.validator = Validator({
+                "is1DoF": [lambda v: bool(v)],
+                "numJoints": [
+                    lambda v: int(v),
+                    lambda v: v if v >= 1 else AttributeError("Num joints must be greater or equal to 1")
+                    ],
+                "ringLength":[
+                    lambda v: float(v),
+                    lambda v: v if v > 0.0 else AttributeError("Ring length must be greater than 0")
+                    ],
+                "orientationBF":[
+                    lambda v: float(v),
+                    ],
+                "curveRadius":[
+                    lambda v: float(v),
+                    lambda v: v if v > 0.0 else AttributeError("Curve radius must be greater than 0"),
+                    lambda v: v if _small(self.__dict__.get("tendonHorizontalDistFromAxis"), v) else AttributeError("Curve radius must be greater than tendon horizontal dist from axis")
+                ],
+                "tendonHorizontalDistFromAxis":[
+                    lambda v: float(v),
+                    lambda v: v if v > 0.0 else AttributeError("Tendon horizontal dist from axis must be greater than 0"),
+                    lambda v: v if _small(v, self.__dict__.get("curveRadius")) else AttributeError("Curve radius must be greater than tendon horizontal dist from axis")
+                ],
+            })
+        d = {
+            "is1DoF": is1DoF,
+            "numJoints": numJoints,
+            "ringLength": ringLength,
+            "orientationBF": orientationBF,
+            "curveRadius": curveRadius,
+            "tendonHorizontalDistFromAxis": tendonHorizontalDistFromAxis
+        }
+        for k,v in d.items():
+            v, _ = self.validator.validate(k, v)
+            self.__dict__[k] = v
+            
+    def validate(self):
+        for k in self.validator.keys:
+            self.validator.validate(k, self.__dict__[k])
+        return self.validator.errors
+    
+    def isValid(self, revalidate=True):
+        if revalidate:
+            self.validate()
+        return self.validator.isValid()
+        
+    
 
     def getOrientationBF(self, i):
         return self.orientationBF + (0 if self.is1DoF or i % 2 == 0 else math.pi/2)
@@ -103,7 +193,6 @@ class SegmentModel():
                      if self.is1DoF else (-math.pi/2, 0, math.pi/2, math.pi))
         return [TendonModel(orientationBF=tendonOrientation,
                               horizontalDistFromAxis=self.tendonHorizontalDistFromAxis,
-                              knobLength=self.knobLength,
                               ) for tendonOrientation in tendonOrientationsBF]
         
     def __repr__(self):

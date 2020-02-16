@@ -21,10 +21,14 @@ def bottomGuideForceComp(ring: RingModel, tendonState: TendonModelState, bottomJ
 
 
 def topGuideDisp(ring: RingModel, tendonState: TendonModelState):
-    return (evalKnobDisp(ringLength=ring.length,
-                        knobLength=tendonState.tendonModel.knobLength,
-                        horizontalDispFromTendonToAxis=tendonState.tendonModel.horizontalDistFromAxis,
-                        tendonOrientationRF=tendonState.tendonModel.orientationBF - ring.orientationBF) 
+    # Note:
+    #  - Knob length does not alter the force effect on the free body
+    #  - Remained for future reference
+    # return (evalKnobDisp(ringLength=ring.length,
+    #                     knobLength=tendonState.tendonModel.knobLength,
+    #                     horizontalDispFromTendonToAxis=tendonState.tendonModel.horizontalDistFromAxis,
+    #                     tendonOrientationRF=tendonState.tendonModel.orientationBF - ring.orientationBF) 
+    return (np.zeros(3)
         if tendonState.isKnob else 
         evalTopGuideEndDisp(ringLength=ring.length,
                             topCurveRadius=ring.topCurveRadius,

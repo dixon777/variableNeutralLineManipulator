@@ -5,7 +5,7 @@ np.set_printoptions(3, suppress =True)
 
 import math
 
-from variable_neutral_line_manipulator.math_model.helper_functions import *
+from variable_neutral_line_manipulator.math_model.helpers import *
 from variable_neutral_line_manipulator.math_model.entities import *
 from variable_neutral_line_manipulator.math_model.states import *
 from variable_neutral_line_manipulator.math_model.solvers import *
@@ -36,24 +36,30 @@ from variable_neutral_line_manipulator.math_model.solvers import *
 
 
 def main():
-    rings = generateRingModels(segments=[
-        SegmentModel(is1DoF=True,
-                numJoints=4,
-                ringLength=2,
-                orientationBF=0,
-                tendonHorizontalDistFromAxis=0.5,
-                knobLength=1,
-                curveRadius=6),
-        # SegmentModel(is1DoF=True,
-        #         numJoints=3,
-        #         ringLength=2,
-        #         orientationBF=0,
-        #         tendonHorizontalDistFromAxis=1.5,
-        #         knobLength=1,
-        #         curveRadius=3
-        #         )
-    ],
-        fricCoefRingTendon=0.0)
+    # rings = generateRingModels(segments=[
+    #     ,
+    #     # SegmentModel(is1DoF=True,
+    #     #         numJoints=3,
+    #     #         ringLength=2,
+    #     #         orientationBF=0,
+    #     #         tendonHorizontalDistFromAxis=1.5,
+    #     #         knobLength=1,
+    #     #         curveRadius=3
+    #     #         )
+    # ],
+    #     fricCoefRingTendon=0.0)
+    try:
+        s = SegmentModel(is1DoF=True,
+                    numJoints=4,
+                    ringLength=2,
+                    orientationBF=0,
+                    tendonHorizontalDistFromAxis=7,
+                    curveRadius=6)
+    except Exception as e:
+        pass
+    
+    print(s.isValid())
+    # s.is1DoF = 2
 
     # funcEnd = defineBottomJointAngleFunc(rings[-1],
     #                                      distalRingState=None,
@@ -75,10 +81,10 @@ def main():
     # _plot(funcEnd, (-1, 1))
         
     
-    res = computeFromEndTensions(rings, endTensions=[[0,0],[1.1,1]])
+    # res = computeFromEndTensions(rings, endTensions=[[0,0],[1.1,1]])
 
     
-    print(len(res.states))
+    # print(len(res.states))
     # plt.show()
     # range3d = Range3d()
 
