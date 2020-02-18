@@ -100,7 +100,6 @@ class ConfigWidget(QWidget):
                 v.stateChanged.connect(self._updateIs1DoF)
             
     def _notifyUpdate(self):
-        print("N")
         StateManagement().updateSegmentSrc.on_next((self.id, self.model))
         
         
@@ -220,7 +219,6 @@ class TensionInputWidget(QWidget):
         
     def _configFormLayout(self):
         for i, tm in enumerate(self.knobTendonModels):
-            print((self.index, i))
             w = QFloatEdit(0, 0, 100, 2, self._setUpdateTensionCB((self.index, i)))
             self.formLayout.addRow(f"{math.degrees(tm.orientationBF)} deg:", w)
             
@@ -228,7 +226,6 @@ class TensionInputWidget(QWidget):
         return lambda v: self._updateTension(indicePair, safeFloat(v))
     
     def _updateTension(self, indexPair, value):
-        print(indexPair)
         StateManagement().updateTensionsSrc.on_next((indexPair, value))
         
         
