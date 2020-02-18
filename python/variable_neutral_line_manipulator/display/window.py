@@ -87,20 +87,20 @@ class ConfigWidget(QWidget):
     def _configForm(self):
         pairs = {
             "1 DoF (tick) / 2 DoFs (empty)": QCheckBox(),
-            "Num joints:": QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=lambda v: self._updateModelParam(v, "numJoints", safeInt)),
-            "Ring length (mm):": QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "ringLength", safeFloat)),
-            "Orientation (deg):": QFloatEdit(math.degrees(self.model.orientationBF),  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "orientationBF", safeFloat)),
-            "Curve radius (mm):": QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "curveRadius", safeFloat)),
-            "Tendon distance from axis (mm):":QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "tendonHorizontalDistFromAxis", safeFloat)),
+            "Num joints:": QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=lambda v: self._updateModelParam("numJoints", safeInt(v))),
+            "Ring length (mm):": QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("ringLength", safeFloat(v))),
+            "Orientation (deg):": QFloatEdit(round(math.degrees(self.model.orientationBF),2),  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda v: self._updateModelParam("orientationBF", math.radians(safeFloat(v)))),
+            "Curve radius (mm):": QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("curveRadius", safeFloat(v))),
+            "Tendon distance from axis (mm):":QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("tendonHorizontalDistFromAxis", safeFloat(v))),
         }
         for k, v in pairs.items():
             self.formLayout.addRow(k, v)
             if isinstance(v, QCheckBox):
                 v.setChecked(self.model.is1DoF)
-                v.stateChanged.connect(lambda v: self._updateModelParam(v, "is1DoF"))
+                v.stateChanged.connect(lambda v: self._updateModelParam("is1DoF", v))
             
-    def _updateModelParam(self, val, key, parser=None):
-        self.model.__dict__[key] = parser(val) if parser else val
+    def _updateModelParam(self, key, val):
+        self.model.__dict__[key] = val
         StateManagement().updateSegmentSrc.on_next((self.id, self.model))
         
         
@@ -197,7 +197,7 @@ class TensionInputWidget(QWidget):
     def _configFormLayout(self):
         for i, tm in enumerate(self.knobTendonModels):
             w = QFloatEdit(0, 0, 100, 2, self._setUpdateTensionCB((self.index, i)))
-            self.formLayout.addRow(f"{math.degrees(tm.orientationBF)} deg:", w)
+            self.formLayout.addRow(f"{round(math.degrees(tm.orientationBF), 2)} deg:", w)
             
     def _setUpdateTensionCB(self, indicePair):
         return lambda v: self._updateTension(indicePair, safeFloat(v))
@@ -228,9 +228,9 @@ class TensionInputListWidget(QWidget):
         self.setLayout(self.mainLayout)
         
         
-        StateManagement().retriveKnobTendonModels.subscribe(self._renewInputs)
+        StateManagement().retriveKnobTendonModels.subscribe(self._showInputs)
         
-    def _renewInputs(self, knobTendonModelCompositeList):
+    def _showInputs(self, knobTendonModelCompositeList):
         l = [self.inputListLayout.itemAt(i).widget() for i in range(self.inputListLayout.count())]
     
         for w in l:
@@ -266,7 +266,7 @@ class ResultTextWidget(QWidget):
         if res.error:
             self.text.append(f"Error: {res.error.__repr__()}")
             return
-        self.text.append("  Joint angles:")
+        self.text.append("  Joint angles (from proximal to distal):")
         for i, s in enumerate(res.states):
             self.text.append(f"    {i}: {math.degrees(s.bottomJointAngle)} deg")
         self.text.append(f"  TF:\n{res.getTF(side='tr')}")
@@ -293,11 +293,3 @@ class App():
         w.show()
         return app.exec_()
     
-        
-def main():
-    App.run(Window)
-    
-    
-    
-if __name__ == "__main__":
-    main()
