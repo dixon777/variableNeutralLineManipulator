@@ -87,50 +87,27 @@ class ConfigWidget(QWidget):
     def _configForm(self):
         pairs = {
             "1 DoF (tick) / 2 DoFs (empty)": QCheckBox(),
-            "Num joints:": QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=self._updateNumJoints),
-            "Ring length (mm):": QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=self._updateRingLength),
-            "Orientation (deg):": QFloatEdit(math.degrees(self.model.orientationBF),  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda s: self._updateOrientationBF(s)),
-            "Curve radius (mm):": QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda s: self._updateCurveRadius(s)),
-            "Tendon distance from axis (mm):":QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda s: self._updateTendonDistFromAxis(s)),
+            "Num joints:": QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=lambda v: self._updateModelParam(v, "numJoints", safeInt)),
+            "Ring length (mm):": QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "ringLength", safeFloat)),
+            "Orientation (deg):": QFloatEdit(math.degrees(self.model.orientationBF),  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "orientationBF", safeFloat)),
+            "Curve radius (mm):": QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "curveRadius", safeFloat)),
+            "Tendon distance from axis (mm):":QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam(v, "tendonHorizontalDistFromAxis", safeFloat)),
         }
         for k, v in pairs.items():
             self.formLayout.addRow(k, v)
             if isinstance(v, QCheckBox):
                 v.setChecked(self.model.is1DoF)
-                v.stateChanged.connect(self._updateIs1DoF)
+                v.stateChanged.connect(lambda v: self._updateModelParam(v, "is1DoF"))
             
-    def _notifyUpdate(self):
+    def _updateModelParam(self, val, key, parser=None):
+        self.model.__dict__[key] = parser(val) if parser else val
         StateManagement().updateSegmentSrc.on_next((self.id, self.model))
         
         
-    def _updateIs1DoF(self,s):
-        self.model.is1DoF = s
-        self._notifyUpdate()
-                   
-    def _updateNumJoints(self,s):
-        self.model.numJoints = safeInt(s)
-        self._notifyUpdate()
-        
-    def _updateRingLength(self,s):
-        self.model.ringLength = safeFloat(s)
-        self._notifyUpdate()
-        
-    def _updateOrientationBF(self,s):
-        self.model.orientationBF = math.radians(safeFloat(s))
-        self._notifyUpdate()
-        
-    def _updateCurveRadius(self,s):
-        self.model.curveRadius = safeFloat(s)
-        self._notifyUpdate()
-        
-    def _updateTendonDistFromAxis(self,s):
-        self.model.tendonHorizontalDistFromAxis = safeFloat(s)
-        self._notifyUpdate()
-        
     def _configErrorLayout(self):
-        StateManagement().updateSegmentSink.subscribe(self._showErrors)
+        StateManagement().updateSegmentSink.subscribe(self._showErrorsCB)
         
-    def _showErrors(self, collection):
+    def _showErrorsCB(self, collection):
         ws = [self.errorLayout.itemAt(i).widget() for i in range(self.errorLayout.count())]
         for w in ws:
             if isinstance(w, QLabel):
