@@ -9,7 +9,7 @@ from PyQt5.QtGui import QColor, QDoubleValidator, QIcon, QIntValidator
 from PyQt5.QtWidgets import QApplication, QCheckBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QOpenGLWidget, QPushButton, QScrollArea, QSlider, QTextEdit, QVBoxLayout, QWidget
 
 from .state_management import StateManagement
-from .result_graph import ResultGraphWidget
+from .result_graph_widget import ResultGraphWidget
 
 def removeFromLayout(layout, i):
     count = layout.count()
