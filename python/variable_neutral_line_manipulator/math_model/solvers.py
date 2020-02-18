@@ -7,7 +7,7 @@ from .entities import *
 from .states import *
 from .vec_objects import *
 from .math_wrapper import *
-from .helpers import *
+from ..common import Logger
 
 @Logger.hierarchy
 def evalBottomAngleBound(ring: RingModel, tendonStates: List[TendonModelState]):

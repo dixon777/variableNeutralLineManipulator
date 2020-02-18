@@ -5,7 +5,7 @@ from ..math_model.entities import *
 from ..math_model.states import *
 from ..math_model.solvers import *
 
-from .helper import Singleton
+from ..common import Singleton, Logger
 
 class Repo(metaclass=Singleton):
     def __init__(self):
@@ -15,24 +15,24 @@ class Repo(metaclass=Singleton):
         self._knobTensionLists = []
         
     def addSegment(self):
-        print(f"Add segment")
+        Logger.D(f"Add segment")
         key = uuid4()
         self._segmentModels[key] = SegmentModel()
         return (key, self._segmentModels[key])
     
     def removeSegment(self, key):
-        print(f"Remove segment: {key}")
+        Logger.D(f"Remove segment: {key}")
         del self._segmentModels[key]
         return key
         
     def updateSegment(self, keySegmentPair):
-        print(f"Update segment: {keySegmentPair}")
+        Logger.D(f"Update segment: {keySegmentPair}")
         k, v = keySegmentPair
         self._segmentModels[k] = v
         return self._segmentModels[k].validate()
         
     def generateSegments(self, _):
-        print("Generate segments")
+        Logger.D("Generate segments")
         for v in self._segmentModels.values():
             if not v.isValid():
                 return  Exception("Some segments' param are not valid")
@@ -50,10 +50,10 @@ class Repo(metaclass=Singleton):
         indices, value = indicesValuePair
         assert(isinstance(indices, tuple))
         assert(isinstance(value, float))
-        print(f"Update tensions")
+        Logger.D(f"Update tensions")
         self._knobTensionLists[indices[0]][indices[1]] = value
     
     def computeTensions(self):
-        print("Compute tensions")
+        Logger.D("Compute tensions")
         s = computeFromEndTensions(self._ringModels, self._knobTensionLists)
         return s

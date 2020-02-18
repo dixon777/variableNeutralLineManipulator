@@ -2,8 +2,7 @@ import rx
 from rx import operators as ops
 from rx.subject import Subject
 
-from .helper import Singleton
-
+from ..common import Singleton
 from .repo import Repo
 
 class StateManagement(metaclass=Singleton):

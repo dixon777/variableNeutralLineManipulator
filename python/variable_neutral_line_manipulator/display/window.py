@@ -11,20 +11,7 @@ from PyQt5.QtWidgets import QApplication, QCheckBox, QFormLayout, QGridLayout, Q
 from .state_management import StateManagement
 from .result_graph_widget import ResultGraphWidget
 
-def removeFromLayout(layout, i):
-    count = layout.count()
-    i = i if i >= 0 else count + i
-    if i >= count or i < 0:
-        return False
-    item = layout.itemAt(i)
-    if item is None:
-        return False
-    widget = item.widget()
-    if widget is None:
-        layout.removeItem(item)
-    else:
-        layout.removeWidget(widget)
-        widget.setParent(None)
+
 
 def safeInt(v, default=0):
     try:

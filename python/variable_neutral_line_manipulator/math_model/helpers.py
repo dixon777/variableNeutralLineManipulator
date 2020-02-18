@@ -43,52 +43,67 @@ def m4MatrixRotation(axis, radian):
     return m4.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
 
 
-"""
-    Singleton instance logger
-     - Functions
-      - Enable automatic spacing depending on the hierarchy of function calls 
-       - Requires decorating functions with Logger.hierarchy() (i.e. @Logger.hierarchy)
-     - Purpose:
-      - Prevent unanticipated logs created by other modules, such as matplotlib
-     - Usage:
-      - Call the following two lines in the main file:
-       - Logger.setLevel(logging.DEBUG) # Set level
-         logging.log(logging.NOTSET, "") # To activate logging (Required for some reason)
-
-"""
-class Logger():
-    spaceLevel = 0
-    instance = logging.getLogger("l")
+# """
+#     Singleton instance logger
+#      - Functions
+#       - Enable automatic spacing depending on the hierarchy of function calls 
+#        - Requires decorating functions with Logger.hierarchy() (i.e. @Logger.hierarchy)
+#      - Purpose:
+#       - Prevent unanticipated logs created by other modules, such as matplotlib
+#      - Usage:
+#       - Call the following two lines in the main file:
+#        - Logger.setLevel(logging.DEBUG) # Set level
+#          logging.log(logging.NOTSET, "") # To activate logging (Required for some reason)
+# """
+# class Logger():
+#     _spaceLevel = 0
+#     _instance = None
     
-    @staticmethod
-    def hierarchy(func):
-        def __c(*args, **kwargs):
-            Logger.addSpace()
-            res = func(*args, **kwargs)
-            Logger.reduceSpace()
-            return res
-        return __c
+#     @staticmethod
+#     def hierarchy(func):
+#         """
+#             Decorator
+#         """
+#         def __c(*args, **kwargs):
+#             Logger.addSpace()
+#             res = func(*args, **kwargs)
+#             Logger.reduceSpace()
+#             return res
+#         return __c
     
-    @classmethod
-    def setLevel(cls, level):
-        cls.instance.setLevel(level)
+#     @classmethod
+#     def initLogger(cls):
+#         if cls._instance is None:
+#                 cls._instance = logging.getLogger()
     
-    @classmethod
-    def D(cls, s, extraSpace=0):
-        cls.instance.log(logging.DEBUG, cls.spaceStr(s, extraSpace))
+#     @classmethod
+#     def setLevel(cls, level):
+#         cls._instance.setLevel(level)
+    
+#     @classmethod
+#     def D(cls, s, extraSpace=0):
+#         cls._instance.log(logging.DEBUG, cls.spaceStr(s, extraSpace))
         
-    @classmethod
-    def I(cls, s, extraSpace=0):
-        cls.instance.log(logging.INFO, cls.spaceStr(s, extraSpace))
+#     @classmethod
+#     def I(cls, s, extraSpace=0):
+#         cls._instance.log(logging.INFO, cls.spaceStr(s, extraSpace))
         
-    @classmethod
-    def spaceStr(cls, s, extraSpace=0):
-        return f"{' '*(cls.spaceLevel+extraSpace)}{s}"
+#     @classmethod
+#     def spaceStr(cls, s, extraSpace=0):
+#         return f"{' '*(cls.spaceLevel+extraSpace)}{s}"
     
-    @classmethod    
-    def addSpace(cls):
-        cls.spaceLevel += 1
+#     @classmethod    
+#     def addSpace(cls):
+#         cls.spaceLevel += 1
     
-    @classmethod    
-    def reduceSpace(cls):
-        cls.spaceLevel -= 1
+#     @classmethod    
+#     def reduceSpace(cls):
+#         cls.spaceLevel -= 1
+        
+#     @classmethod
+#     def switchLogger(cls, name):
+#         cls._instance = logging.getLogger(name)
+    
+#     @classmethod
+#     def get(cls, name=None):
+#         return logging.getLogger(name) if name else cls._instance
