@@ -4,15 +4,21 @@ class TendonGuideGeometry():
     def __init__(self,
                  distFromAxis,
                  orientationBF,
-                 radius,
-                 ):
+                 radius):
         self.distFromAxis = distFromAxis
         self.orientationBF = orientationBF
         self.radius = radius
     
     def orientationRF(self, ringOrientationBF):
         return self.orientationBF - ringOrientationBF
-
+    
+class TensionKnobGuideGeometry(TendonGuideGeometry):
+    def __init__(self, distFromAxis, orientationBF, radius, knobLength, knobSlotRadius):
+        super().__init__(distFromAxis, orientationBF, radius)
+        self.knobLength = knobLength
+        self.knobSlotRadius = knobSlotRadius
+        
+    
 class RingGeometry():
     def __init__(self, 
                  length, 

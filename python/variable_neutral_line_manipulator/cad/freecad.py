@@ -8,7 +8,7 @@ import FreeCADGui
 import FreeCAD.Part as Part
 import FreeCAD.Sketcher as Sketcher 
 
-
+from entities import RingGeometry, TensionKnobGuideGeometry
 
 _featureClassMapping = {
     "Body": 'PartDesign::Body',
@@ -97,18 +97,18 @@ def _cutBottomCurve(doc, obj, length, curveRadius):
     
     
 def _cutTopCurve(doc, obj, length, orientationBF, curveRadius):
-    topPlane = obj.newObject(_featureClassMapping["Plane"], "topPlane")
-    topPlane.AttachmentOffset = App.Placement(
+    topCurvePlane = obj.newObject(_featureClassMapping["Plane"], "topCurvePlane")
+    topCurvePlane.AttachmentOffset = App.Placement(
         App.Vector(0,0,0),
         App.Rotation(0,math.degrees(orientationBF),0) # Yaw = x, Pitch = z, Roll = y (in deg)
     )
-    topPlane.MapReversed = False
-    topPlane.Support = [(doc.YZ_Plane, '')]
-    topPlane.MapMode = "FlatFace"
+    topCurvePlane.MapReversed = False
+    topCurvePlane.Support = [(doc.YZ_Plane, '')]
+    topCurvePlane.MapMode = "FlatFace"
     
      # Create bottom curve sketch
     topSketch = obj.newObject(_featureClassMapping["Sketch"], "topSketch")
-    topSketch.Support = (topPlane, '')
+    topSketch.Support = (topCurvePlane, '')
     topSketch.MapMode = "FlatFace"
     
     centerY = length/2 - curveRadius # one
@@ -159,8 +159,8 @@ def _cutTopCurve(doc, obj, length, orientationBF, curveRadius):
    
    
 def _cutThroughHole(doc, obj, orientation, distFromAxis, holeRadius):
-    x = distFromAxis*math.sin(orientation)
-    y = distFromAxis*math.cos(orientation)
+    x = distFromAxis*math.cos(orientation)
+    y = distFromAxis*math.sin(orientation)
     
     sketch = obj.newObject(_featureClassMapping["Sketch"], "cylinderSketch")
     sketch.Support = (doc.XY_Plane, [''])
@@ -198,36 +198,113 @@ def _cutCenterHole(doc, obj, radius):
     """
     _cutThroughHole(doc, obj, 0.0, 0.0, radius)
     
+
+def _cutKnob(doc, obj, orientation, distFromAxis, radius, outerRadius, baseToCenter):
+    """
+        ringLength = to bypass the app
+    """
+    knobPlane = obj.newObject(_featureClassMapping["Plane"], "knobPlane")
+    knobPlane.AttachmentOffset = App.Placement(
+        App.Vector(0,0,baseToCenter),
+        App.Rotation(0,0,0)
+    )
+    knobPlane.MapReversed = False
+    knobPlane.Support = [(doc.XY_Plane, '')]
+    knobPlane.MapMode = "FlatFace"
+    
+    sketch = obj.newObject(_featureClassMapping["Sketch"], "knobSketch")
+    sketch.Support = (knobPlane, '')
+    sketch.MapMode = "FlatFace"
+    
+    sketch.addGeometry(Part.ArcOfCircle(Part.Circle(
+        App.Vector(0,0),
+        App.Vector(0,0,1),
+        1
+    ), math.pi/2, 3*math.pi/2), False)
+    
+    sketch.addConstraint(Sketcher.Constraint('Radius',0, radius)) 
+    
+    # Enforce 180 deg span of arc
+    sketch.addGeometry(Part.LineSegment(App.Vector(0.0,0.0),App.Vector(1.0,0.0)),True)
+    sketch.addConstraint(Sketcher.Constraint('Coincident',1,1,0,1)) 
+    sketch.addConstraint(Sketcher.Constraint('Coincident',1,2,0,3)) 
+    
+    sketch.addGeometry(Part.LineSegment(App.Vector(0.0,0.0),App.Vector(1.0,0.0)),True)
+    sketch.addConstraint(Sketcher.Constraint('Coincident',2,1,0,3)) 
+    sketch.addConstraint(Sketcher.Constraint('Coincident',2,2,0,2)) 
+    sketch.addConstraint(Sketcher.Constraint('Angle',1,2,2,1,math.pi)) 
+    
+    # Complete shape
+    sketch.addGeometry(Part.LineSegment(App.Vector(0,radius),App.Vector(1.0, radius)),False) # 3
+    sketch.addGeometry(Part.LineSegment(App.Vector(0.0,-radius),App.Vector(1.0,-radius)),False) # 4
+    sketch.addConstraint(Sketcher.Constraint('Tangent',3,1,0,1)) 
+    sketch.addConstraint(Sketcher.Constraint('Tangent',4,1,0,2)) 
+    sketch.addConstraint(Sketcher.Constraint('Equal',3,4)) 
+    sketch.addConstraint(Sketcher.Constraint('Distance',3,outerRadius)) 
+    
+    sketch.addGeometry(Part.LineSegment(App.Vector(1.0, radius),App.Vector(1.0, -radius)),False) # 5
+    sketch.addConstraint(Sketcher.Constraint('Coincident',5,1,3,2)) 
+    sketch.addConstraint(Sketcher.Constraint('Coincident',5,2,4,2)) 
+    
+    # Enforce orientation
+    sketch.addGeometry(Part.LineSegment(App.Vector(0.0,radius),App.Vector(1.0, radius)),True) # 6
+    sketch.addConstraint(Sketcher.Constraint('Horizontal',6)) 
+    sketch.addConstraint(Sketcher.Constraint('Distance',6,radius)) 
+    sketch.addConstraint(Sketcher.Constraint('Coincident',6,1,0,1)) 
+    sketch.addConstraint(Sketcher.Constraint('Angle',6,1,3,1,orientation)) 
+    
+    # Enforce disp
+    x = distFromAxis*math.cos(orientation)
+    y = distFromAxis*math.sin(orientation)
+    sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,0,3,x)) 
+    sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,0,3,y)) 
+    
+    pocket = obj.newObject(_featureClassMapping["Pocket"],"knobCut")
+    pocket.Profile = sketch
+    pocket.Length = 10.0
+    pocket.Length2 = 100.0
+    pocket.Type = 1
+    pocket.UpToFace = None
+    pocket.Reversed = 1
+    pocket.Midplane = 0
+    pocket.Offset = 0.000000
+    
+    # doc.removeObject("knobPlane")
+    
     
 def _generateRingObj(doc,
                ringGeometry,
                bodyName="ring"):
-    
+    rg = ringGeometry
     obj = doc.addObject(_featureClassMapping["Body"], bodyName)
     
     _createCylinder(doc, obj, 
-                   ringGeometry.cylindricalRadius, 
-                   ringGeometry.length, 
-                   ringGeometry.topCurveRadius is not None, 
-                   ringGeometry.topCurveRadius is not None)
+                   rg.cylindricalRadius, 
+                   rg.length, 
+                   rg.topCurveRadius is not None, 
+                   rg.topCurveRadius is not None)
     
-    if ringGeometry.bottomCurveRadius:
-        _cutBottomCurve(doc, obj, ringGeometry.length, ringGeometry.bottomCurveRadius)
+    if rg.bottomCurveRadius:
+        _cutBottomCurve(doc, obj, rg.length, rg.bottomCurveRadius)
     
-    if ringGeometry.topCurveRadius:
-        _cutTopCurve(doc, obj, ringGeometry.length, ringGeometry.topOrientationBF, ringGeometry.topCurveRadius)
+    if rg.topCurveRadius:
+        _cutTopCurve(doc, obj, rg.length, rg.topOrientationBF, rg.topCurveRadius)
     
-    for tg in ringGeometry.tendonGuideGeometries:
-        _cutThroughHole(doc, obj, tg.orientationRF(ringGeometry.orientationBF), tg.distFromAxis, tg.radius)
-
-    _applyFilletToHoles(doc, obj, ringGeometry.tendonGuideFilletRadius)
+    for tg in rg.tendonGuideGeometries:
+        _cutThroughHole(doc, obj, tg.orientationRF(rg.orientationBF), tg.distFromAxis, tg.radius)
+        if isinstance(tg, TensionKnobGuideGeometry): 
+            # (-0.0001) is for avoiding the tendon guide perimeter intersect with the knob's circular edge. 
+            # Smaller value is still applicable for generating a valid Object file (.obj) but will lead to missing faces of the body if the source file (.FCStd) is opened in FreeCAD GUI
+            _cutKnob(doc, obj, tg.orientationRF(rg.orientationBF), tg.distFromAxis - tg.radius + tg.knobSlotRadius-0.0001, tg.knobSlotRadius, rg.cylindricalRadius, tg.knobLength - rg.length/2)
     
-    if ringGeometry.centerHoleRadius:
-        _cutCenterHole(doc, obj, ringGeometry.centerHoleRadius)
+    # _applyFilletToHoles(doc, obj, rg.tendonGuideFilletRadius)
+    
+    if rg.centerHoleRadius:
+        _cutCenterHole(doc, obj, rg.centerHoleRadius)
         
     doc.recompute()
     
-    
+
 
 
 def _saveDoc(doc, dirName, fileName):
@@ -267,7 +344,7 @@ def generateRings(ringGeometries, savedSrcDirPath=None, exportObjDirPath=None):
     
         
 def main():
-    from entities import RingGeometry, TendonGuideGeometry
+    
     rg = RingGeometry(
         length = 5,
         cylindricalRadius = 2.5,
@@ -278,10 +355,13 @@ def main():
         tendonGuideFilletRadius=0.08,
         centerHoleRadius=1,
         tendonGuideGeometries=[
-            TendonGuideGeometry(
+            TensionKnobGuideGeometry(
                 distFromAxis=1.8,
                 orientationBF=i*math.pi/4,
-                radius=0.5,                
+                radius=0.5,  
+                knobLength = 3, 
+                knobSlotRadius=0.7,
+                              
             ) for i in range(8)
         ],
     )
