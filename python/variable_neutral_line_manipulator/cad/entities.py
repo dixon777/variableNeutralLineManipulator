@@ -12,7 +12,7 @@ class TendonGuideGeometry():
     def orientationRF(self, ringOrientationBF):
         return self.orientationBF - ringOrientationBF
     
-class TensionKnobGuideGeometry(TendonGuideGeometry):
+class TendonKnobGuideGeometry(TendonGuideGeometry):
     def __init__(self, distFromAxis, orientationBF, radius, knobLength, knobSlotRadius):
         super().__init__(distFromAxis, orientationBF, radius)
         self.knobLength = knobLength

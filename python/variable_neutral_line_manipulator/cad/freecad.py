@@ -8,7 +8,7 @@ import FreeCADGui
 import FreeCAD.Part as Part
 import FreeCAD.Sketcher as Sketcher 
 
-from .entities import RingGeometry, TensionKnobGuideGeometry
+from .entities import *
 
 from ..common import *
 
@@ -294,7 +294,7 @@ def _generateRingObj(doc,
     
     for tg in rg.tendonGuideGeometries:
         _cutThroughHole(doc, obj, tg.orientationRF(rg.orientationBF), tg.distFromAxis, tg.radius)
-        if isinstance(tg, TensionKnobGuideGeometry): 
+        if isinstance(tg, TendonKnobGuideGeometry): 
             # (-0.0001) is for avoiding the tendon guide perimeter intersect with the knob's circular edge. 
             # Smaller value is still applicable for generating a valid Object file (.obj) but will lead to missing faces of the body if the source file (.FCStd) is opened in FreeCAD GUI
             _cutKnob(doc, obj, tg.orientationRF(rg.orientationBF), tg.distFromAxis - tg.radius + tg.knobSlotRadius-0.0001, tg.knobSlotRadius, rg.cylindricalRadius, tg.knobLength - rg.length/2)
@@ -349,9 +349,13 @@ class RingCAD():
         self.obj = _generateRingObj(self.doc, self.ringGeomtry, "body")
         
     def saveSrc(self, path=None):
+        if not path or not os.path.basename(path):
+            path = os.path.join(os.path.dirname(path) if path else "", self.name)
         if self.doc:
-            _saveSrc(self.doc, path)
+           return  _saveSrc(self.doc, path)
         
     def saveAsObj(self, path=None):
+        if not path or not os.path.basename(path):
+            path = os.path.join(os.path.dirname(path) if path else "", self.name)
         if self.obj:
-            _saveAsMesh([self.obj,], path)
+            return _saveAsMesh([self.obj,], path)

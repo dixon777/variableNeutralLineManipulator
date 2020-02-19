@@ -25,7 +25,7 @@ def ensurePath(path=None, suffix=None, defaultBaseName=None):
         newPath = dirName + baseName
     """
     path = path or ""
-    baseName = os.path.basename(path) if path else (defaultBaseName or datetime.now().strftime(('%d-%m-%Y_%H-%M-%S')))
+    baseName = (os.path.basename(path) if path else None) or (defaultBaseName or datetime.now().strftime(('%d-%m-%Y_%H-%M-%S')))
     baseName = enforceFileSuffix(baseName, suffix)
     dirName = os.path.dirname(path) or os.path.realpath(os.getcwd())
     path = os.path.join(dirName, baseName)
