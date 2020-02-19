@@ -17,7 +17,7 @@ class Repo(metaclass=Singleton):
     def addSegment(self):
         Logger.D(f"Add segment")
         key = uuid4()
-        self._segmentModels[key] = SegmentModel()
+        self._segmentModels[key] = SegmentModelWithValidator()
         return (key, self._segmentModels[key])
     
     def removeSegment(self, key):

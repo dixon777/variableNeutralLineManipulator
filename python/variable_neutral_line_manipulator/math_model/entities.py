@@ -71,6 +71,84 @@ class RingModel():
                f"fricCoefRingTendon = {self.fricCoefRingTendon}\n"
                f"knobTensionModels:\n" + tmStr)
 
+class SegmentModel():
+    """
+        Define each manipulator segments' parameters. Each segment has a set of tendon knobs attached to its end ring
+        For N joints, the segment consists of: j1, r1, j2, r2, ..., j(n-1), r(n-1), j(n), r(n), where j and r are the annotations
+        for joint and ring
+        Should be passed into class Arm for composition of full arm
+    """
+    def __init__(self, is1DoF:bool=True,
+                 numJoints:float=1,
+                 ringLength:float=1.0,
+                 orientationBF:float=0.0,
+                 curveRadius: float=1.0,
+                 tendonHorizontalDistFromAxis: float=0.5):
+        
+        d = {
+            "is1DoF": is1DoF,
+            "numJoints": numJoints,
+            "ringLength": ringLength,
+            "orientationBF": orientationBF,
+            "curveRadius": curveRadius,
+            "tendonHorizontalDistFromAxis": tendonHorizontalDistFromAxis
+        }
+        for k,v in d.items():
+            self.__dict__[k] = v
+            
+    def getOrientationBF(self, i):
+        return self.orientationBF + (0 if self.is1DoF or i % 2 == 0 else math.pi/2)
+
+    def getRingLength(self, i):
+        return self.ringLength if isinstance(self.ringLength, float) else self.ringLength[i]
+
+    def getCurveRadius(self, i):
+        return self.curveRadius if isinstance(self.curveRadius, float) else self.curveRadius[i]
+
+    def getKnobTendonLocations(self, i):
+        if i+1 < self.numJoints:
+            return []
+
+        tendonOrientationsBF = self.orientationBF + \
+            np.array((-math.pi/2, math.pi/2)
+                     if self.is1DoF else (-math.pi/2, 0, math.pi/2, math.pi))
+        return [TendonModel(orientationBF=tendonOrientation,
+                              horizontalDistFromAxis=self.tendonHorizontalDistFromAxis,
+                              ) for tendonOrientation in tendonOrientationsBF]
+        
+    def __repr__(self):
+        return (f"{self.__class__.__name__}:"
+                f"is 1 DoF = {self.is1DoF}\n"
+               f"num joints = {self.numJoints}\n"
+               f"ring length = {self.ringLength}\n"
+               f"orientation base frame = {self.orientationBF}\n"
+               f"Curve radius = {self.curveRadius}\n"
+               f"Tendon horizontal dist from axis = {self.tendonHorizontalDistFromAxis}\n")
+
+
+@Logger.hierarchy
+def generateRingModels(segments: List[SegmentModel], fricCoefRingTendon=0.0) -> List[RingModel]:
+    Logger.D(f"generateRingModels()")
+    for i, s in enumerate(segments): 
+        Logger.D(f"Model {i}: {s}")
+        
+    rings = []
+    for segmentIndex, segment in enumerate(segments):
+        for jointIndex in range(segment.numJoints):
+            rings.append(RingModel(
+                fricCoefRingTendon=fricCoefRingTendon,
+                length=segment.getRingLength(jointIndex),
+                orientationBF=segment.getOrientationBF(jointIndex),
+                bottomCurveRadius=segment.getCurveRadius(jointIndex),
+                topCurveRadius=segment.getCurveRadius(jointIndex+1) if jointIndex+1 < segment.numJoints else
+                segments[segmentIndex+1].getCurveRadius(0) if segmentIndex+1 < len(segments) else
+                None,
+                topOrientationRF=segment.getOrientationBF(jointIndex+1) - segment.getOrientationBF(jointIndex) if jointIndex+1 < segment.numJoints else
+                segments[segmentIndex+1].getOrientationBF(0) - segment.getOrientationBF(jointIndex) if segmentIndex+1 < len(segments) else
+                None,
+                knobTendonModels=segment.getKnobTendonLocations(jointIndex),
+            ))
+    return rings
 
 
 class Validator():
@@ -111,60 +189,39 @@ class Validator():
     def errors(self):
         return ErrorCollection(self.errs)
 
-class SegmentModel():
-    """
-        Define each manipulator segments' parameters. Each segment has a set of tendon knobs attached to its end ring
-        For N joints, the segment consists of: j1, r1, j2, r2, ..., j(n-1), r(n-1), j(n), r(n), where j and r are the annotations
-        for joint and ring
-        Should be passed into class Arm for composition of full arm
-    """
-    def __init__(self, is1DoF:bool=True,
-                 numJoints:float=1,
-                 ringLength:float=1.0,
-                 orientationBF:float=0.0,
-                 curveRadius: float=1.0,
-                 tendonHorizontalDistFromAxis: float=0.5):
-        
+
+class SegmentModelWithValidator(SegmentModel):
+    def __init__(self, is1DoF=True, numJoints=1, ringLength=1.0, orientationBF=0.0, curveRadius=1.0, tendonHorizontalDistFromAxis=0.5):
+        super().__init__(is1DoF=is1DoF, numJoints=numJoints, ringLength=ringLength, orientationBF=orientationBF, curveRadius=curveRadius, tendonHorizontalDistFromAxis=tendonHorizontalDistFromAxis)
         # For comparison between curveRadius and tendonHorizontalDistFromAxis
-        def _small(tendonHorizontalDistFromAxis,curveRadius):
+        def _compare(tendonHorizontalDistFromAxis,curveRadius):
             return tendonHorizontalDistFromAxis is None or curveRadius is None or tendonHorizontalDistFromAxis < curveRadius
         
         self.validator = Validator({
                 "is1DoF": [lambda v: bool(v)],
                 "numJoints": [
-                    lambda v: int(v),
+                    lambda v: int(v) if v is not None else AttributeError("Num joints must not be empty"),
                     lambda v: v if v >= 1 else AttributeError("Num joints must be greater or equal to 1")
                     ],
                 "ringLength":[
-                    lambda v: float(v),
+                    lambda v: float(v) if v is not None else AttributeError("Ring Length must not be empty"),
                     lambda v: v if v > 0.0 else AttributeError("Ring length must be greater than 0")
                     ],
                 "orientationBF":[
-                    lambda v: float(v),
+                    lambda v: float(v) if v is not None else AttributeError("Orientation (Base Frame) must not be empty"),
                     ],
                 "curveRadius":[
-                    lambda v: float(v),
+                    lambda v: float(v) if v is not None else AttributeError("Curve radius must not be empty"),
                     lambda v: v if v > 0.0 else AttributeError("Curve radius must be greater than 0"),
-                    lambda v: v if _small(self.__dict__.get("tendonHorizontalDistFromAxis"), v) else AttributeError("Curve radius must be greater than tendon horizontal dist from axis")
+                    # lambda v: v if _compare(self.__dict__.get("tendonHorizontalDistFromAxis"), v) else AttributeError("Curve radius must be greater than tendon horizontal dist from axis")
                 ],
                 "tendonHorizontalDistFromAxis":[
-                    lambda v: float(v),
+                    lambda v: float(v) if v is not None else AttributeError("Tendon horizontal dist from axis must not be empty"),
                     lambda v: v if v > 0.0 else AttributeError("Tendon horizontal dist from axis must be greater than 0"),
-                    lambda v: v if _small(v, self.__dict__.get("curveRadius")) else AttributeError("Curve radius must be greater than tendon horizontal dist from axis")
+                    lambda v: v if _compare(v, self.__dict__.get("curveRadius")) else AttributeError("Curve radius must be greater than tendon horizontal dist from axis")
                 ],
             })
-        d = {
-            "is1DoF": is1DoF,
-            "numJoints": numJoints,
-            "ringLength": ringLength,
-            "orientationBF": orientationBF,
-            "curveRadius": curveRadius,
-            "tendonHorizontalDistFromAxis": tendonHorizontalDistFromAxis
-        }
-        for k,v in d.items():
-            v, _ = self.validator.validate(k, v)
-            self.__dict__[k] = v
-            
+        
     def validate(self):
         for k in self.validator.keys:
             self.validator.validate(k, self.__dict__[k])
@@ -175,60 +232,3 @@ class SegmentModel():
             self.validate()
         return self.validator.isValid()
         
-    
-
-    def getOrientationBF(self, i):
-        return self.orientationBF + (0 if self.is1DoF or i % 2 == 0 else math.pi/2)
-
-    def getRingLength(self, i):
-        return self.ringLength if isinstance(self.ringLength, float) else self.ringLength[i]
-
-    def getCurveRadius(self, i):
-        return self.curveRadius if isinstance(self.curveRadius, float) else self.curveRadius[i]
-
-    def getKnobTendonLocations(self, i):
-        if i+1 < self.numJoints:
-            return []
-
-        tendonOrientationsBF = self.orientationBF + \
-            np.array((-math.pi/2, math.pi/2)
-                     if self.is1DoF else (-math.pi/2, 0, math.pi/2, math.pi))
-        return [TendonModel(orientationBF=tendonOrientation,
-                              horizontalDistFromAxis=self.tendonHorizontalDistFromAxis,
-                              ) for tendonOrientation in tendonOrientationsBF]
-        
-    def __repr__(self):
-        return (f"{self.__class__.__name__}:"
-                f"is 1 DoF = {self.is1DoF}\n"
-               f"num joints = {self.numJoints}\n"
-               f"ring length = {self.ringLength}\n"
-               f"orientation base frame = {self.orientationBF}\n"
-               f"Curve radius = {self.curveRadius}\n"
-               f"Tendon horizontal dist from axis = {self.tendonHorizontalDistFromAxis}\n")
-
-@Logger.hierarchy
-def generateRingModels(segments: List[SegmentModel], fricCoefRingTendon=0.0) -> List[RingModel]:
-    Logger.D(f"generateRingModels()")
-    for i, s in enumerate(segments): 
-        Logger.D(f"Model {i}: {s}")
-        
-    rings = []
-    for segmentIndex, segment in enumerate(segments):
-        for jointIndex in range(segment.numJoints):
-            rings.append(RingModel(
-                fricCoefRingTendon=fricCoefRingTendon,
-                length=segment.getRingLength(jointIndex),
-                orientationBF=segment.getOrientationBF(jointIndex),
-                bottomCurveRadius=segment.getCurveRadius(jointIndex),
-                topCurveRadius=segment.getCurveRadius(jointIndex+1) if jointIndex+1 < segment.numJoints else
-                segments[segmentIndex+1].getCurveRadius(0) if segmentIndex+1 < len(segments) else
-                None,
-                topOrientationRF=segment.getOrientationBF(jointIndex+1) - segment.getOrientationBF(jointIndex) if jointIndex+1 < segment.numJoints else
-                segments[segmentIndex+1].getOrientationBF(0) - segment.getOrientationBF(jointIndex) if segmentIndex+1 < len(segments) else
-                None,
-                knobTendonModels=segment.getKnobTendonLocations(jointIndex),
-            ))
-    return rings
-
-
-            

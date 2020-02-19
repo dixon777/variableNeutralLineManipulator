@@ -14,18 +14,18 @@ from .helper import *
 
 
 
-def safeInt(v, default=0):
+def safeInt(v, default=None):
     try:
         v = int(v)
     except:
-        v = int(default)
+        v = int(default) if default else None
     return v
           
-def safeFloat(v, default=0.0):
+def safeFloat(v, default=None):
     try:
         v = float(v)
     except:
-        v = float(default)
+        v = float(default) if default else None
     return v
 
 class QNumEdit(QLineEdit):
