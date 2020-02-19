@@ -33,6 +33,8 @@ def _createCylinder(doc, obj, cylindricalRadius, length, hasTopCurve, hasBottomC
         App.Vector(0,0,1), 
         cylindricalRadius), False)
     
+    sketch.addConstraint(Sketcher.Constraint('Radius',0,cylindricalRadius)) 
+    
     # Extrude face
     pad = obj.newObject(_featureClassMapping["Pad"], "cylinderPad")
     pad.Profile = sketch
