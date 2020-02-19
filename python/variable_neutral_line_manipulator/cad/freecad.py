@@ -8,7 +8,9 @@ import FreeCADGui
 import FreeCAD.Part as Part
 import FreeCAD.Sketcher as Sketcher 
 
-from entities import RingGeometry, TensionKnobGuideGeometry
+from .entities import RingGeometry, TensionKnobGuideGeometry
+
+from ..common import *
 
 _featureClassMapping = {
     "Body": 'PartDesign::Body',
@@ -303,71 +305,53 @@ def _generateRingObj(doc,
         _cutCenterHole(doc, obj, rg.centerHoleRadius)
         
     doc.recompute()
+    return obj
     
 
 
-
-def _saveDoc(doc, dirName, fileName):
-    fileName = fileName.split(".")[0]+".FCStd"
-    path = os.path.join(dirName, fileName)
-    if(os.path.exists(path)):
-        os.remove(path)
+def _saveSrc(doc, path):
+    from datetime import datetime
+    path = ensurePath(path, ".FCStd")
     doc.saveAs(path)
     return path
     
-def _exportAsMesh(objs, dirName, fileName):
-    path = os.path.join(dirName, fileName.split(".")[0]+".obj")
-    if(os.path.exists(path)):
-        os.remove(path)
-    if objs:
-        import Mesh
-        Mesh.export(objs, path)
+def _saveAsMesh(objs, path):
+    from datetime import datetime
+    path = ensurePath(path, ".obj")
+    import Mesh
+    Mesh.export(objs, path)
     return path
 
-def generateRings(ringGeometries, savedSrcDirPath=None, exportObjDirPath=None):    
-    for i, rg in enumerate(ringGeometries):
-        s = f"ring{i}"
-        doc = App.newDocument(s)
-        _generateRingObj(doc, rg, s)
-        obj = doc.Objects[-1]
-        print(f"Object Generation \'{s}\' is completed")
-        if savedSrcDirPath:
-            path = _saveDoc(doc, savedSrcDirPath, s)
-            print(f"Source file \'{s}\' has been output to {path}")
-        if exportObjDirPath:
-            path = _exportAsMesh([obj,], exportObjDirPath, s)
-            print(f"Obj file \'{s}\' has been output to {path}")
+# def generateRings(ringGeometries, savedSrcDirPath=None, exportObjDirPath=None):    
+#     for i, rg in enumerate(ringGeometries):
+#         s = f"ring{i}"
+#         doc = App.newDocument(s)
+#         obj = _generateRingObj(doc, rg, s)
+#         print(f"Object Generation \'{s}\' is completed")
+#         if savedSrcDirPath:
+#             path = _saveSrc(doc, savedSrcDirPath, s)
+#             print(f"Source file \'{s}\' has been output to {path}")
+#         if exportObjDirPath:
+#             path = _saveAsMesh([obj,], exportObjDirPath, s)
+#             print(f"Obj file \'{s}\' has been output to {path}")
         
         
         
-    
-    
+class RingCAD():
+    def __init__(self, ringGeomtry, name=""):
+        self.name = name
+        self.ringGeomtry = ringGeomtry
+        self.doc = None
+        self.obj = None
         
-def main():
-    
-    rg = RingGeometry(
-        length = 5,
-        cylindricalRadius = 2.5,
-        orientationBF = 0,
-        topOrientationRF = math.pi/2,
-        bottomCurveRadius = 3,
-        topCurveRadius = 3.5,
-        tendonGuideFilletRadius=0.08,
-        centerHoleRadius=1,
-        tendonGuideGeometries=[
-            TensionKnobGuideGeometry(
-                distFromAxis=1.8,
-                orientationBF=i*math.pi/4,
-                radius=0.5,  
-                knobLength = 3, 
-                knobSlotRadius=0.7,
-                              
-            ) for i in range(8)
-        ],
-    )
-    dirName =  os.path.dirname(__file__)
-    generateRings([rg]*2, dirName, dirName)
-    
-    
-if __name__ == "__main__":
-    main()
+    def generate(self):
+        self.doc = App.newDocument(self.name)
+        self.obj = _generateRingObj(self.doc, self.ringGeomtry, "body")
+        
+    def saveSrc(self, path=None):
+        if self.doc:
+            _saveSrc(self.doc, path)
+        
+    def saveAsObj(self, path=None):
+        if self.obj:
+            _saveAsMesh([self.obj,], path)
