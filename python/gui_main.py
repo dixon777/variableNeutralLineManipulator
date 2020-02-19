@@ -1,4 +1,4 @@
-from variable_neutral_line_manipulator.display.window import App
+from variable_neutral_line_manipulator.display.gui import App
 from variable_neutral_line_manipulator.common import Logger
 
 def main():

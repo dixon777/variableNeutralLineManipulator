@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QApplication, QCheckBox, QFormLayout, QGridLayout, Q
 
 from .state_management import StateManagement
 from .result_graph_widget import ResultGraphWidget
+from .helper import *
 
 
 
@@ -95,11 +96,7 @@ class ConfigWidget(QWidget):
         StateManagement().updateSegmentSink.subscribe(self._showErrorsCB)
         
     def _showErrorsCB(self, collection):
-        ws = [self.errorLayout.itemAt(i).widget() for i in range(self.errorLayout.count())]
-        for w in ws:
-            if isinstance(w, QLabel):
-                w.setParent(None)
-                self.errorLayout.removeWidget(w)
+        removeAllWidgetsFromLayout(self.errorLayout)
                 
         for v in collection.errors.values():
             if v is None:
@@ -218,15 +215,12 @@ class TensionInputListWidget(QWidget):
         StateManagement().retriveKnobTendonModels.subscribe(self._showInputs)
         
     def _showInputs(self, knobTendonModelCompositeList):
-        l = [self.inputListLayout.itemAt(i).widget() for i in range(self.inputListLayout.count())]
-    
-        for w in l:
-            w.setParent(None)
-            self.inputListLayout.removeWidget(w)
+        removeAllWidgetsFromLayout(self.inputListLayout)
             
         if isinstance(knobTendonModelCompositeList, Exception):
             self.inputListLayout.addWidget(QLabel(str(knobTendonModelCompositeList)))
             return
+        
         for i, (r, tms) in enumerate(knobTendonModelCompositeList):
             self.inputListLayout.addWidget(TensionInputWidget(i, r, tms))
             
@@ -259,7 +253,7 @@ class ResultTextWidget(QWidget):
         self.text.append(f"  TF:\n{res.getTF(side='tr')}")
         
         
-class Window(QWidget):
+class MainWindow(QWidget):
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent=parent, flags=flags)
         
@@ -276,7 +270,7 @@ class App():
     def run():
         import sys
         app = QApplication(sys.argv)
-        w = Window()
+        w = MainWindow()
         w.show()
         return app.exec_()
     

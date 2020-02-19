@@ -19,3 +19,11 @@ def removeFromLayout(layout, i):
         layout.removeWidget(widget)
         widget.setParent(None)
     return True
+
+def removeAllWidgetsFromLayout(layout, types=None):
+    l = [layout.itemAt(i).widget() for i in range(layout.count())]
+    
+    for w in l:
+        if not types or isinstance(w, types):
+            w.setParent(None)
+            layout.removeWidget(w)
