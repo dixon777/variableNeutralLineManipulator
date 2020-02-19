@@ -3,6 +3,8 @@ import math
 
 import numpy as np
 
+from ..common import *
+
 # Knob length does not alter the force effect on the free body
 
 class ErrorCollection():
@@ -202,10 +204,14 @@ class SegmentModel():
                f"ring length = {self.ringLength}\n"
                f"orientation base frame = {self.orientationBF}\n"
                f"Curve radius = {self.curveRadius}\n"
-               f"Tendone horizontal dist from axis = {self.tendonHorizontalDistFromAxis}\n")
+               f"Tendon horizontal dist from axis = {self.tendonHorizontalDistFromAxis}\n")
 
-
+@Logger.hierarchy
 def generateRingModels(segments: List[SegmentModel], fricCoefRingTendon=0.0) -> List[RingModel]:
+    Logger.D(f"generateRingModels()")
+    for i, s in enumerate(segments): 
+        Logger.D(f"Model {i}: {s}")
+        
     rings = []
     for segmentIndex, segment in enumerate(segments):
         for jointIndex in range(segment.numJoints):

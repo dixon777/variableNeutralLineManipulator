@@ -43,7 +43,7 @@ class Repo(metaclass=Singleton):
         for r in self._ringModels:
             if r.knobTendonModels:
                 knobTendonModelCompositeList.append((r, r.knobTendonModels))
-                self._knobTensionLists.append([0,]*len(r.knobTendonModels))
+                self._knobTensionLists.append([0.0,]*len(r.knobTendonModels))
         return knobTendonModelCompositeList
     
     def updateTensions(self, indicesValuePair):

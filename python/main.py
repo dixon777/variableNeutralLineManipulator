@@ -1,11 +1,11 @@
 import numpy as np
 np.set_printoptions(3, suppress =True)
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 import math
 
-from variable_neutral_line_manipulator.math_model.helpers import *
+from variable_neutral_line_manipulator.common import *
 from variable_neutral_line_manipulator.math_model.entities import *
 from variable_neutral_line_manipulator.math_model.states import *
 from variable_neutral_line_manipulator.math_model.solvers import *
@@ -36,38 +36,28 @@ from variable_neutral_line_manipulator.math_model.solvers import *
 
 
 def main():
-    # rings = generateRingModels(segments=[
-    #     ,
-    #     # SegmentModel(is1DoF=True,
-    #     #         numJoints=3,
-    #     #         ringLength=2,
-    #     #         orientationBF=0,
-    #     #         tendonHorizontalDistFromAxis=1.5,
-    #     #         knobLength=1,
-    #     #         curveRadius=3
-    #     #         )
-    # ],
-    #     fricCoefRingTendon=0.0)
+    import logging
+    Logger.setLevel(logging.DEBUG)
     try:
         s = SegmentModel(is1DoF=True,
                     numJoints=4,
                     ringLength=2,
-                    orientationBF=0,
-                    tendonHorizontalDistFromAxis=7,
+                    orientationBF=0,    
+                    tendonHorizontalDistFromAxis=3,
                     curveRadius=6)
     except Exception as e:
         pass
     
-    print(s.isValid())
-    # s.is1DoF = 2
-
+    # rings = generateRingModels([s,])
     # funcEnd = defineBottomJointAngleFunc(rings[-1],
     #                                      distalRingState=None,
     #                                      knobTensions=[1, 1])
-    # funcEnd(0)
     
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 1, 1)
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    
+    res = computeFromEndTensions(generateRingModels([s,]), endTensions=[[1,1,]])
+    print(len(res.states))
     
     # def _plot(func, angleBound):
     #     x = np.linspace(*angleBound)
@@ -79,6 +69,7 @@ def main():
     #     plt.show()
     
     # _plot(funcEnd, (-1, 1))
+    # plt.show()
         
     
     # res = computeFromEndTensions(rings, endTensions=[[0,0],[1.1,1]])

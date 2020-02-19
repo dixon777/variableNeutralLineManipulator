@@ -1,6 +1,4 @@
 
-        
-        
 def removeFromLayout(layout, i):
     """
         Remove i-th item

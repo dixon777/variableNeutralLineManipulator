@@ -180,11 +180,12 @@ class TensionInputWidget(QWidget):
         
     def _configFormLayout(self):
         for i, tm in enumerate(self.knobTendonModels):
-            w = QFloatEdit(0, 0, 100, 2, self._setUpdateTensionCB((self.index, i)))
+            w = QFloatEdit(0, 0, 100, 2, self._updateTensionWrapper((self.index, i)))
             self.formLayout.addRow(f"{round(math.degrees(tm.orientationBF), 2)} deg:", w)
             
-    def _setUpdateTensionCB(self, indicePair):
-        return lambda v: self._updateTension(indicePair, safeFloat(v))
+    # Dummy but required for enforcing indicesPair to be a constant instead of dynamically evaluated
+    def _updateTensionWrapper(self, indicesPair):
+        return lambda v: self._updateTension(indicesPair, safeFloat(v))
     
     def _updateTension(self, indexPair, value):
         StateManagement().updateTensionsSrc.on_next((indexPair, value))
@@ -216,18 +217,19 @@ class TensionInputListWidget(QWidget):
         
     def _showInputs(self, knobTendonModelCompositeList):
         removeAllWidgetsFromLayout(self.inputListLayout)
-            
+        
+        # if error is received
         if isinstance(knobTendonModelCompositeList, Exception):
             self.inputListLayout.addWidget(QLabel(str(knobTendonModelCompositeList)))
             return
         
+        # if no error occurs
         for i, (r, tms) in enumerate(knobTendonModelCompositeList):
             self.inputListLayout.addWidget(TensionInputWidget(i, r, tms))
             
     def minimumSizeHint(self):
         return QSize(400,300)
     
-
 
 class ResultTextWidget(QWidget):
     def __init__(self, parent=None, flags=Qt.WindowFlags()):

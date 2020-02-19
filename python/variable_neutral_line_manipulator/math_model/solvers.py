@@ -181,8 +181,10 @@ def defineBottomJointAngleFunc(ring: RingModel, distalRingState: RingModelState 
 
     return __bottomJointAngleCompute
 
-
+@Logger.hierarchy
 def computeFromEndTensions(rings: List[float], endTensions: List[List[float]], callback=None) -> StateResult:
+    Logger.D(f"computeFromEndTensions()")
+    Logger.D(f"endTensions: {endTensions}")
     tensionIndex = -1
     distalRingState = None
     for i, r in enumerate(reversed(rings)):
