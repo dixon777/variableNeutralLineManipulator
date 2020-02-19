@@ -159,27 +159,21 @@ def _cutTopCurve(doc, obj, length, orientationBF, curveRadius):
    
    
 def _cutThroughHole(doc, obj, orientation, distFromAxis, holeRadius):
+    x = distFromAxis*math.sin(orientation)
+    y = distFromAxis*math.cos(orientation)
+    
     sketch = obj.newObject(_featureClassMapping["Sketch"], "cylinderSketch")
     sketch.Support = (doc.XY_Plane, [''])
     sketch.MapMode = "FlatFace"
-    
-    constructLine = sketch.addGeometry(Part.LineSegment(
-        App.Vector(0, 0),
-        App.Vector(0, 1)
-    ))
-    sketch.addConstraint(Sketcher.Constraint('Distance', 0, distFromAxis)) 
-    sketch.addConstraint(Sketcher.Constraint("Coincident", -1, 1, 0, 1))
-    sketch.addConstraint(Sketcher.Constraint("Angle", -1, 1, 0, 1, orientation))
-    sketch.toggleConstruction(0)
     
     holeCircle = sketch.addGeometry(Part.Circle(
         App.Vector(0,0),
         App.Vector(0,0,1),
         1
     ))
-    sketch.addConstraint(Sketcher.Constraint('Radius', 1, holeRadius))
-    sketch.addConstraint(Sketcher.Constraint('Coincident',0, 2, 1, 3)) 
-    
+    sketch.addConstraint(Sketcher.Constraint('Radius', 0, holeRadius))
+    sketch.addConstraint(Sketcher.Constraint('DistanceX',-1, 1, 0, 3, x)) 
+    sketch.addConstraint(Sketcher.Constraint('DistanceY',-1, 1, 0, 3, y)) 
     
     pocket = obj.newObject(_featureClassMapping["Pocket"], "holeCut")
     pocket.Profile = sketch
@@ -195,24 +189,14 @@ def _applyFilletToHoles(doc, obj, radius):
     fillet = obj.newObject(_featureClassMapping["Fillet"], "holeFillets")
     fillet.Radius = radius
     # Before fillets, Face1 = Cylindrical face, Face2 = Top surface, Face3 = Bottom surface, Face(4-end) = Cylindrical surface of drilled holes
-    fillet.Base = (lastFeature, [f"Face{i}" for i in range(3, len(lastFeature.Shape.Faces))])    
+    fillet.Base = (lastFeature, [f"Face{i}" for i in range(3, len(lastFeature.Shape.Faces)+1)])    
     
-def _cutCenterHole(doc, obj, radius, length):
+def _cutCenterHole(doc, obj, radius):
     """
         Generate a center hole
         Must be called after _applyFilletToHoles() to avoid face renaming issue of FreeCAD (originated from Opencascade)
     """
-    cylinder = doc.addObject(_featureClassMapping["Cylinder"], "centerHoleCylinder")
-    cylinder.Radius = f"{radius} mm"
-    cylinder.Height = f"{length} mm"
-    cylinder.Placement = App.Placement(
-        App.Vector(0,0,-length/2),
-        App.Rotation(App.Vector(0,0,1),0),
-        App.Vector(0,0,1)
-    )
-    cut = doc.addObject(_featureClassMapping["Cut"], "centerHoleCut")
-    cut.Base = obj
-    cut.Tool = cylinder
+    _cutThroughHole(doc, obj, 0.0, 0.0, radius)
     
     
 def _generateRingObj(doc,
@@ -239,7 +223,7 @@ def _generateRingObj(doc,
     _applyFilletToHoles(doc, obj, ringGeometry.tendonGuideFilletRadius)
     
     if ringGeometry.centerHoleRadius:
-        _cutCenterHole(doc, obj, ringGeometry.centerHoleRadius, ringGeometry.length)
+        _cutCenterHole(doc, obj, ringGeometry.centerHoleRadius)
         
     doc.recompute()
     
@@ -292,7 +276,7 @@ def main():
         bottomCurveRadius = 3,
         topCurveRadius = 3.5,
         tendonGuideFilletRadius=0.08,
-        centerHoleRadius=0.3,
+        centerHoleRadius=1,
         tendonGuideGeometries=[
             TendonGuideGeometry(
                 distFromAxis=1.8,
