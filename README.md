@@ -4,7 +4,7 @@ This contains all the source files for the mathematical model computation as wel
 
 # Requirements
 
-- Python: >= 3.6.6
+- Python == 3.6.6
 
 # Guideline
 
