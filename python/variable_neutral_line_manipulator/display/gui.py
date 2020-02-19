@@ -1,5 +1,6 @@
 import math, os, logging
 from uuid import UUID
+from collections.abc import Iterable
 
 import numpy as np
 import pyrr
@@ -13,37 +14,48 @@ from .result_graph_widget import ResultGraphWidget
 from .helper import *
 
 
+def safeOps(v, funcs, default=None):
+    if not isinstance(funcs, Iterable):
+        funcs = [funcs]
+    
+    for f in funcs:
+        try:
+            v = f(v)
+        except:
+            return default
+    return v
 
 def safeInt(v, default=None):
-    try:
-        v = int(v)
-    except:
-        v = int(default) if default else None
-    return v
+    return safeOps(v, int, default)
           
 def safeFloat(v, default=None):
-    try:
-        v = float(v)
-    except:
-        v = float(default) if default else None
-    return v
+    return safeOps(v, float, default)
 
 class QNumEdit(QLineEdit):
     def __init__(self, initVal=0, textEditCB=None, parent=None):
         super().__init__(str(initVal), parent=parent)
         self.textChanged.connect(textEditCB)
+    
+    def label(self):
+        return ""
         
-
-
 class QIntEdit(QNumEdit):
     def __init__(self, initVal=0, minVal=None, maxVal=None, textEditCB=None, parent=None):
         super().__init__(initVal, textEditCB=textEditCB, parent=parent)
-        self.setValidator(QIntValidator(safeInt(minVal), safeInt(maxVal)))
+        self.setValidator(QIntValidator(int(minVal), int(maxVal)))
+
+    @property
+    def label(self):
+        return f"Range: ({self.validator().bottom()}, {self.validator().top()})"
         
 class QFloatEdit(QNumEdit):
     def __init__(self, initVal=0.0, minVal=None, maxVal=None, decimal=None, textEditCB=None, parent=None):
         super().__init__(initVal, textEditCB=textEditCB, parent=parent)
-        self.setValidator(QDoubleValidator(safeFloat(minVal), safeFloat(maxVal), safeInt(decimal)))
+        self.setValidator(QDoubleValidator(float(minVal), float(maxVal), int(decimal)))
+        
+    @property
+    def label(self):
+        return f"Range: ({self.validator().bottom()}, {self.validator().top()}) [decimals: {self.validator().decimals()}]"
         
 
 
@@ -73,13 +85,19 @@ class ConfigWidget(QWidget):
         self.setLayout(mainLayout)
         
     def _configForm(self):
+        numJointEdit = QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=lambda v: self._updateModelParam("numJoints", safeInt(v)))
+        ringLengthEdit = QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("ringLength", safeFloat(v)))
+        orientationEdit = QFloatEdit(self.model.orientationBF,  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda v: self._updateModelParam("orientationBF", safeOps(v, (float, math.radians)) ))
+        curveRadiusEdit = QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("curveRadius", safeFloat(v)))
+        tendonDistFromAxisEdit = QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("tendonHorizontalDistFromAxis", safeFloat(v)))
+        
         pairs = {
             "1 DoF (tick) / 2 DoFs (empty)": QCheckBox(),
-            "Num joints:": QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=lambda v: self._updateModelParam("numJoints", safeInt(v))),
-            "Ring length (mm):": QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("ringLength", safeFloat(v))),
-            "Orientation (deg):": QFloatEdit(round(math.degrees(self.model.orientationBF),2),  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda v: self._updateModelParam("orientationBF", math.radians(safeFloat(v)))),
-            "Curve radius (mm):": QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("curveRadius", safeFloat(v))),
-            "Tendon distance from axis (mm):":QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("tendonHorizontalDistFromAxis", safeFloat(v))),
+            f"Num joints:\n {numJointEdit.label}": numJointEdit,
+            f"Ring length (mm):\n {ringLengthEdit.label}": ringLengthEdit,
+            f"Orientation (deg):\n {orientationEdit.label}": orientationEdit,
+            f"Curve radius (mm):\n {curveRadiusEdit.label}": curveRadiusEdit,
+            f"Tendon distance from axis (mm):\n {tendonDistFromAxisEdit.label}": tendonDistFromAxisEdit,
         }
         for k, v in pairs.items():
             self.formLayout.addRow(k, v)

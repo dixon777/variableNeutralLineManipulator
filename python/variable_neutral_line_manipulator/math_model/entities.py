@@ -208,7 +208,7 @@ class SegmentModelWithValidator(SegmentModel):
                     lambda v: v if v > 0.0 else AttributeError("Ring length must be greater than 0")
                     ],
                 "orientationBF":[
-                    lambda v: float(v) if v is not None else AttributeError("Orientation (Base Frame) must not be empty"),
+                    lambda v: float(v) if v is not None else AttributeError("Orientation must not be empty"),
                     ],
                 "curveRadius":[
                     lambda v: float(v) if v is not None else AttributeError("Curve radius must not be empty"),
