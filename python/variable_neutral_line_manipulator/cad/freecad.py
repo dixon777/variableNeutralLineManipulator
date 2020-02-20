@@ -60,6 +60,7 @@ def _cutBottomCurve(doc, obj, length, curveRadius):
         App.Vector(0,0,1), 
         curveRadius
     ), -math.pi,0), False) # (in radian)
+    bottomSketch.addConstraint(Sketcher.Constraint('Radius',0,curveRadius)) 
     
     points = [
         (-curveRadius,centerY),
@@ -122,6 +123,7 @@ def _cutTopCurve(doc, obj, length, orientationBF, curveRadius):
         App.Vector(0,0,1), 
         curveRadius
     ), 0, math.pi), False) # (in radian)
+    topSketch.addConstraint(Sketcher.Constraint('Radius',0,curveRadius)) 
     
     points = (
         (curveRadius,centerY),
@@ -193,7 +195,7 @@ def _applyFilletToHoles(doc, obj, radius):
     fillet = obj.newObject(_featureClassMapping["Fillet"], "holeFillets")
     fillet.Radius = radius
     # Before fillets, Face1 = Cylindrical face, Face2 = Top surface, Face3 = Bottom surface, Face(4-end) = Cylindrical surface of drilled holes
-    fillet.Base = (lastFeature, [f"Face{i}" for i in range(3, len(lastFeature.Shape.Faces)+1)])    
+    fillet.Base = (lastFeature, [f"Face{i}" for i in range(1, 4)])#range(len(lastFeature.Shape.Faces)+1)])    
     
 def _cutCenterHole(doc, obj, radius):
     """
@@ -301,10 +303,15 @@ def _generateRingObj(doc,
             # Smaller value is still applicable for generating a valid Object file (.obj) but will lead to missing faces of the body if the source file (.FCStd) is opened in FreeCAD GUI
             _cutKnob(doc, obj, tg.orientationRF(rg.orientationBF), tg.distFromAxis - tg.radius + tg.knobSlotRadius-0.0001, tg.knobSlotRadius, rg.cylindricalRadius, tg.knobLength - rg.length/2)
     
-    # _applyFilletToHoles(doc, obj, rg.tendonGuideFilletRadius)
-    
     if rg.centerHoleRadius:
         _cutCenterHole(doc, obj, rg.centerHoleRadius)
+        
+    if type(tg) == TendonGuideGeometry: 
+        _applyFilletToHoles(doc, obj, rg.tendonGuideFilletRadius)
+    else:
+        print("Please apply fillets manually")
+        
+    
         
     doc.recompute()
     return obj
@@ -317,9 +324,16 @@ def _saveSrc(doc, path):
     doc.saveAs(path)
     return path
     
-def _saveAsMesh(objs, path):
+def _saveAsObj(objs, path):
     from datetime import datetime
     path = ensurePath(path, ".obj")
+    import Mesh
+    Mesh.export(objs, path)
+    return path
+
+def _saveAsSTL(objs, path):
+    from datetime import datetime
+    path = ensurePath(path, ".stl")
     import Mesh
     Mesh.export(objs, path)
     return path
@@ -356,8 +370,14 @@ class RingCAD():
         if self.doc:
            return  _saveSrc(self.doc, path)
         
-    def saveAsObj(self, path=None):
+    def saveObj(self, path=None):
         if not path or not os.path.basename(path):
             path = os.path.join(os.path.dirname(path) if path else "", self.name)
         if self.obj:
-            return _saveAsMesh([self.obj,], path)
+            return _saveAsObj([self.obj,], path)
+        
+    def saveStl(self, path=None):
+        if not path or not os.path.basename(path):
+            path = os.path.join(os.path.dirname(path) if path else "", self.name)
+        if self.obj:
+            return _saveAsSTL([self.obj,], path)

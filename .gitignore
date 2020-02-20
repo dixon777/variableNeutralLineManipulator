@@ -6,7 +6,9 @@
 !.vscode/extensions.json
 *.code-workspace
 *.FCStd
+*.FCStd1
 *.obj
+*.stl
 .pytest_cache
 __pycache__/
 *.py[cod]
