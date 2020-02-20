@@ -45,19 +45,20 @@ def main():
                     orientationBF=0,    
                     tendonHorizontalDistFromAxis=3,
                     curveRadius=6)
+        s2 = SegmentModel(is1DoF=True,
+                    numJoints=4,
+                    ringLength=2,
+                    orientationBF=math.pi/2,    
+                    tendonHorizontalDistFromAxis=3,
+                    curveRadius=6)
     except Exception as e:
         pass
-    
-    # rings = generateRingModels([s,])
-    # funcEnd = defineBottomJointAngleFunc(rings[-1],
-    #                                      distalRingState=None,
-    #                                      knobTensions=[1, 1])
     
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     
-    res = computeFromEndTensions(generateRingModels([s,]), endTensions=[[1,1,]])
-    print(len(res.states))
+    res = computeFromEndTensions(generateRingModels([s,s2]), endTensions=[[1.1,1,], [1,1]])
+    print(res.computeTendonLengths())
     
     # def _plot(func, angleBound):
     #     x = np.linspace(*angleBound)

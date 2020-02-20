@@ -25,14 +25,16 @@ class TendonModel():
         horizontalDistFromAxis = horizontal dist from axis
         knob length = knob length from the base frame
     """
-    def __init__(self, orientationBF: float, horizontalDistFromAxis: float):
+    def __init__(self, orientationBF: float, horizontalDistFromAxis: float, knobLength: float=None):
         self.orientationBF = orientationBF
         self.horizontalDistFromAxis = horizontalDistFromAxis
+        self.knobLength = knobLength
         
     def __str__(self):
         return (f"{self.__class__.__name__}:"
-                f"orientation base frame = {self.orientationBF}\n"
-               f"horizontalDistFromAxis = {self.horizontalDistFromAxis}\n")
+                f"orientationBF = {self.orientationBF}\n"
+               f"horizontalDistFromAxis = {self.horizontalDistFromAxis}\n"
+               f"knobLength = {self.knobLength}\n")
 
 
 class RingModel():
@@ -83,15 +85,17 @@ class SegmentModel():
                  ringLength:float=1.0,
                  orientationBF:float=0.0,
                  curveRadius: float=1.0,
-                 tendonHorizontalDistFromAxis: float=0.5):
+                 tendonHorizontalDistFromAxis: float=0.5,
+                 knobLength:float=0.5):
         
         d = {
-            "is1DoF": is1DoF,
-            "numJoints": numJoints,
-            "ringLength": ringLength,
-            "orientationBF": orientationBF,
-            "curveRadius": curveRadius,
-            "tendonHorizontalDistFromAxis": tendonHorizontalDistFromAxis
+            "is1DoF": bool(is1DoF),
+            "numJoints": int(numJoints),
+            "ringLength": float(ringLength),
+            "orientationBF": float(orientationBF),
+            "curveRadius": float(curveRadius),
+            "tendonHorizontalDistFromAxis": float(tendonHorizontalDistFromAxis),
+            "knobLength": float(knobLength),
         }
         for k,v in d.items():
             self.__dict__[k] = v
@@ -220,6 +224,9 @@ class SegmentModelWithValidator(SegmentModel):
                     lambda v: v if v > 0.0 else AttributeError("Tendon horizontal dist from axis must be greater than 0"),
                     lambda v: v if _compare(v, self.__dict__.get("curveRadius")) else AttributeError("Curve radius must be greater than tendon horizontal dist from axis")
                 ],
+                "knobLength": [
+                    lambda v: float(v) if v is not None else None,
+                ]
             })
         
     def validate(self):

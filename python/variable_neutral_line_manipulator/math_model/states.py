@@ -123,13 +123,13 @@ class StateResult():
         
     def getTF(self, ringIndex=-1, side="c"):
         """
+            Get the transformation matrix from the top of the base frame
             side = "b": bottom, "c": center, "tr": top in ring frame, "td": top in top curve orientation
         """
         side = "c" if side is None else side
         c = np.identity(4)
         for s in self.states[:ringIndex]:
             c = np.matmul(c, getTFProximalTopToDistalBottom(s.bottomJointAngle, s.ring.bottomCurveRadius))
-            # Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
             c = np.matmul(c, np.matmul(m4MatrixTranslation((0.0,0, s.ring.length)),
                           m4MatrixRotation((0,0,1.0), s.ring.topOrientationRF)))
 
@@ -151,4 +151,49 @@ class StateResult():
      
 
     def computeTendonLengths(self) -> List[List[float]]:
-        raise NotImplementedError()
+        """
+            Compute the length of tendons required from their respective knobs to the top curvature of the base ring
+            If the knob length of the tendon is None, it is assuemd that the knob is attached to the ring's top curvature 
+            
+            Evaluated from the distal end ring to the base ring
+        """
+        tendonModels = []
+        lengths = []
+        for sI, s in enumerate(reversed(self.states)):
+            r = s.ring
+            planarAngles = []
+            
+            # Calculate all non-knob tendons length along the ring's body
+            for i, tm in enumerate(tendonModels):
+                planarDistFromAxis = tm.horizontalDistFromAxis*math.sin(tm.orientationBF - r.orientationBF)
+                planarAngleFromAxis = math.asin(planarDistFromAxis/r.bottomCurveRadius)
+                planarAngles.append(planarAngleFromAxis)
+                lengths[i] += r.length - r.bottomCurveRadius*(1-math.cos(planarAngleFromAxis)) - r.topCurveRadius*(1-math.cos(planarAngleFromAxis))
+                
+            
+            # Append all knob tendons
+            # Calculate all knob tendons length along the ring's body
+            # if knob length is not defined, replaced it with ring's length
+            for tm in reversed(r.knobTendonModels):
+                tendonModels.insert(0, tm)
+                planarDistFromAxis = tm.horizontalDistFromAxis*math.sin(tm.orientationBF - r.orientationBF)
+                planarAngleFromAxis = math.asin(planarDistFromAxis/r.bottomCurveRadius)
+                planarAngles.insert(0, planarAngleFromAxis)
+                lengths.insert(0, (tm.knobLength or r.length) - r.bottomCurveRadius*(1-math.cos(planarAngleFromAxis))) # not true
+            
+            # Calculate all tendons length at the bottom joint between two rings
+            for i, (tm, planarAngleFromAxis) in enumerate(zip(tendonModels,planarAngles)):
+                lengths[i] += 2*r.bottomCurveRadius*(1-math.cos(planarAngleFromAxis+s.bottomJointAngle/2))
+        
+        ls = []
+        
+        lastRing = self.states[0].ring
+        for s in self.states:
+            r = s.ring
+            lls = []
+            for _ in r.knobTendonModels:
+                lls.append(lengths.pop(0))
+            if lls:
+                ls.append(lls)
+        
+        return ls
