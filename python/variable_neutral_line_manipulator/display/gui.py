@@ -189,7 +189,7 @@ class TensionInputWidget(QWidget):
         self.knobTendonModels = knobTendonModels
         self._configFormLayout()
         
-        box = QGroupBox(f"{self.index}")
+        box = QGroupBox(f"{self.index+1}-th segment")
         box.setLayout(self.formLayout)
         
         mainLayout = QHBoxLayout()
@@ -203,7 +203,7 @@ class TensionInputWidget(QWidget):
             
     # Dummy but required for enforcing indicesPair to be a constant instead of dynamically evaluated
     def _updateTensionWrapper(self, indicesPair):
-        return lambda v: self._updateTension(indicesPair, safeFloat(v))
+        return lambda v: self._updateTension(indicesPair, safeFloat(v, 0.0))
     
     def _updateTension(self, indexPair, value):
         StateManagement().updateTensionsSrc.on_next((indexPair, value))
@@ -269,8 +269,14 @@ class ResultTextWidget(QWidget):
             return
         self.text.append("  Joint angles (from proximal to distal):")
         for i, s in enumerate(res.states):
-            self.text.append(f"    {i}: {math.degrees(s.bottomJointAngle)} deg")
-        self.text.append(f"  TF:\n{res.getTF(side='tr')}")
+            self.text.append(f"    {i+1}-th joint: {math.degrees(s.bottomJointAngle)} deg")
+        self.text.append(f"")
+        self.text.append(f"  TF:\n{res.getTF(side='tr')}\n")
+        self.text.append(f"  Tendon lengths:")
+        for i, ts in enumerate(res.computeTendonLengths()):
+            self.text.append(f"    {i+1}-th segment:")
+            for j, t in enumerate(ts):
+                self.text.append(f"     {j+1}-th tendon: {t}")
         
         
 class MainWindow(QWidget):
