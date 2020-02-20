@@ -6,7 +6,6 @@ from ..math_model.states import *
 from ..math_model.solvers import *
 
 from ..common import Singleton, Logger
-
 class Repo(metaclass=Singleton):
     def __init__(self):
         super().__init__()
