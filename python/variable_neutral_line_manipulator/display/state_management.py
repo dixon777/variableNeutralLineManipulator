@@ -35,6 +35,12 @@ class StateManagement(metaclass=Singleton):
             ops.map(lambda _: Repo().computeTensions())
         )
         
+        self.graphResizeUpdateSrc = Subject()
+        self.graphResizeUpdateSink = self.graphResizeUpdateSrc.pipe(
+            ops.debounce(2.0)
+        )
+        
+        
     def __del__(self):
         for v in self.__dict__.values():
             if isinstance(v, Subject):        

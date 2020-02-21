@@ -14,7 +14,7 @@ from .result_graph_widget import ResultGraphWidget
 from .helper import *
 
 
-def safeOps(v, funcs, default=None):
+def tryParse(v, funcs, default=None):
     if not isinstance(funcs, Iterable):
         funcs = [funcs]
     
@@ -25,11 +25,11 @@ def safeOps(v, funcs, default=None):
             return default
     return v
 
-def safeInt(v, default=None):
-    return safeOps(v, int, default)
+def tryParseInt(v, default=None):
+    return tryParse(v, int, default)
           
-def safeFloat(v, default=None):
-    return safeOps(v, float, default)
+def tryParseFloat(v, default=None):
+    return tryParse(v, float, default)
 
 class QNumEdit(QLineEdit):
     def __init__(self, initVal=0, textEditCB=None, parent=None):
@@ -85,11 +85,11 @@ class ConfigWidget(QWidget):
         self.setLayout(mainLayout)
         
     def _configForm(self):
-        numJointEdit = QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=lambda v: self._updateModelParam("numJoints", safeInt(v)))
-        ringLengthEdit = QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("ringLength", safeFloat(v)))
-        orientationEdit = QFloatEdit(self.model.orientationBF,  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda v: self._updateModelParam("orientationBF", safeOps(v, (float, math.radians)) ))
-        curveRadiusEdit = QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("curveRadius", safeFloat(v)))
-        tendonDistFromAxisEdit = QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("tendonHorizontalDistFromAxis", safeFloat(v)))
+        numJointEdit = QIntEdit(self.model.numJoints, minVal=0, maxVal=100, textEditCB=lambda v: self._updateModelParam("numJoints", tryParseInt(v)))
+        ringLengthEdit = QFloatEdit(self.model.ringLength, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("ringLength", tryParseFloat(v)))
+        orientationEdit = QFloatEdit(self.model.orientationBF,  minVal=-180, maxVal=180, decimal=2, textEditCB=lambda v: self._updateModelParam("orientationBF", tryParse(v, (float, math.radians)) ))
+        curveRadiusEdit = QFloatEdit(self.model.curveRadius, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("curveRadius", tryParseFloat(v)))
+        tendonDistFromAxisEdit = QFloatEdit(self.model.tendonHorizontalDistFromAxis, minVal=0, maxVal=100, decimal=2, textEditCB=lambda v: self._updateModelParam("tendonHorizontalDistFromAxis", tryParseFloat(v)))
         
         pairs = {
             "1 DoF (tick) / 2 DoFs (empty)": QCheckBox(),
@@ -179,7 +179,7 @@ class ConfigListWidget(QWidget):
         #     removeFromLayout(self.segmentConfigListLayout, -1)
         
     def minimumSizeHint(self):
-        return QSize(400,300)
+        return QSize(200,200)
     
 class TensionInputWidget(QWidget):
     def __init__(self, index, ring, knobTendonModels, parent=None, flags=Qt.WindowFlags()):
@@ -203,7 +203,7 @@ class TensionInputWidget(QWidget):
             
     # Dummy but required for enforcing indicesPair to be a constant instead of dynamically evaluated
     def _updateTensionWrapper(self, indicesPair):
-        return lambda v: self._updateTension(indicesPair, safeFloat(v, 0.0))
+        return lambda v: self._updateTension(indicesPair, tryParseFloat(v, 0.0))
     
     def _updateTension(self, indexPair, value):
         StateManagement().updateTensionsSrc.on_next((indexPair, value))
@@ -284,10 +284,10 @@ class MainWindow(QWidget):
         super().__init__(parent=parent, flags=flags)
         
         layout = QGridLayout()
-        layout.addWidget(ResultGraphWidget(),0,0)
-        layout.addWidget(ResultTextWidget(), 1,0)
-        layout.addWidget(ConfigListWidget(),0,1)
-        layout.addWidget(TensionInputListWidget(),1,1)
+        layout.addWidget(ResultGraphWidget(self),0,0)
+        layout.addWidget(ResultTextWidget(self), 1,0)
+        layout.addWidget(ConfigListWidget(self),0,1)
+        layout.addWidget(TensionInputListWidget(self),1,1)
         self.setLayout(layout)
         
 
