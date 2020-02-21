@@ -69,9 +69,6 @@ def plotRing(ax, ring:RingGeometry, transform=np.identity(4), radialDivision=30,
     ax.plot_surface(xBottom,yBottom,zBottom)
     ax.plot_surface(xTop,yTop,zTop)
     
-    
-    
-
 def plotRings(ax, res:StateResult):
     for i, s in enumerate(res.states):
         r = s.ring
