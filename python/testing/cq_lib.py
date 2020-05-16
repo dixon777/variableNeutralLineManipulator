@@ -2,10 +2,16 @@ from math import *
 import os
 import cadquery as cq
 
+
+
+
 class DiskType:
     TOP = "top"
-    
+    INTERMDIDATE = "intermediate"
     BOTTOM = "bottom"
+    
+
+
 
 class Disk:
     def __init__(self, t:DiskType, D, L, ctr, cto, cbr, cbo, chd, gd, gn, gdfc):
@@ -118,7 +124,7 @@ if __name__ == "__main__":
     
     generate_end_time = time.time()
 
-    export(shape, svg_path="a.svg", stl_path="a.stl", dir_path=os.path.join(os.path.curdir, "tmp"))
+    export(shape, svg_path="a.svg", stl_path="a.stl", step_path="a.step", dir_path=os.path.join(os.path.curdir, "tmp"))
     
     export_end_time = time.time()
     
