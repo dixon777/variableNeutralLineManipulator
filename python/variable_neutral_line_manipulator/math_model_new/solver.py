@@ -38,7 +38,7 @@ class DiskModelState():
         
         
     def eval_proximal_disk_top_components(self, proximal_disk:DiskMathModel):
-        top_orientationRF = self.disk.bottomOrientationBF - proximal_disk.bottomOrientationBF
+        top_orientationRF = self.disk.bottom_orientationBF - proximal_disk.bottom_orientationBF
         
         # contact
         c = np.concatenate((distalToProximalFrame(self.bottom_contact_reactionRF.force, self.bottom_joint_angle, top_orientationRF),
@@ -49,8 +49,8 @@ class DiskModelState():
         for t in self.tendon_states:
             c += ForceMomentVec(force=evalTopGuideForce(t.tension_in_disk, self.bottom_joint_angle, top_orientationRF),
                                 disp=evalTopGuideEndDisp(
-                                    proximal_disk.length, self.disk.bottomCurveRadius, t.model.distFromAxis, 
-                                    t.model.orientationBF - proximal_disk.bottomOrientationBF, top_orientationRF
+                                    proximal_disk.length, self.disk.bottom_curve_radius, t.model.dist_from_axis, 
+                                    t.model.orientationBF - proximal_disk.bottom_orientationBF, top_orientationRF
                                 )).flat_total
         return c
 
@@ -58,7 +58,7 @@ def eval_bottom_tendon_components(disk:DiskMathModel, tendonStates, bottom_joint
         c = np.zeros(6)
         for t in tendonStates:
             c += ForceMomentVec(force=evalBottomGuideForce(t.tension_in_disk, bottom_joint_angle), 
-                                disp=evalBottomGuideEndDisp(disk.length, disk.bottomCurveRadius, t.model.distFromAxis, t.model.orientationBF - disk.bottomOrientationBF)).flat_total
+                                disp=evalBottomGuideEndDisp(disk.length, disk.bottom_curve_radius, t.model.dist_from_axis, t.model.orientationBF - disk.bottom_orientationBF)).flat_total
         return c
 
 def solve_numerically(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], distal_disk_state:DiskModelState, solver_type:SolverType):
@@ -71,7 +71,7 @@ def solve_numerically(disk:DiskMathModel, knob_tendon_states:List[TendonModelSta
     def _equilibrium(bottom_joint_angle):
         sum_comp = top_vec + eval_bottom_tendon_components(disk, tension_states, bottom_joint_angle)
         bottom_contact_comp = ForceMomentVec.from_force_disp_total_moment(force=-sum_comp[:3], 
-                                                                            disp=evalBottomContactDisp(disk.length, disk.bottomCurveRadius, bottom_joint_angle),
+                                                                            disp=evalBottomContactDisp(disk.length, disk.bottom_curve_radius, bottom_joint_angle),
                                                                             total_moment=- sum_comp[3:])
         return bottom_contact_comp.pure_moment[0], bottom_contact_comp
     
@@ -114,7 +114,7 @@ def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], 
     sum_bottom_guide_x_moment_cos = 0
     bottom_guide_disps = []
     for ts in tendon_states:
-        bottom_guide_disps.append(evalBottomGuideEndDisp(disk.length, disk.bottomCurveRadius, ts.model.distFromAxis, ts.model.orientationBF - disk.bottomOrientationBF))
+        bottom_guide_disps.append(evalBottomGuideEndDisp(disk.length, disk.bottom_curve_radius, ts.model.dist_from_axis, ts.model.orientationBF - disk.bottom_orientationBF))
         sum_tensions += ts.tension_in_disk
         sum_bottom_guide_x_moment_sin += bottom_guide_disps[-1][2]*ts.tension_in_disk
         sum_bottom_guide_x_moment_cos += bottom_guide_disps[-1][1]*ts.tension_in_disk
@@ -122,9 +122,9 @@ def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], 
     top_vec = distal_disk_state.eval_proximal_disk_top_components(disk) if distal_disk_state else np.zeros(6)
     
     # Refers to the note
-    P = disk.bottomCurveRadius*top_vec[2] + (disk.length/2-disk.bottomCurveRadius)*sum_tensions + sum_bottom_guide_x_moment_sin
-    Q = -disk.bottomCurveRadius*top_vec[1] - sum_bottom_guide_x_moment_cos
-    R = top_vec[1]*(disk.bottomCurveRadius - disk.length/2) + top_vec[3]
+    P = disk.bottom_curve_radius*top_vec[2] + (disk.length/2-disk.bottom_curve_radius)*sum_tensions + sum_bottom_guide_x_moment_sin
+    Q = -disk.bottom_curve_radius*top_vec[1] - sum_bottom_guide_x_moment_cos
+    R = top_vec[1]*(disk.bottom_curve_radius - disk.length/2) + top_vec[3]
     
     # P*sin(theta) + Q*cos(theta) = +-sqrt(P**2+Q**2)*sin(theta+atan(Q/P))
     # There are 2 possible formulae, mathematically speaking, but only 1 of them complies with the constraint
@@ -149,7 +149,7 @@ def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], 
     
     bottom_contact_reactionRF = -top_vec - bottom_guide_vecRF
     bottom_contact_reactionRF = ForceMomentVec.from_force_disp_total_moment(bottom_contact_reactionRF[:3], 
-                                                                            evalBottomContactDisp(disk.length, disk.bottomCurveRadius, bottom_joint_angle),
+                                                                            evalBottomContactDisp(disk.length, disk.bottom_curve_radius, bottom_joint_angle),
                                                                             bottom_contact_reactionRF[3:])
         
     return DiskModelState(disk, tendon_states, bottom_contact_reactionRF, bottom_joint_angle)

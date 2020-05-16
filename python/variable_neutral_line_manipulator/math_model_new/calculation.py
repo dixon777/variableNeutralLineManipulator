@@ -42,7 +42,7 @@ def evalBottomGuideForce(tensionInDisk: float,
     ))
 
 def evalTopGuideEndDisp(length: float,
-                        topCurveRadius: float,
+                        topcurve_radius: float,
                         tendonDistFromAxis: float,
                         tendonOrientationRF: float,
                         topOrientationRF: float) -> np.ndarray:
@@ -53,11 +53,11 @@ def evalTopGuideEndDisp(length: float,
     return np.array((
         tendonDistFromAxis*cos(tendonOrientationRF),
         tendonDistFromAxis*sin(tendonOrientationRF),
-        sqrt(topCurveRadius**2 - horizontalDispAlongCurve**2) + length/2 - topCurveRadius
+        sqrt(topcurve_radius**2 - horizontalDispAlongCurve**2) + length/2 - topcurve_radius
     ))
     
 def evalBottomGuideEndDisp(length: float,
-                            bottomCurveRadius: float,
+                            bottomcurve_radius: float,
                             tendonDistFromAxis: float,
                             tendonOrientationRF: float)-> np.ndarray:
     """
@@ -67,11 +67,11 @@ def evalBottomGuideEndDisp(length: float,
     return np.array((
         tendonDistFromAxis*cos(tendonOrientationRF),
         tendonDistFromAxis*sin(tendonOrientationRF),
-        -sqrt(bottomCurveRadius**2 - horizontalDispAlongCurve**2) + bottomCurveRadius - length/2
+        -sqrt(bottomcurve_radius**2 - horizontalDispAlongCurve**2) + bottomcurve_radius - length/2
     ))
     
 def evalTopContactDisp(length: float,
-                    topCurveRadius: float,
+                    topcurve_radius: float,
                     topJointAngle: float, 
                     topOrientationRF: float):
     """
@@ -79,13 +79,13 @@ def evalTopContactDisp(length: float,
     """
     halfJointAngle = topJointAngle/2
     return np.array((
-        topCurveRadius*sin(halfJointAngle)*sin(topOrientationRF),
-        -topCurveRadius*sin(halfJointAngle)*cos(topOrientationRF),
-        topCurveRadius*cos(halfJointAngle) + length/2 - topCurveRadius
+        topcurve_radius*sin(halfJointAngle)*sin(topOrientationRF),
+        -topcurve_radius*sin(halfJointAngle)*cos(topOrientationRF),
+        topcurve_radius*cos(halfJointAngle) + length/2 - topcurve_radius
     ))
     
 def evalBottomContactDisp(length: float,
-                        bottomCurveRadius: float,
+                        bottomcurve_radius: float,
                         bottomJointAngle: float):
     """
         Evaluate displacement from disk center to center of bottom contacting line
@@ -93,8 +93,8 @@ def evalBottomContactDisp(length: float,
     halfJointAngle = bottomJointAngle/2
     return np.array((
         0,
-        -bottomCurveRadius*sin(halfJointAngle),
-        -bottomCurveRadius*cos(halfJointAngle) + bottomCurveRadius - length/2
+        -bottomcurve_radius*sin(halfJointAngle),
+        -bottomcurve_radius*cos(halfJointAngle) + bottomcurve_radius - length/2
     ))
     
     

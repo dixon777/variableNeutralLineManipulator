@@ -15,8 +15,15 @@ def test_force_model():
     # m.generate_models()
     # se.eval(m, [[4,1,3,1],], StateEvaluator.NumericalSolverType.BINARY)
     
-    m = ManipulatorMathModel([s1,s2], [start, mid, end], 5)
+    err = None
+    m = ManipulatorMathModel([s1,s2], [start, mid, end], 2.1)
+    if m.error_dict:
+        for k, s in m.error_dict.items():
+            print(s)
+        return
+    
     se.eval(m, [[4,3,3,2], [2,1]], SolverType.DIRECT)
+        
     
     for s in se.states:
         print(s.bottom_joint_angle*180/pi)
