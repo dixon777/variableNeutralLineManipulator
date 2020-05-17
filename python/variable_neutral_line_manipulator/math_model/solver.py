@@ -160,6 +160,7 @@ class StateComputer():
         self.tensionInputs = []
         
     def eval(self, manipulator_model:ManipulatorMathModel, tensionInputs:List, solver_type:SolverType):            
+        self.states.clear()
         self.tensionInputs = [ti for ti in tensionInputs]
         distal_disk_state = None
         
