@@ -45,7 +45,7 @@ class DiskMathModel:
     """
         Geometry of disk 
     """
-    def __init__(self, outer_diameter, length, bottom_orientationBF=None, bottom_curve_radius=None, top_orientationBF=None, top_curve_radius=None):
+    def __init__(self, outer_diameter, length, bottom_orientationBF=0.0, bottom_curve_radius=None, top_orientationBF=None, top_curve_radius=None):
         self.outer_diameter = outer_diameter
         self.length = length
         self.bottom_orientationBF = bottom_orientationBF
@@ -65,17 +65,17 @@ class DiskMathModel:
         return f"<DiskMathModel> [outer diameter={self.outer_diameter}, length={self.length}, bottom orientation={self.bottom_orientationBF}, bottom curvature radius={self.bottom_curve_radius}, top orientation={self.top_orientationBF}, top curvature radius={self.top_curve_radius}]"
     
 class ManipulatorMathModel:
-    def __init__(self, segment_configs:List[SegmentMathConfig], base_disk_length:float, outer_diameter:float):
+    def __init__(self, segment_configs:List[SegmentMathConfig]=[], base_disk_length:float=0., outer_diameter:float=0.):
         super().__init__()
         self._segment_configs = segment_configs
         self._base_disk_length = base_disk_length
         self._outer_diameter = outer_diameter
-        self._disks = []
-        self._tendons = []
+        self._disks:List[DiskMathModel] = []
+        self._tendons:List[TendonMathModel] = []
         self._error_dict = ErrorDict()
         
         self.ensure_generation()
-        
+    
     @property
     def segment_configs(self):
         return self._segment_configs.copy()
@@ -83,6 +83,10 @@ class ManipulatorMathModel:
     @property
     def outer_diameter(self):
         return self._outer_diameter
+    
+    @property
+    def base_disk_length(self):
+        return self._base_disk_length
     
     @property
     def disks(self):
@@ -125,7 +129,7 @@ class ManipulatorMathModel:
         if not self.ensure_generation():
             return None, None
         for i, d in enumerate(self._disks[1:]):
-            yield d, self.get_knobbed_tendons_at_disk(len(self._disks)-i-1)
+            yield d, self.get_knobbed_tendons_at_disk(i+1)
     
     @property
     def disk_knobbed_tendons_reversed_iterator(self):
@@ -151,10 +155,12 @@ class ManipulatorMathModel:
         if base_disk_length is not None:
             self._base_disk_length = base_disk_length
         if segment_configs is not None:
-            self.segment_configs = segment_configs
+            self._segment_configs = segment_configs
                 
     def is_config_valid(self) -> bool:
         self._error_dict.clear()
+        if len(self._segment_configs) < 1:
+            return False
         for s in self._segment_configs:
             if s.curve_radius <= s.tendon_dist_from_axis:
                 self._error_dict.add(s, "Physical compatibility: Curvature radius must be larger than tendon distance from axis")

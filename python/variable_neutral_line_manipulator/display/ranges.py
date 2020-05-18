@@ -62,10 +62,10 @@ class Range3d(object):
     def z(self):
         return self.ranges[2]
         
-    def update(self, x=(), y=(), z=()):
-        self.updateX(x)
-        self.updateY(y)
-        self.updateZ(z)
+    def update(self, xs=(), ys=(), zs=()):
+        self.updateX(xs)
+        self.updateY(ys)
+        self.updateZ(zs)
         
     def updateX(self, vals):
         self.ranges[0].update(vals)

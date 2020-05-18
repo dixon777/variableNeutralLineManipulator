@@ -1,8 +1,9 @@
-from math import cos, sin, asin, atan, atan2, sqrt
+from math import cos, sin, asin, atan, atan2, sqrt, isnan
 
 from .models import *
 from .calculation import *
 from .vec import *
+from itertools import zip_longest
 
 class SolverType:
     DIRECT="direct"
@@ -53,6 +54,64 @@ class DiskModelState():
                                     t.model.orientationBF - proximal_disk.bottom_orientationBF, top_orientationRF
                                 )).flat_total
         return c
+    
+class ManipulatorState:
+    def __init__(self, manipulator_model:ManipulatorMathModel, 
+                 tension_inputs:List, 
+                 disk_states:List[DiskModelState]):
+        super().__init__()
+        self.model = manipulator_model
+        self.tension_inputs = tension_inputs
+        self.disk_states:List[DiskModelState] = disk_states
+        
+        self.TFs_DF = []
+        self._generate_TFs()
+        
+    def _generate_TFs(self):
+        tf = np.identity(4)
+        self.TFs_DF.append(tf)
+        for d, s in zip_longest(self.model.disks, self.disk_states, fillvalue=None):
+            if s is None:
+                break
+            tf = np.matmul(tf, np.matmul(m4MatrixTranslation((0.0,0, d.length)),
+                          m4MatrixRotation((0,0,1.0), d.top_orientationBF - d.bottom_orientationBF)))
+            tf = np.matmul(tf, evalTFProximalTopToDistalBottom(s.bottom_joint_angle, d.top_curve_radius))
+            
+            self.TFs_DF.append(tf)
+       
+        
+    def get_TF(self, disk_index, side, frame):
+        """
+            Get the transformation matrix from the top of the base frame
+            side = "b": bottom, "c": center, "t": top
+            frame= "r": reference frame, "d": disk frame, "t": top curvature frame
+        """
+        length = self.model.disks[disk_index].length
+        tf = self.TFs_DF[disk_index]
+        
+        if side == "b":
+            pass
+        elif side == "c":
+            tf = np.matmul(tf, m4MatrixTranslation((0,0, length/2 ))) 
+        elif side == "t":
+            tf = np.matmul(tf, m4MatrixTranslation((0,0, length ))) 
+        else:
+            raise AttributeError(f"'side' must not be {side}, but either 'b', 'c' or 't'") 
+        
+        if frame == "d":
+            pass
+        elif frame == "r":
+            orientation_diff = self.model.disks[disk_index].bottom_orientationBF
+            return np.matmul(m4MatrixRotation((0,0,1.0), orientation_diff),tf)
+        elif frame == "t":
+            orientation_diff = (self.model.disks[disk_index].bottom_orientationBF -
+                                self.model.disks[disk_index].top_orientationBF)
+            return np.matmul(m4MatrixRotation((0,0,1.0), orientation_diff),tf)
+        else:
+            raise AttributeError(f"'frame' must not be {frame}, but either 'd', 'r' or 't'") 
+        return tf
+           
+
 
 def eval_bottom_tendon_components(disk:DiskMathModel, tendonStates, bottom_joint_angle):
         c = np.zeros(6)
@@ -98,12 +157,6 @@ def equation_binary_search(func, lower, upper, init=None, threshold=0.0000000001
         y,res = func(x)
     return x, res
 
-def atanC(y, x):
-    tmp = atan(y/ x)
-    while tmp < -pi/2:
-        tmp += pi
-    return tmp
-
 def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], distal_disk_state:DiskModelState):
     tendon_states = [t for t in knob_tendon_states]
     if distal_disk_state:
@@ -131,10 +184,15 @@ def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], 
     # Validated by plotting both solutions to see which matches the original formula
     half_joint_angle = asin(R/sqrt(P**2 + Q**2)) - atan(Q/P)  # OR asin(R/sqrt(P**2 + Q**2)) - atan2(Q,P) 
     
+    # Singularity occurs when zero tension forces are applied to all tendons
+    # (Have not confirmed if there exists other cases causing singularity)
+    if isnan(half_joint_angle):
+        half_joint_angle = 0
+        
     # To check whether the result complies with the original formula
     # Not sure whether this condition will be true in any case, but at least it is
     # confirmed that the solution must be evaluated from either 2 of these formulae
-    if abs(P*sin(half_joint_angle) + Q*cos(half_joint_angle) + R) > 1**-10:
+    elif abs(P*sin(half_joint_angle) + Q*cos(half_joint_angle) + R) > 1**-10:
         print(f"ERROR: {P*sin(half_joint_angle) + Q*cos(half_joint_angle) + R}")
         half_joint_angle = asin(-R/sqrt(P**2 + Q**2)) - atan(Q/P)
     
@@ -154,29 +212,25 @@ def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], 
         
     return DiskModelState(disk, tendon_states, bottom_contact_reactionRF, bottom_joint_angle)
 
-class StateComputer():
-    def __init__(self):
-        self.states = []
-        self.tensionInputs = []
-        
-    def eval(self, manipulator_model:ManipulatorMathModel, tensionInputs:List, solver_type:SolverType):            
-        self.states.clear()
-        self.tensionInputs = [ti for ti in tensionInputs]
-        distal_disk_state = None
-        
-        for disk, knob_tension_models in manipulator_model.disk_knobbed_tendons_reversed_iterator:
-            knob_tendon_states = [] 
-            if knob_tension_models:
-                knob_tendon_states = [TendonModelState(t, tensionInputs[-1][i], True) for i, t in enumerate(knob_tension_models)] 
-                tensionInputs = tensionInputs[:-1]
-                
-            if solver_type == SolverType.DIRECT:
-                distal_disk_state = solve_direct(disk, knob_tendon_states, distal_disk_state)
-            elif solver_type == SolverType.BINARY or solver_type == SolverType.NEWTON:
-                distal_disk_state = solve_numerically(disk, knob_tendon_states, distal_disk_state, solver_type)
-                
-            if not distal_disk_state:
-                return False
-            self.states.insert(0, distal_disk_state)
+
+def eval_manipulator_state(manipulator_model:ManipulatorMathModel, tension_inputs:List, solver_type:SolverType):            
+    states = []
+    distal_disk_state = None
+    
+    for disk, knob_tension_models in manipulator_model.disk_knobbed_tendons_reversed_iterator:
+        knob_tendon_states = [] 
+        if knob_tension_models:
+            knob_tendon_states = [TendonModelState(t, tension_inputs[-1][i], True) for i, t in enumerate(knob_tension_models)] 
+            tension_inputs = tension_inputs[:-1]
             
-        return True
+        if solver_type == SolverType.DIRECT:
+            distal_disk_state = solve_direct(disk, knob_tendon_states, distal_disk_state)
+        elif solver_type == SolverType.BINARY or solver_type == SolverType.NEWTON:
+            distal_disk_state = solve_numerically(disk, knob_tendon_states, distal_disk_state, solver_type)
+            
+        if not distal_disk_state:
+            return None
+        states.insert(0, distal_disk_state)
+        
+    return ManipulatorState(manipulator_model, tension_inputs, states)
+    

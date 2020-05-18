@@ -2,6 +2,7 @@ from math import sin, cos, sqrt
 import numpy as np
 
 import pyrr.matrix33 as m3
+import pyrr.matrix44 as m4
 
 def m3MatrixRotation(axis, radian):
     return m3.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
@@ -96,5 +97,17 @@ def evalBottomContactDisp(length: float,
         -bottomcurve_radius*sin(halfJointAngle),
         -bottomcurve_radius*cos(halfJointAngle) + bottomcurve_radius - length/2
     ))
+
+def m4MatrixTranslation(vec):
+    return m4.create_from_translation(np.array(vec)*1.0).transpose() 
+
+def m4MatrixRotation(axis, radian):
+    return m4.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
+
+def evalTFProximalTopToDistalBottom(jointAngle: float, curveRadius: float):
+    rot = m4MatrixRotation((1.0,0,0), jointAngle/2)
+    return np.matmul(rot, 
+                     np.matmul(m4MatrixTranslation((0.0,0,2*curveRadius*(1-cos(jointAngle/2)))),
+                     rot)) # (Wrong) Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
     
     

@@ -1,58 +1,75 @@
-from uuid import uuid4 
+from uuid import uuid4
 from copy import deepcopy
 
-from ..math_model.entities import *
-from ..math_model.states import *
-from ..math_model.solvers import *
+from ..math_model import *
 
+from .protocol import *
 from ..common import Singleton, Logger
+from math import degrees
+
+
 class Repo(metaclass=Singleton):
     def __init__(self):
         super().__init__()
-        self._segmentModels = {} # Segment
-        self._ringModels = []
-        self._knobTensionLists = []
+        self._manipulator_config: ManipulatorConfigDisplayModel = ManipulatorConfigDisplayModel(
+            base_disk_length=5,
+            outer_diameter=5,
+        )
+        self._manipulator_model = ManipulatorMathModel()
+        self._tension_inputs = TensionInputListDisplayModel()
         
-    def addSegment(self):
+    def publish_init_segments_config(self, *args):
+        Logger.D(f"Publish init segments")
+        return self._manipulator_config
+
+    def add_segment(self, *args):
         Logger.D(f"Add segment")
         key = uuid4()
-        self._segmentModels[key] = SegmentModelWithValidator()
-        return (key, self._segmentModels[key])
-    
-    def removeSegment(self, key):
+        self._manipulator_config.segment_models[key] = SegmentConfigDisplayModel(
+            key=key,
+            n_joints=1,
+            is_2_DoF=False,
+            disk_length=5,
+            orientationBF=0,
+            curve_radius=3,
+            tendon_dist_from_axis=1,
+            end_disk_length=5,
+        )
+        return self._manipulator_config
+
+    def remove_segment(self, key):
         Logger.D(f"Remove segment: {key}")
-        del self._segmentModels[key]
-        return key
-        
-    def updateSegment(self, keySegmentPair):
-        Logger.D(f"Update segment: {keySegmentPair}")
-        k, v = keySegmentPair
-        self._segmentModels[k] = v
-        return self._segmentModels[k].validate()
-        
-    def generateSegments(self, _):
+        del self._manipulator_config.segment_models[key]
+        return self._manipulator_config
+
+    def update_segment_config(self, config):
+        Logger.D(f"Update config: {config}")
+        self._manipulator_config = config
+        # self._manipulator_config.errors.clear()
+        return self._manipulator_config
+
+    def generate_manipulator(self, *args):
         Logger.D("Generate segments")
-        for v in self._segmentModels.values():
-            if not v.isValid():
-                return  Exception("Some segments' param are not valid")
-            
-        self._knobTensionLists.clear()
-        self._ringModels = generateRingModels(list(self._segmentModels.values()))
-        knobTendonModelCompositeList = []
-        for r in self._ringModels:
-            if r.knobTendonModels:
-                knobTendonModelCompositeList.append((r, r.knobTendonModels))
-                self._knobTensionLists.append([0.0,]*len(r.knobTendonModels))
-        return knobTendonModelCompositeList
-    
-    def updateTensions(self, indicesValuePair):
-        indices, value = indicesValuePair
-        assert(isinstance(indices, tuple))
-        assert(isinstance(value, float))
+        self._manipulator_model.update(outer_diameter=self._manipulator_config.outer_diameter,
+                                       base_disk_length=self._manipulator_config.base_disk_length,
+                                       segment_configs=list(self._manipulator_config.segment_models.values()))
+        
+        if not self._manipulator_model.generate_models():
+            return ErrorDict(self._manipulator_model.error_dict)
+
+        self._tension_inputs.values = [
+            [TensionInputDisplayModel(t.orientationBF, 0.0) for t in kt] 
+            for _, kt in self._manipulator_model.disk_knobbed_tendons_iterator if kt
+        ]
+        return self._tension_inputs
+
+    def updateTensions(self, tension_inputs):
         Logger.D(f"Update tensions")
-        self._knobTensionLists[indices[0]][indices[1]] = value
-    
-    def computeTensions(self):
+        self._tension_inputs = tension_inputs
+        return self._tension_inputs
+
+    def computeTensions(self, *args):
         Logger.D("Compute tensions")
-        s = computeFromEndTensions(self._ringModels, self._knobTensionLists)
-        return s
+        manipulator_state = eval_manipulator_state(self._manipulator_model, self._tension_inputs.to_pure_values(), solver_type=SolverType.DIRECT)
+        return manipulator_state
+    

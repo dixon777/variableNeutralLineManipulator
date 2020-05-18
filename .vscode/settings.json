@@ -3,7 +3,7 @@
         "editor.insertSpaces": true,
         "editor.tabSize": 4  
     },
-    "python.pythonPath": "C:\\Users\\DH\\miniconda3\\python.exe",
+    "python.pythonPath": "C:\\Users\\DH\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
     "python.testing.pytestArgs": [
         "mathematical_model"
     ],
