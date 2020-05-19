@@ -59,7 +59,7 @@ class DiskMathModel:
         
     @staticmethod
     def End(outer_diameter, length, bottom_orientationBF, bottom_curve_radius):
-        return DiskMathModel(outer_diameter, length, bottom_orientationBF, bottom_curve_radius)
+        return DiskMathModel(outer_diameter, length, bottom_orientationBF, bottom_curve_radius, top_orientationBF=bottom_orientationBF)
     
     def __repr__(self):
         return f"<DiskMathModel> [outer diameter={self.outer_diameter}, length={self.length}, bottom orientation={self.bottom_orientationBF}, bottom curvature radius={self.bottom_curve_radius}, top orientation={self.top_orientationBF}, top curvature radius={self.top_curve_radius}]"

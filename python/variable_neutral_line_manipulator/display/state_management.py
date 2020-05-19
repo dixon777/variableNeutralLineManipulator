@@ -12,6 +12,15 @@ def format_manipulator(manipulator_state:ManipulatorState):
     s = "Bottom joint angles (deg):\n"
     for i, disk_state in enumerate(manipulator_state.disk_states):
         s += f" {i+1}. {degrees(disk_state.bottom_joint_angle)}\n"
+        
+        
+    s += "\nTransformation matrices (Disk frame):\n"
+    for i in range(len(manipulator_state.disk_states)+1):
+        s+=f"{i}.\nBottom:\n"
+        s+=str(manipulator_state.get_TF(i,"b","d"))
+        s+="\nTop:\n"
+        s+=str(manipulator_state.get_TF(i,"t","d"))
+        s+="\n"
     return s
 
 class StateManagement(metaclass=Singleton):
