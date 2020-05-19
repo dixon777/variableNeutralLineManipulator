@@ -7,26 +7,26 @@ import pyrr.matrix44 as m4
 def m3MatrixRotation(axis, radian):
     return m3.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
 
-def distalToProximalFrame(distalDiskBottomVecRF: np.ndarray,
+def distalToProximalFrame(distalDiskBottomVecDF: np.ndarray,
                        topJointAngle: float,
-                       topOrientationRF: float) -> np.ndarray:
+                       topOrientationDF: float) -> np.ndarray:
     """
         Change distal disk's bottom reaction in distal disk's frame to disk's top reaction in disk's frame
     """
-    return np.dot(m3MatrixRotation((0, 0, 1.0), topOrientationRF), 
-                  np.dot(m3MatrixRotation((1.0, 0, 0), topJointAngle), -distalDiskBottomVecRF))
+    return np.dot(m3MatrixRotation((0, 0, 1.0), topOrientationDF), 
+                  np.dot(m3MatrixRotation((1.0, 0, 0), topJointAngle), -distalDiskBottomVecDF))
 
 
 def evalTopGuideForce(tensionInDisk: float,
                     topJointAngle: float,
-                    topOrientationRF: float) -> np.ndarray:
+                    topOrientationDF: float) -> np.ndarray:
     """
         Evaluate force component at any top end of tendon guide
     """
     halfJointAngle = topJointAngle/2
     return np.array((
-        tensionInDisk*sin(halfJointAngle)*sin(topOrientationRF),
-        -tensionInDisk*sin(halfJointAngle)*cos(topOrientationRF),
+        tensionInDisk*sin(halfJointAngle)*sin(topOrientationDF),
+        -tensionInDisk*sin(halfJointAngle)*cos(topOrientationDF),
         tensionInDisk*cos(halfJointAngle)
     ))
     
@@ -45,43 +45,43 @@ def evalBottomGuideForce(tensionInDisk: float,
 def evalTopGuideEndDisp(length: float,
                         topcurve_radius: float,
                         tendonDistFromAxis: float,
-                        tendonOrientationRF: float,
-                        topOrientationRF: float) -> np.ndarray:
+                        tendonOrientationDF: float,
+                        topOrientationDF: float) -> np.ndarray:
     """
         Evaluate displacement from disk center to any top end of tendon guide
     """
-    horizontalDispAlongCurve = tendonDistFromAxis*sin(tendonOrientationRF - topOrientationRF)
+    horizontalDispAlongCurve = tendonDistFromAxis*sin(tendonOrientationDF - topOrientationDF)
     return np.array((
-        tendonDistFromAxis*cos(tendonOrientationRF),
-        tendonDistFromAxis*sin(tendonOrientationRF),
+        tendonDistFromAxis*cos(tendonOrientationDF),
+        tendonDistFromAxis*sin(tendonOrientationDF),
         sqrt(topcurve_radius**2 - horizontalDispAlongCurve**2) + length/2 - topcurve_radius
     ))
     
 def evalBottomGuideEndDisp(length: float,
                             bottomcurve_radius: float,
                             tendonDistFromAxis: float,
-                            tendonOrientationRF: float)-> np.ndarray:
+                            tendonOrientationDF: float)-> np.ndarray:
     """
         Evaluate displacement from disk center to any bottom end of tendon guide
     """
-    horizontalDispAlongCurve = tendonDistFromAxis*sin(tendonOrientationRF)
+    horizontalDispAlongCurve = tendonDistFromAxis*sin(tendonOrientationDF)
     return np.array((
-        tendonDistFromAxis*cos(tendonOrientationRF),
-        tendonDistFromAxis*sin(tendonOrientationRF),
+        tendonDistFromAxis*cos(tendonOrientationDF),
+        tendonDistFromAxis*sin(tendonOrientationDF),
         -sqrt(bottomcurve_radius**2 - horizontalDispAlongCurve**2) + bottomcurve_radius - length/2
     ))
     
 def evalTopContactDisp(length: float,
                     topcurve_radius: float,
                     topJointAngle: float, 
-                    topOrientationRF: float):
+                    topOrientationDF: float):
     """
         Evaluate displacement from disk center to center of top contacting line
     """
     halfJointAngle = topJointAngle/2
     return np.array((
-        topcurve_radius*sin(halfJointAngle)*sin(topOrientationRF),
-        -topcurve_radius*sin(halfJointAngle)*cos(topOrientationRF),
+        topcurve_radius*sin(halfJointAngle)*sin(topOrientationDF),
+        -topcurve_radius*sin(halfJointAngle)*cos(topOrientationDF),
         topcurve_radius*cos(halfJointAngle) + length/2 - topcurve_radius
     ))
     

@@ -1,5 +1,7 @@
 from math import degrees
 
+import numpy as np
+
 import rx
 from rx import operators as ops, Observable
 from rx.subject import Subject
@@ -8,18 +10,20 @@ from ..common import Singleton
 from .repo import Repo
 from ..math_model import *
 
+def round_val(val):
+    return np.round(val, 5)
+
 def format_manipulator(manipulator_state:ManipulatorState):
     s = "Bottom joint angles (deg):\n"
     for i, disk_state in enumerate(manipulator_state.disk_states):
-        s += f" {i+1}. {degrees(disk_state.bottom_joint_angle)}\n"
-        
+        s += f" {i+1}: {round_val(degrees(disk_state.bottom_joint_angle))}\n"
         
     s += "\nTransformation matrices (Disk frame):\n"
     for i in range(len(manipulator_state.disk_states)+1):
-        s+=f"{i}.\nBottom:\n"
-        s+=str(manipulator_state.get_TF(i,"b","d"))
+        s+=f"{i}:\nBottom:\n"
+        s+=str(round_val(manipulator_state.get_TF(i,"b","d")))
         s+="\nTop:\n"
-        s+=str(manipulator_state.get_TF(i,"t","d"))
+        s+=str(round_val(manipulator_state.get_TF(i,"t","d")))
         s+="\n"
     return s
 

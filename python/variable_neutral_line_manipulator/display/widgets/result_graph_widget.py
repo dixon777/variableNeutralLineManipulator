@@ -51,7 +51,7 @@ class ResultGraphWidget(QWidget):
                 plot_TFs(self.ax, manipulator_state, max_ranges)
                 # cylindricalRadius = max([tms.tendonModel.horizontalDistFromAxis for tms in s.tendonModelStates])
                 # rg = RingPlotGeometry.fromRing(s.ring, cylindricalRadius)
-                # plotRingRF(self.ax, rg, self.result.getTF(i), range=equal_scale_range3d)
+                # plotRingDF(self.ax, rg, self.result.getTF(i), range=equal_scale_range3d)
             enforceRange(self.ax, max_ranges)
             
         self.ax.set_xlabel('X axis')

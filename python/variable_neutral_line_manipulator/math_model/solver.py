@@ -26,11 +26,11 @@ class DiskModelState():
     def __init__(self,
                  disk: DiskMathModel,
                  tendon_states: List[TendonModelState],
-                 bottom_contact_reactionRF: np.array,
+                 bottom_contact_reactionDF: np.array,
                  bottom_joint_angle: float):
         self.disk = disk
         self.tendon_states:List[TendonModelState] = tendon_states
-        self.bottom_contact_reactionRF = bottom_contact_reactionRF
+        self.bottom_contact_reactionDF = bottom_contact_reactionDF
         self.bottom_joint_angle = bottom_joint_angle
         
     @property
@@ -39,19 +39,19 @@ class DiskModelState():
         
         
     def eval_proximal_disk_top_components(self, proximal_disk:DiskMathModel):
-        top_orientationRF = self.disk.bottom_orientationBF - proximal_disk.bottom_orientationBF
+        top_orientationDF = self.disk.bottom_orientationBF - proximal_disk.bottom_orientationBF
         
         # contact
-        c = np.concatenate((distalToProximalFrame(self.bottom_contact_reactionRF.force, self.bottom_joint_angle, top_orientationRF),
-        distalToProximalFrame(self.bottom_contact_reactionRF.total_moment, self.bottom_joint_angle, top_orientationRF)))
+        c = np.concatenate((distalToProximalFrame(self.bottom_contact_reactionDF.force, self.bottom_joint_angle, top_orientationDF),
+        distalToProximalFrame(self.bottom_contact_reactionDF.total_moment, self.bottom_joint_angle, top_orientationDF)))
         
         
         # tendon
         for t in self.tendon_states:
-            c += ForceMomentVec(force=evalTopGuideForce(t.tension_in_disk, self.bottom_joint_angle, top_orientationRF),
+            c += ForceMomentVec(force=evalTopGuideForce(t.tension_in_disk, self.bottom_joint_angle, top_orientationDF),
                                 disp=evalTopGuideEndDisp(
                                     proximal_disk.length, self.disk.bottom_curve_radius, t.model.dist_from_axis, 
-                                    t.model.orientationBF - proximal_disk.bottom_orientationBF, top_orientationRF
+                                    t.model.orientationBF - proximal_disk.bottom_orientationBF, top_orientationDF
                                 )).flat_total
         return c
     
@@ -200,17 +200,17 @@ def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], 
     
     # Store the state related data for next proximal disk bottom joint angle evaluation
     # Force displacement has been evaluated
-    bottom_guide_vecRF = 0
+    bottom_guide_vecDF = 0
     for ts,d in zip(tendon_states, bottom_guide_disps):
-        bottom_guide_vecRF += ForceMomentVec(force=evalBottomGuideForce(ts.tension_in_disk, bottom_joint_angle), disp=d).flat_total
-    # bottom_guide_vecRF = eval_bottom_tendon_components(disk, tendon_states, bottom_joint_angle)
+        bottom_guide_vecDF += ForceMomentVec(force=evalBottomGuideForce(ts.tension_in_disk, bottom_joint_angle), disp=d).flat_total
+    # bottom_guide_vecDF = eval_bottom_tendon_components(disk, tendon_states, bottom_joint_angle)
     
-    bottom_contact_reactionRF = -top_vec - bottom_guide_vecRF
-    bottom_contact_reactionRF = ForceMomentVec.from_force_disp_total_moment(bottom_contact_reactionRF[:3], 
+    bottom_contact_reactionDF = -top_vec - bottom_guide_vecDF
+    bottom_contact_reactionDF = ForceMomentVec.from_force_disp_total_moment(bottom_contact_reactionDF[:3], 
                                                                             evalBottomContactDisp(disk.length, disk.bottom_curve_radius, bottom_joint_angle),
-                                                                            bottom_contact_reactionRF[3:])
+                                                                            bottom_contact_reactionDF[3:])
         
-    return DiskModelState(disk, tendon_states, bottom_contact_reactionRF, bottom_joint_angle)
+    return DiskModelState(disk, tendon_states, bottom_contact_reactionDF, bottom_joint_angle)
 
 
 def eval_manipulator_state(manipulator_model:ManipulatorMathModel, tension_inputs:List, solver_type:SolverType):            

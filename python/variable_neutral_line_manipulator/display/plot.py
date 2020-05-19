@@ -12,12 +12,12 @@ class RingPlotGeometry():
                  cylindricalRadius,
                  orientationBF,
                  bottomCurveRadius=None,
-                 topOrientationRF=None,
+                 topOrientationDF=None,
                  topCurveRadius=None):
         self.length = length
         self.cylindricalRadius = cylindricalRadius
         self.orientationBF = orientationBF
-        self.topOrientationRF = topOrientationRF
+        self.topOrientationDF = topOrientationDF
         self.bottomCurveRadius = bottomCurveRadius
         self.topCurveRadius = topCurveRadius
 
@@ -27,12 +27,12 @@ class RingPlotGeometry():
             length=ring.length,
             cylindricalRadius=cylindricalRadius,
             orientationBF=ring.orientationBF,
-            topOrientationRF=ring.topOrientationRF,
+            topOrientationDF=ring.topOrientationDF,
             bottomCurveRadius=ring.bottomCurveRadius,
             topCurveRadius=ring.topCurveRadius,
         )
 
-def plotRingRF(ax, ring: RingPlotGeometry, transform=np.identity(4), radialDivision=25, angleDivision=25, range: Range3d = None):
+def plotRingDF(ax, ring: RingPlotGeometry, transform=np.identity(4), radialDivision=25, angleDivision=25, range: Range3d = None):
     """
         Without defining arg "transform", a ring object is plotted with its base curvature rotates about the axis parallel to the x-axis
     """
@@ -44,18 +44,18 @@ def plotRingRF(ax, ring: RingPlotGeometry, transform=np.identity(4), radialDivis
     x = np.multiply(rM, np.cos(thetaM))
     y = np.multiply(rM, np.sin(thetaM))
 
-    # Define bottom surf
+    # Define bottom suDF
     if ring.bottomCurveRadius is not None:
         zBottom = -np.sqrt(ring.bottomCurveRadius ** 2 - np.multiply(rM,
                                                                      np.sin(thetaM)) ** 2) + ring.bottomCurveRadius - ring.length/2
     else:
         zBottom = -ring.length/2*np.ones(np.shape(x))
 
-    # Define top surf
+    # Define top suDF
     if ring.topCurveRadius is not None:
-        topOrientationRF = ring.topOrientationRF if ring.topOrientationRF is not None else 0.0
+        topOrientationDF = ring.topOrientationDF if ring.topOrientationDF is not None else 0.0
         zTop = np.sqrt(ring.bottomCurveRadius ** 2 - np.multiply(rM, np.sin(
-            thetaM-topOrientationRF)) ** 2) - ring.bottomCurveRadius + ring.length/2
+            thetaM-topOrientationDF)) ** 2) - ring.bottomCurveRadius + ring.length/2
     else:
         zTop = ring.length/2*np.ones(np.shape(x))
 
@@ -71,7 +71,7 @@ def plotRingRF(ax, ring: RingPlotGeometry, transform=np.identity(4), radialDivis
     yTop = np.reshape(b[1, :], rM.shape)
     zTop = np.reshape(b[2, :], rM.shape)
 
-    # Define body surf
+    # Define body suDF
     xBody = np.array((xTop[:, -1], xBottom[:, -1]))
     yBody = np.array((yTop[:, -1], yBottom[:, -1]))
     zBody = np.array((zTop[:, -1], zBottom[:, -1]))
@@ -89,9 +89,9 @@ def plotRingRF(ax, ring: RingPlotGeometry, transform=np.identity(4), radialDivis
         }
         range.update(**coor_args)
 
-    ax.plot_surface(xBody, yBody, zBody)
-    ax.plot_surface(xBottom, yBottom, zBottom)
-    ax.plot_surface(xTop, yTop, zTop)
+    ax.plot_suDFace(xBody, yBody, zBody)
+    ax.plot_suDFace(xBottom, yBottom, zBottom)
+    ax.plot_suDFace(xTop, yTop, zTop)
 
 
 def plot_TFs(ax, manipulator_state: ManipulatorState, max_ranges:Range3d):
