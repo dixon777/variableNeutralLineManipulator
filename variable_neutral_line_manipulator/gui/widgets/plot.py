@@ -1,4 +1,4 @@
-import math
+from math import pi
 import numpy as np
 
 from ..gui_common import *
@@ -35,7 +35,7 @@ def plotRingDF(ax, ring: RingPlotGeometry, transform=np.identity(4), radialDivis
         Without defining arg "transform", a ring object is plotted with its base curvature rotates about the axis parallel to the x-axis
     """
     r = np.linspace(0, ring.cylindricalRadius, radialDivision)
-    theta = np.linspace(0, math.pi*2, angleDivision)
+    theta = np.linspace(0, pi*2, angleDivision)
 
     rM, thetaM = np.meshgrid(r, theta)
 
@@ -92,10 +92,10 @@ def plotRingDF(ax, ring: RingPlotGeometry, transform=np.identity(4), radialDivis
     ax.plot_suDFace(xTop, yTop, zTop)
 
 
-def plot_TFs(ax, manipulator_state: ManipulatorState, max_ranges:Range3d):
+def plot_TFs(ax, manipulator_state: ManipulatorState, max_ranges:Range3d, ref_frame_sys="bd"):
     for i in range(len(manipulator_state.model.disks)):
-        tf_lower = manipulator_state.get_TF(i, "b", "d")
-        tf_upper = manipulator_state.get_TF(i, "t", "d")
+        tf_lower = manipulator_state.get_TF(i, "b", "bd")
+        tf_upper = manipulator_state.get_TF(i, "t", "bd")
         plot_args = {
             "xs": (tf_lower[0, 3], tf_upper[0, 3]),
             "ys": (tf_lower[1, 3], tf_upper[1, 3]),
@@ -103,3 +103,21 @@ def plot_TFs(ax, manipulator_state: ManipulatorState, max_ranges:Range3d):
         }
         ax.plot(**plot_args)
         max_ranges.update(**plot_args)
+    
+    if not ref_frame_sys:
+        return
+    
+    for i in range(len(manipulator_state.model.disks)):
+        tf = manipulator_state.get_TF(i, "b", ref_frame_sys)
+        _plot_frame(ax, tf, manipulator_state.model.disks[i].length*0.2)
+
+
+def _plot_frame(ax, tf, length):
+    pos = tf[0:3,3]
+    rot = tf[0:3,0:3]
+    x_dir = np.dot(rot, [1,0,0])
+    y_dir = np.dot(rot, [0,1,0])
+    z_dir = np.dot(rot, [0,0,1])
+    
+    for d in (x_dir, y_dir, z_dir):
+        ax.quiver(pos[0], pos[1],pos[2], d[0], d[1], d[2],arrow_length_ratio=0.5, length=length, normalize=True)

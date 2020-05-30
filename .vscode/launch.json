@@ -8,7 +8,7 @@
             "name": "GUI",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/python/gui_main.py",
+            "program": "${workspaceFolder}/gui_main.py",
             "console": "integratedTerminal"
         },
         {

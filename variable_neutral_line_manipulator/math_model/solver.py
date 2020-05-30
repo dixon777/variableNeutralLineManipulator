@@ -70,6 +70,8 @@ class ManipulatorState:
     def _generate_TFs(self):
         tf = np.identity(4)
         self.TFs_DF.append(tf)
+        
+        # len(self.model.disks) = len(self.disk_states) + 1
         for d, s in zip_longest(self.model.disks, self.disk_states, fillvalue=None):
             if s is None:
                 break
@@ -80,11 +82,11 @@ class ManipulatorState:
             self.TFs_DF.append(tf)
        
         
-    def get_TF(self, disk_index, side, frame):
+    def get_TF(self, disk_index, side, frame_sys):
         """
             Get the transformation matrix from the top of the base frame
             side = "b": bottom, "c": center, "t": top
-            frame= "r": reference frame, "d": disk frame, "t": top curvature frame
+            frame_sys = "bd": base-disk-orientation, "bc": bottom-curvature-orientation, "tc": top-curvature-orientation
         """
         length = self.model.disks[disk_index].length
         tf = self.TFs_DF[disk_index]
@@ -98,17 +100,17 @@ class ManipulatorState:
         else:
             raise AttributeError(f"'side' must not be {side}, but either 'b', 'c' or 't'") 
         
-        if frame == "d":
+        if frame_sys == "bc":
             pass
-        elif frame == "r":
-            orientation_diff = self.model.disks[disk_index].bottom_orientationBF
-            return np.matmul(m4MatrixRotation((0,0,1.0), orientation_diff),tf)
-        elif frame == "t":
-            orientation_diff = (self.model.disks[disk_index].bottom_orientationBF -
-                                self.model.disks[disk_index].top_orientationBF)
-            return np.matmul(m4MatrixRotation((0,0,1.0), orientation_diff),tf)
+        elif frame_sys == "bd":
+            orientation_change = -self.model.disks[disk_index].bottom_orientationBF
+            return np.matmul(tf,m4MatrixRotation((0,0,1.0), orientation_change))
+        elif frame_sys == "tc":
+            orientation_change = (self.model.disks[disk_index].top_orientationBF 
+                                  - self.model.disks[disk_index].bottom_orientationBF)
+            return np.matmul(tf, m4MatrixRotation((0,0,1.0), orientation_change))
         else:
-            raise AttributeError(f"'frame' must not be {frame}, but either 'd', 'r' or 't'") 
+            raise AttributeError(f"'frame' must not be {frame_sys}, but either 'bd', 'bc' or 'tc'") 
         return tf
            
 

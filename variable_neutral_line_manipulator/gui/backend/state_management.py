@@ -17,12 +17,20 @@ def format_manipulator(manipulator_state:ManipulatorState):
     for i, disk_state in enumerate(manipulator_state.disk_states):
         s += f" {i+1}: {round_val(degrees(disk_state.bottom_joint_angle))}\n"
         
-    s += "\nTransformation matrices (Disk frame):\n"
+    s += "\nTransformation matrices (Base-disk-orientation):\n"
     for i in range(len(manipulator_state.disk_states)+1):
         s+=f"{i}:\nBottom:\n"
-        s+=str(round_val(manipulator_state.get_TF(i,"b","d")))
+        s+=str(round_val(manipulator_state.get_TF(i,"b","bd")))
         s+="\nTop:\n"
-        s+=str(round_val(manipulator_state.get_TF(i,"t","d")))
+        s+=str(round_val(manipulator_state.get_TF(i,"t","bd")))
+        s+="\n"
+        
+    s += "\nTransformation matrices (Bottom-curvature-orientation):\n"
+    for i in range(len(manipulator_state.disk_states)+1):
+        s+=f"{i}:\nBottom:\n"
+        s+=str(round_val(manipulator_state.get_TF(i,"b","bc")))
+        s+="\nTop:\n"
+        s+=str(round_val(manipulator_state.get_TF(i,"t","bc")))
         s+="\n"
     return s
 
@@ -80,7 +88,6 @@ class StateManagement(metaclass=Singleton):
         )
         
         self._graph_stream = compute_state_result.pipe(
-            #TODO
         )
         
     def request_init_segment_configs(self):

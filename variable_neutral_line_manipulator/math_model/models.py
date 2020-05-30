@@ -1,5 +1,5 @@
 from typing import List
-from math import pi
+from math import pi, sqrt
 import numpy as np
 
 from ..common import ErrorDict
