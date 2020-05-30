@@ -13,7 +13,6 @@ This project is part of the research, initiated from Dec 2019, subsidised by the
 
 ```bash
 git clone https://github.com/dixon777/variableNeutralLineManipulator.git
-cd python
 python -m pip install -r /variable_neutral_line_manipulator/requirements.txt
 ```
 
@@ -21,6 +20,5 @@ python -m pip install -r /variable_neutral_line_manipulator/requirements.txt
 
 ## 1. User Interface
 ```bash
-cd <REPO_ROOT_PATH>/python # <REPO_ROOT_PATH> is the root directory of the repo
-python gui_main.py
+python <REPO_ROOT_PATH>/gui_main.py # <REPO_ROOT_PATH> is the root directory of the repo
 ```
