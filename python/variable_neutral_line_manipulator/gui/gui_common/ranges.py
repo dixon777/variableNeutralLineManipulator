@@ -1,6 +1,5 @@
 import numpy as np
-
-        
+   
 class Range1d(object):
     def __init__(self):
         self.min = None

@@ -1,5 +1,6 @@
 import math
-from .gui_common import *
+from ..gui_common import *
+from ..backend import *
 
 class TensionInputWidget(QWidget):
     def __init__(self, index, knobTendons, userUpdateCB, parent=None):

@@ -1,6 +1,8 @@
 import math 
 
-from .gui_common import *
+from ..gui_common import *
+from ..backend import *
+
 from uuid import UUID
 
 class SegmentConfigWidget(QWidget):

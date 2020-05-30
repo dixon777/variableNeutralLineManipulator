@@ -179,22 +179,26 @@ def solve_direct(disk:DiskMathModel, knob_tendon_states:List[TendonModelState], 
     Q = -disk.bottom_curve_radius*top_vec[1] - sum_bottom_guide_x_moment_cos
     R = top_vec[1]*(disk.bottom_curve_radius - disk.length/2) + top_vec[3]
     
-    # P*sin(theta) + Q*cos(theta) = +-sqrt(P**2+Q**2)*sin(theta+atan(Q/P))
-    # There are 2 possible formulae, mathematically speaking, but only 1 of them complies with the constraint
-    # Validated by plotting both solutions to see which matches the original formula
-    half_joint_angle = asin(R/sqrt(P**2 + Q**2)) - atan(Q/P)  # OR asin(R/sqrt(P**2 + Q**2)) - atan2(Q,P) 
-    
-    # Singularity occurs when zero tension forces are applied to all tendons
-    # (Have not confirmed if there exists other cases causing singularity)
-    if isnan(half_joint_angle):
+    # Avoid singularity (division by 0) right away
+    if P == 0.0:
         half_joint_angle = 0
+    else:
+        # P*sin(theta) + Q*cos(theta) = +-sqrt(P**2+Q**2)*sin(theta+atan(Q/P))
+        # There are 2 possible formulae, mathematically speaking, but only 1 of them complies with the constraint
+        # Validated by plotting both solutions to see which matches the original formula
+        half_joint_angle = asin(R/sqrt(P**2 + Q**2)) - atan(Q/P)  # OR asin(R/sqrt(P**2 + Q**2)) - atan2(Q,P) 
         
-    # To check whether the result complies with the original formula
-    # Not sure whether this condition will be true in any case, but at least it is
-    # confirmed that the solution must be evaluated from either 2 of these formulae
-    elif abs(P*sin(half_joint_angle) + Q*cos(half_joint_angle) + R) > 1**-10:
-        print(f"ERROR: {P*sin(half_joint_angle) + Q*cos(half_joint_angle) + R}")
-        half_joint_angle = asin(-R/sqrt(P**2 + Q**2)) - atan(Q/P)
+        # Singularity occurs when zero tension forces are applied to all tendons
+        # (Have not confirmed if there exists other cases causing singularity)
+        if isnan(half_joint_angle):
+            half_joint_angle = 0
+        
+        # To check whether the result complies with the original formula
+        # Not sure whether this condition will be true in any case, but at least it is
+        # confirmed that the solution must be evaluated from either 2 of these formulae
+        elif abs(P*sin(half_joint_angle) + Q*cos(half_joint_angle) + R) > 1**-10:
+            print(f"ERROR: {P*sin(half_joint_angle) + Q*cos(half_joint_angle) + R}")
+            half_joint_angle = asin(-R/sqrt(P**2 + Q**2)) - atan(Q/P)
     
     bottom_joint_angle = 2*half_joint_angle
     

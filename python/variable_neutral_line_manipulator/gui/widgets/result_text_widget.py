@@ -1,5 +1,7 @@
 import math
-from .gui_common import *
+
+from ..gui_common import *
+from ..backend import *
 
 
 class ResultTextWidget(QWidget):

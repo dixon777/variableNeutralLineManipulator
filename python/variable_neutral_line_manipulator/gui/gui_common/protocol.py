@@ -1,4 +1,4 @@
-from ..math_model import SegmentMathConfig
+from .common import SegmentMathConfig
 
 """
     Provides mutually agreed data structures between UI and repository

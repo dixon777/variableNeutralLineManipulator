@@ -1,19 +1,15 @@
 import math
 import numpy as np
 
-from .gui_common import *
-
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
 from matplotlib.figure import Figure
-
 from mpl_toolkits.mplot3d import Axes3D
 
-from ..ranges import Range3d, enforceRange
-from ..plot import *
-from ...math_model import ManipulatorState
+from ..gui_common import *
+from ..backend import *
 
+from .plot import plot_TFs
 
 class ResultGraphWidget(QWidget):
     """

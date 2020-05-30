@@ -1,1 +1,1 @@
-from .display import App
+from .gui import App

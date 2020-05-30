@@ -1,11 +1,13 @@
 from collections.abc import Iterable
-from ...common import *
-from ..protocol import *
-from ..state_management import *
 
 from PySide2.QtCore import QPoint, QSize, QTimer, Qt
 from PySide2.QtGui import QColor, QDoubleValidator, QIcon, QIntValidator
 from PySide2.QtWidgets import QApplication, QCheckBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLayout, QLineEdit, QOpenGLWidget, QPushButton, QScrollArea, QSizePolicy, QSlider, QTextEdit, QVBoxLayout, QWidget
+
+from .common import *
+
+from .protocol import *
+from .ranges import *
 
 def removeFromLayout(layout, i):
     """
