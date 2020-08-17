@@ -22,4 +22,5 @@ tmp
 
 .vscode/
 .dist/
-
+build/
+dist/
