@@ -9,9 +9,17 @@
 *.FCStd1
 *.obj
 *.stl
+*.step
+*.stp
+*.x_t
 .pytest_cache
 __pycache__/
 *.py[cod]
 python/venv/
 
 tmp
+.temp*
+
+.vscode/
+.dist/
+

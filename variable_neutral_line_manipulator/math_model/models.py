@@ -6,18 +6,9 @@ from ..common import ErrorDict
 from .calculation import *
 from .vec import *
 
-
-
-# class TransitionMathConfig:
-#     """
-#         Geometry definition of transition (before initial segment, after last segment and between consecutive segments)
-#     """
-#     def __init__(self, disk_length):
-#         self.disk_length = disk_length
-
 class SegmentMathConfig:
     """
-        Geometry definition of segment
+        Math definition of segment
     """
     def __init__(self, is_2_DoF, n_joints, disk_length, orientationBF, curve_radius, tendon_dist_from_axis, end_disk_length):
         self.n_joints = n_joints
@@ -27,7 +18,6 @@ class SegmentMathConfig:
         self.curve_radius = curve_radius
         self.tendon_dist_from_axis = tendon_dist_from_axis
         self.end_disk_length = end_disk_length
-    
             
 class TendonMathModel:
     """

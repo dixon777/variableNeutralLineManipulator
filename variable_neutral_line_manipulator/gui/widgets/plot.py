@@ -108,7 +108,7 @@ def plot_TFs(ax, manipulator_state: ManipulatorState, max_ranges:Range3d, ref_fr
         return
     
     for i in range(len(manipulator_state.model.disks)):
-        tf = manipulator_state.get_TF(i, "b", ref_frame_sys)
+        tf = manipulator_state.get_TF(i, "c", ref_frame_sys)
         _plot_frame(ax, tf, manipulator_state.model.disks[i].length*0.2)
 
 
