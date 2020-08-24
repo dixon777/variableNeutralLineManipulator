@@ -1,7 +1,7 @@
 from math import sqrt, cos, sin
 import cadquery as cq
 from ..common.entities import *
-
+    
 
 def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):
     outer_diameter = disk_geometry.outer_diameter

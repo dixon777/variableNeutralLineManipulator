@@ -3,8 +3,9 @@ from variable_neutral_line_manipulator.math_model.entities import *
 from variable_neutral_line_manipulator.math_model.solver import *
 from variable_neutral_line_manipulator.simulation.adam_command import *
 import time
-import numpy 
+import numpy
 import math
+
 
 def test_geometry():
     import pprint
@@ -21,10 +22,11 @@ def test_geometry():
             centre_hole_diameter=1,
             tendon_guide_diameter=0.5
         ), ]
-    disk_geometry_indices = generate_disk_geometry_indices(segments, 5.0)
+    disk_geometry_indices = generate_indices_disk_model_pairs(segments, 5.0)
     cad_indices = generate_CAD_indices(disk_geometry_indices)
-    export_CAD_indices_for_simulation(disk_geometry_indices, cad_indices, "./.temp")
-    
+    export_CAD_indices_for_simulation(
+        disk_geometry_indices, cad_indices, "./.temp")
+
 
 def test_math_model():
     segments = [
@@ -38,10 +40,29 @@ def test_math_model():
             end_disk_length=5,
         )
     ]
-    
+
     manipulator_model = ManipulatorMathModel(segments)
-    disk_model_states = IterativeSolver().solve(manipulator_model, [[4,3,2,1]])
+    disk_model_states = IterativeSolver().solve(
+        manipulator_model, [[4, 3, 2, 1]])
     print(disk_model_states)
-    
+
+
+def test_simulation_socket():
+    s = AdamViewSocket()
+    print(s.get_database_names())
+
+
+def test_manipulator_creator():
+    segments = [
+            Segment2DoFGeometryModel(
+                True, 2,
+                5, 0, 3, 2, None, 5, 1, 0.1
+            )
+        ]
+    pairs = generate_indices_disk_model_pairs(segments)
+    s = ManipulatorCreator()
+    s.generate_disks(pairs)
+
+
 if __name__ == "__main__":
-    test_math_model()
+    test_manipulator_creator()

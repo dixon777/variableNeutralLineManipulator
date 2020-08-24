@@ -1,34 +1,35 @@
 import os
 import copy
 import json
+from math import pi
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import List, Dict, Iterable, Tuple
 
 
-def jsonify(item):
-    if isinstance(item, (int, float, str, bool)):
-        return item
-    
-    if isinstance(item, (list,np.ndarray)):
-        return [jsonify(i) for i in item]
-    
-    if isinstance(item, dict):
-        return {(str(i), jsonify(j)) for i, j in item.items()}
-    
-    if hasattr(item, '__iter__'):
-        try:
-            first_subitem = next(item.__iter__())
-            if len(first_subitem) == 2:
-                d = {}
-                for i, j in dict(item).items():
-                    d[str(i)] = jsonify(j)
-                return d
-            else:
-                return [jsonify(i) for i in item]
-        except StopIteration:
-            return {}
-    return item
+# def jsonify(item):
+#     if isinstance(item, (int, float, str, bool)):
+#         return item
+
+#     if isinstance(item, (list,np.ndarray)):
+#         return [jsonify(i) for i in item]
+
+#     if isinstance(item, dict):
+#         return {(str(i), jsonify(j)) for i, j in item.items()}
+
+#     if hasattr(item, '__iter__'):
+#         try:
+#             first_subitem = next(item.__iter__())
+#             if len(first_subitem) == 2:
+#                 d = {}
+#                 for i, j in dict(item).items():
+#                     d[str(i)] = jsonify(j)
+#                 return d
+#             else:
+#                 return [jsonify(i) for i in item]
+#         except StopIteration:
+#             return {}
+#     return item
 
 
 class BaseDataClass(ABC):
@@ -42,10 +43,29 @@ class BaseDataClass(ABC):
     def __iter__(self):
         yield "__class_name__", self.__class__.__name__
         for k in self.attr_keys:
-            yield k, jsonify(self.__dict__[k])
+            j = self.__dict__[k]
+            yield k, j
 
     def __repr__(self):
         return str(dict(self))
+
+    class Encoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, BaseDataClass):
+                return dict(obj)
+            return super().default(obj)
+
+    class Decoder(json.JSONDecoder):
+        def __init__(self, *args, **kwargs):
+            json.JSONDecoder.__init__(
+                self, object_hook=self.object_hook, *args, **kwargs)
+
+        def object_hook(self, obj):
+            if '__class_name__' not in obj:
+                return obj
+            TYPE = obj['__class_name__']
+            del obj['__class_name__']
+            return eval(TYPE)(**obj)
 
 
 class DiskGeometryBase(BaseDataClass):
@@ -162,7 +182,7 @@ class DiskGeometryModel(BaseDataClass):
         return super().attr_keys + ["bottom_orientationMF", "geometry"]
 
 
-class Segment2DoFGeometryModel():
+class Segment2DoFGeometryModel(BaseDataClass):
     """
         Math definition of segment
     """
@@ -210,7 +230,7 @@ class Segment2DoFGeometryModel():
     def __to_all_tendon_guide_geometriesDF(tendon_guide_geometriesMF, disk_orientation):
         return list(TendonGuideGeometryDF.from_MF(geometryMF, disk_orientation) for geometryMF in tendon_guide_geometriesMF)
 
-    def generate_base_disk(self, length, distal_tendon_geometriesMF=[]):
+    def generate_base_disk_model(self, length, distal_tendon_geometriesMF=[]):
         disk_orientationMF = self.orientationMF
         all_tendon_guide_geometriesMF = self.tendon_guide_geometriesMF + \
             distal_tendon_geometriesMF
@@ -223,7 +243,7 @@ class Segment2DoFGeometryModel():
                                                                            centre_hole_diameter=self.centre_hole_diameter,
                                                                            tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))
 
-    def generate_disk_geometry_indices(self, end_top_orientationMF=0.0, end_top_curve_radius=None, distal_tendon_geometriesMF=[]):
+    def generate_indices_disk_model_pairs(self, end_top_orientationMF=None, end_top_curve_radius=None, distal_tendon_geometriesMF=[]):
         res = []
         all_tendon_guide_geometriesMF = self.tendon_guide_geometriesMF + \
             distal_tendon_geometriesMF
@@ -237,24 +257,26 @@ class Segment2DoFGeometryModel():
             if self.n_joints > 1:
                 res.append((tuple(i for i in range(self.n_joints - (0 if last_disk_mergable else 1))),
                             DiskGeometryModel(
-                    bottom_orientationMF=disk_orientationMF, geometry=DiskGeometry(length=self.disk_length,
-                                                                                   outer_diameter=self.disk_outer_diameter,
-                                                                                   bottom_curve_radius=self.curve_radius,
-                                                                                   top_orientationDF=0,
-                                                                                   top_curve_radius=self.curve_radius,
-                                                                                   centre_hole_diameter=self.centre_hole_diameter,
-                                                                                   tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))))
+                    bottom_orientationMF=disk_orientationMF,
+                    geometry=DiskGeometry(length=self.disk_length,
+                                          outer_diameter=self.disk_outer_diameter,
+                                          bottom_curve_radius=self.curve_radius,
+                                          top_orientationDF=0,
+                                          top_curve_radius=self.curve_radius,
+                                          centre_hole_diameter=self.centre_hole_diameter,
+                                          tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))))
 
             if not last_disk_mergable:
                 res.append(((self.n_joints-1, ), DiskGeometryModel(
-                    bottom_orientationMF=disk_orientationMF, geometry=DiskGeometry(length=self.disk_length,
-                                                                                   outer_diameter=self.disk_outer_diameter,
-                                                                                   bottom_curve_radius=self.curve_radius,
-                                                                                   top_orientationDF=(
-                                                                                       end_top_orientationMF if end_top_orientationMF else 0) - disk_orientationMF,
-                                                                                   top_curve_radius=end_top_curve_radius,
-                                                                                   centre_hole_diameter=self.centre_hole_diameter,
-                                                                                   tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))))
+                    bottom_orientationMF=disk_orientationMF,
+                    geometry=DiskGeometry(length=self.disk_length,
+                                          outer_diameter=self.disk_outer_diameter,
+                                          bottom_curve_radius=self.curve_radius,
+                                          top_orientationDF=(
+                                              end_top_orientationMF - disk_orientationMF if end_top_orientationMF else None),
+                                          top_curve_radius=end_top_curve_radius,
+                                          centre_hole_diameter=self.centre_hole_diameter,
+                                          tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))))
 
         # 2 DoF
         else:
@@ -264,41 +286,41 @@ class Segment2DoFGeometryModel():
 
             if self.n_joints > 1:
                 disk_orientationMF = self.orientationMF
-                intermediate_disk_geometry1 = DiskGeometry(length=self.disk_length,
+                res.append((tuple(i for i in range(0, self.n_joints - (0 if last_disk_mergable else 1), 2)),
+                            DiskGeometryModel(disk_orientationMF,
+                                              DiskGeometry(length=self.disk_length,
                                                            outer_diameter=self.disk_outer_diameter,
                                                            bottom_curve_radius=self.curve_radius,
                                                            top_orientationDF=pi/2,
                                                            top_curve_radius=self.curve_radius,
                                                            centre_hole_diameter=self.centre_hole_diameter,
-                                                           tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF))
-            res.append((tuple(i for i in range(0, self.n_joints - (0 if last_disk_mergable else 1), 2)),
-                        DiskGeometryModel(disk_orientationMF, intermediate_disk_geometry1)))
+                                                           tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))))
 
             if self.n_joints > 2:
                 disk_orientationMF = self.orientationMF + pi/2
-                intermediate_disk_geometry2 = DiskGeometry(length=self.disk_length,
+                res.append((tuple(i for i in range(1, self.n_joints - (0 if last_disk_mergable else 1), 2)),
+                            DiskGeometryModel(disk_orientationMF,
+                                              DiskGeometry(length=self.disk_length,
                                                            outer_diameter=self.disk_outer_diameter,
                                                            bottom_curve_radius=self.curve_radius,
                                                            top_orientationDF=pi/2,
                                                            top_curve_radius=self.curve_radius,
                                                            centre_hole_diameter=self.centre_hole_diameter,
-                                                           tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF))
-                res.append((tuple(i for i in range(1, self.n_joints - (0 if last_disk_mergable else 1), 2)),
-                            DiskGeometryModel(disk_orientationMF, intermediate_disk_geometry2)))
+                                                           tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))))
 
             if not last_disk_mergable:
                 disk_orientationMF = (
                     self.orientationMF + (pi/2 if self.n_joints % 2 == 0 else 0))
-                end_disk_geometry = DiskGeometry(length=self.disk_length,
-                                                 outer_diameter=self.disk_outer_diameter,
-                                                 bottom_curve_radius=self.curve_radius,
-                                                 top_orientationDF=end_top_orientationMF - disk_orientationMF,
-                                                 top_curve_radius=self.curve_radius,
-                                                 centre_hole_diameter=self.centre_hole_diameter,
-                                                 tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF))
-
                 res.append(
-                    ((self.n_joints-1, ), DiskGeometryModel(disk_orientationMF, end_disk_geometry)))
+                    ((self.n_joints-1, ), DiskGeometryModel(disk_orientationMF,
+                                                            DiskGeometry(length=self.disk_length,
+                                                                         outer_diameter=self.disk_outer_diameter,
+                                                                         bottom_curve_radius=self.curve_radius,
+                                                                         top_orientationDF=(end_top_orientationMF -
+                                                                                            disk_orientationMF if end_top_orientationMF else None),
+                                                                         top_curve_radius=end_top_curve_radius,
+                                                                         centre_hole_diameter=self.centre_hole_diameter,
+                                                                         tendon_guide_geometriesDF=self.__to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))))
 
         return res
 
@@ -308,7 +330,7 @@ class Segment2DoFGeometryModel():
                                     "end_disk_length", "disk_outer_diameter", "centre_hole_diameter", "tendon_guide_diameter"]
 
 
-def generate_disk_geometry_indices(segments, base_disk_length=None):
+def generate_indices_disk_model_pairs(segments, base_disk_length=None):
     disk_geometry_indices = []
     tendon_guide_geometriesMF = []
 
@@ -319,7 +341,7 @@ def generate_disk_geometry_indices(segments, base_disk_length=None):
     end_top_curve_radius = None
 
     for i, segment in enumerate(reversed(segments)):
-        disk_geomerty_indices_start_from_segment = segment.generate_disk_geometry_indices(
+        disk_geomerty_indices_start_from_segment = segment.generate_indices_disk_model_pairs(
             end_top_orientationMF, end_top_curve_radius, tendon_guide_geometriesMF)
         n_joints_count -= segment.num_joints
         disk_geometry_indices = [(tuple((i + n_joints_count) for i in indices), disk_geometry)

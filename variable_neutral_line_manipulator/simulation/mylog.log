@@ -1,0 +1,412 @@
+MainThread : setup_logging : Logging initiated
+MainThread : __init__ : Starting TCP/IP Listener thread
+MainThread : __init__ : Trying to bind to port
+MainThread : __init__ : Bound to port 5002
+thread_1234 : run : Starting run loop for tcp thread
+thread_1234 : run : New client socket created, description: <socket.socket fd=3412, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35960)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3412, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35960)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=1972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35969)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=1972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35969)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=1972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35976)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=1972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35976)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5280, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35978)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5280, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35978)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5280, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35984)>
+thread_1234 : run : Found cmd: cmd list_info names entity_name = "?" write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info names entity_name = "?" write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5280, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 35984)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3668, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36001)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3668, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36001)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4564, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36002)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4564, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36002)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=1972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36004)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=1972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36004)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36005)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36005)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3668, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36008)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3668, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36008)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3424, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36442)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3424, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36442)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3424, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36458)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3424, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36458)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4564, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36477)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4564, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36477)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36489)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36489)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36497)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36497)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=1364, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36527)>
+thread_1234 : run : Found cmd: cmd list_info names entity_name = "MODEL_1" write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info names entity_name = "MODEL_1" write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=1364, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36527)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3348, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36530)>
+thread_1234 : run : Found cmd: cmd list_info names entity_name = "MODEL_1" write_to_terminal = "off" brief = "off" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info names entity_name = "MODEL_1" write_to_terminal = "off" brief = "off" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3348, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36530)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36537)>
+thread_1234 : run : Found cmd: cmd list_info names entity_name = "?" write_to_terminal = "off" brief = "off" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info names entity_name = "?" write_to_terminal = "off" brief = "off" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36537)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36786)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36786)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36827)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" type = "ascii" part_name = "0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" type = "ascii" part_name = "0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36827)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4120, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36879)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4120, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36879)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3288, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36917)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3288, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36917)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36918)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36918)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3256, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36930)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3256, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36930)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3264, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36931)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3264, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36931)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3256, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36945)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3256, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36945)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36946)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3984, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36946)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36954)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36954)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36955)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36955)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36963)>
+thread_1234 : run : Found cmd: cmd list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+MainThread : timer_event : About to execute:  list_info defaults write_to_terminal = "off" brief = "on" file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.return_result.txt" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36963)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36964)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36964)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36991)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=2396, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36991)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36999)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 36999)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37001)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37001)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37140)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37140)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37151)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37151)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37201)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37201)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4388, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37212)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4388, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37212)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37230)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37230)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4196, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37424)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4196, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37424)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4960, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37468)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4960, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37468)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5092, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 37644)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : __init__ : Starting TCP/IP Listener thread
+MainThread : __init__ : Trying to bind to port
+MainThread : __init__ : Bound to port 5002
+thread_1234 : run : Starting run loop for tcp thread
+thread_1234 : run : New client socket created, description: <socket.socket fd=4384, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39199)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4384, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39199)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4960, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39200)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4960, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39200)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39317)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39317)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4816, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39325)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4816, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39325)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39326)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4972, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39326)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4532, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39454)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4532, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39454)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4532, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39465)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4532, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39465)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39466)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39466)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3252, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39611)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3252, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39611)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4132, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39692)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4132, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39692)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3204, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39693)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3204, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39693)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3204, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39854)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3204, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39854)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4000, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39872)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4000, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39872)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4672, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39879)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4672, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39879)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4196, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39898)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4196, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 39898)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40088)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40088)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5312, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40145)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5312, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40145)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5108, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40148)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5108, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40148)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4000, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40149)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4000, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40149)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=2380, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40283)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=2380, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40283)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4968, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40291)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4968, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40291)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5312, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40293)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5312, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40293)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5312, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40294)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5312, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40294)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3288, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40811)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3288, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40811)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40812)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_1" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4124, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40812)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4580, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40813)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4580, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40813)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3136, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40920)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3136, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40920)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3644, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40963)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3644, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40963)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4264, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40964)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4264, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 40964)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41085)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41085)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4264, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41086)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4264, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41086)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4648, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41136)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_0" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4648, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41136)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4648, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41137)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4648, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41137)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41250)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41250)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3700, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41251)>
+thread_1234 : run : Found cmd: cmd part create rigid_body name_and_position part_name = "disk_1" 
+MainThread : timer_event : About to execute:  part create rigid_body name_and_position part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3700, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41251)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3700, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41252)>
+thread_1234 : run : Found cmd: cmd file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file geometry read type_of_geometry = "stp" file = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\.temp.step" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3700, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41252)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3700, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41365)>
+thread_1234 : run : Found cmd: cmd file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid write file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3700, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41365)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41369)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4436, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41369)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=2380, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41370)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=2380, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41370)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4480, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41378)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4480, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41378)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4728, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41379)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4728, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41379)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41749)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3300, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41749)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4716, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41758)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4716, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41758)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4480, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41769)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4480, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41769)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5108, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41770)>
+thread_1234 : run : Found cmd: cmd file modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+MainThread : timer_event : About to execute:  file modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5108, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41770)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41771)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41771)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4388, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41772)>
+thread_1234 : run : Found cmd: cmd file modify rigid_body name_and_position part_name = "disk_1" location = 0,0,0 
+MainThread : timer_event : About to execute:  file modify rigid_body name_and_position part_name = "disk_1" location = 0,0,0 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4388, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41772)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41778)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41778)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41779)>
+thread_1234 : run : Found cmd: cmd file modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+MainThread : timer_event : About to execute:  file modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41779)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41780)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41780)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41781)>
+thread_1234 : run : Found cmd: cmd file modify rigid_body name_and_position part_name = "disk_1" location = 0,0,5 
+MainThread : timer_event : About to execute:  file modify rigid_body name_and_position part_name = "disk_1" location = 0,0,5 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41781)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4716, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41785)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4716, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41785)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41786)>
+thread_1234 : run : Found cmd: cmd part modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+MainThread : timer_event : About to execute:  part modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+thread_1234 : run : About to shut down client socket <socket.socket fd=5112, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41786)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4560, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41787)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4560, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41787)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41788)>
+thread_1234 : run : Found cmd: cmd part modify rigid_body name_and_position part_name = "disk_1" location = 0,0,5 
+MainThread : timer_event : About to execute:  part modify rigid_body name_and_position part_name = "disk_1" location = 0,0,5 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41788)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=4072, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41793)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\0.xmt_txt" type = "ascii" part_name = "disk_0" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=4072, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41793)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41794)>
+thread_1234 : run : Found cmd: cmd part modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+MainThread : timer_event : About to execute:  part modify rigid_body name_and_position part_name = "disk_0" location = 0,0,0 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41794)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41795)>
+thread_1234 : run : Found cmd: cmd file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+MainThread : timer_event : About to execute:  file parasolid read file_name = "C:\Users\DH\OneDrive - UNSW\tasteOfResearch\codes\.temp_adam\1.xmt_txt" type = "ascii" part_name = "disk_1" 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41795)>
+thread_1234 : run : New client socket created, description: <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41796)>
+thread_1234 : run : Found cmd: cmd part modify rigid_body name_and_position part_name = "disk_1" location = 0,0,5 
+MainThread : timer_event : About to execute:  part modify rigid_body name_and_position part_name = "disk_1" location = 0,0,5 
+thread_1234 : run : About to shut down client socket <socket.socket fd=3948, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5002), raddr=('127.0.0.1', 41796)>
