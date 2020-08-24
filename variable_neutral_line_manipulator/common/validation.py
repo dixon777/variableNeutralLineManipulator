@@ -2,6 +2,10 @@ from math import sqrt, sin, cos, degrees, pi
 import numpy as np
 
 from .entities import TendonGuideGeometry
+
+
+
+
 """
 Model construction
 """
@@ -38,16 +42,16 @@ def validate_disk_param(outer_diameter,
         # Tendon guide param
         for i, tg1 in enumerate(tendon_guides_geometries):
                 if tg1.diameter + tg1.dist_from_axis*2 >= outer_diameter:
-                        warnings.append(f"{i}-th tendon guide's surface intersect the outer cylindrical surface")
+                        errors.append(f"{i}-th tendon guide's surface intersect the outer cylindrical surface")
                         
                 if centre_hole_diameter and tg1.dist_from_axis*2 - tg1.diameter <= centre_hole_diameter:
-                        warnings.append(f"{i}-th tendon guide's surface intersect the centre hole cylindrical surface")
+                        errors.append(f"{i}-th tendon guide's surface intersect the centre hole cylindrical surface")
                 
                 for j, tg2 in enumerate(tendon_guides_geometries[i+1:]):
                         diff = np.linalg.norm(
-                                tg1.dist_from_axis * np.array((cos(tg1.orientationBF), sin(tg1.orientationBF)))
+                                tg1.dist_from_axis * np.array((cos(tg1.orientationDF), sin(tg1.orientationDF)))
                                 - 
-                                tg2.dist_from_axis * np.array((cos(tg2.orientationBF), sin(tg2.orientationBF)))
+                                tg2.dist_from_axis * np.array((cos(tg2.orientationDF), sin(tg2.orientationDF)))
                         )
                         if diff < tg1.diameter/2 + tg2.diameter/2:
                                 errors.append(f"{i}-th and {i+j}-th tendon guides overlap")

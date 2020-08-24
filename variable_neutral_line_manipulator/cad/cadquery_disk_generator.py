@@ -1,35 +1,33 @@
 from math import sqrt, cos, sin
 import cadquery as cq
-from ..common.validation import *
 from ..common.entities import *
 
 
-def generate_disk_CAD(disk_geometry: DiskGeometry):
-
+def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):
     outer_diameter = disk_geometry.outer_diameter
     length = disk_geometry.length
     bottom_curve_radius = disk_geometry.bottom_curve_radius
     top_curve_radius = disk_geometry.top_curve_radius
-    top_curve_orientationDF = disk_geometry.top_curve_orientationDF
+    top_orientationDF = disk_geometry.top_orientationDF
     centre_hole_diameter = disk_geometry.centre_hole_diameter
-    tendon_guide_geometries = disk_geometry.tendon_guide_geometries
+    tendon_guide_geometries = disk_geometry.tendon_guide_geometriesDF
 
     # Validation
-    errors = validate_disk_param(outer_diameter,
-                                 length,
-                                 bottom_curve_radius,
-                                 top_curve_radius,
-                                 top_curve_orientationDF,
-                                 centre_hole_diameter,
-                                 tendon_guide_geometries)
-    if len(errors) > 0:
-        return None, errors
+    # errors = validate_disk_param(outer_diameter,
+    #                              length,
+    #                              bottom_curve_radius,
+    #                              top_curve_radius,
+    #                              top_orientationDF,
+    #                              centre_hole_diameter,
+    #                              tendon_guide_geometries)
+    # if len(errors) > 0:
+    #     raise Exception(errors)
 
     TC = 0.1  # Constant to eliminate numerical errors in computation
 
     disk_object = (cq.Workplane("XY").circle(outer_diameter/2))
 
-    if centre_hole_diameter:
+    if curve_only and centre_hole_diameter > 0:
         disk_object = disk_object.circle(centre_hole_diameter/2)
 
 
@@ -39,7 +37,7 @@ def generate_disk_CAD(disk_geometry: DiskGeometry):
 
     if top_curve_radius:
         top_curve_object = (cq.Workplane("YZ")
-                            .transformed(rotate=(0, top_curve_orientationDF, 0))
+                            .transformed(rotate=(0, top_orientationDF, 0))
                             .moveTo(-(outer_diameter/2+TC), length+TC)
                             .vLineTo(sqrt(top_curve_radius**2-(outer_diameter/2+TC)**2)-top_curve_radius+length/2)
                             .radiusArc((outer_diameter/2+TC, sqrt(top_curve_radius**2-(outer_diameter/2+TC)**2)-top_curve_radius+length/2), top_curve_radius)
@@ -59,6 +57,10 @@ def generate_disk_CAD(disk_geometry: DiskGeometry):
         disk_object = disk_object.cut(bottom_curve_object)
 
     
+    if curve_only:
+        return disk_object
+    
+    # tendon guides
     tendon_guide_objects = cq.Workplane("XY")
     for tg in tendon_guide_geometries:
         print(tg)
@@ -67,7 +69,7 @@ def generate_disk_CAD(disk_geometry: DiskGeometry):
     tendon_guide_objects = tendon_guide_objects.extrude(length/2+TC, both=True)
     disk_object = (disk_object.cut(tendon_guide_objects))
     
-    return disk_object, errors
+    return disk_object
 
 
 def export_CAD(obj, path=None, export_type="step", override=True, tolerance=0.001):
