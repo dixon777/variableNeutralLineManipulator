@@ -21,7 +21,8 @@ def test_geometry():
             disk_outer_diameter=5,
             centre_hole_diameter=1,
             tendon_guide_diameter=0.5
-        ), ]
+        ), 
+    ]
     disk_geometry_indices = generate_indices_disk_model_pairs(segments, 5.0)
     cad_indices = generate_CAD_indices(disk_geometry_indices)
     export_CAD_indices_for_simulation(
@@ -49,20 +50,28 @@ def test_math_model():
 
 def test_simulation_socket():
     s = AdamViewSocket()
-    print(s.get_database_names())
+    print(s.get_default_settings())
 
 
 def test_manipulator_creator():
     segments = [
             Segment2DoFGeometryModel(
-                True, 2,
+                True, 3,
                 5, 0, 3, 2, None, 5, 1, 0.1
             )
         ]
-    pairs = generate_indices_disk_model_pairs(segments)
+    manipulatorModel = ManipulatorGeometryModel(segments)
     s = ManipulatorCreator()
-    s.generate_disks(pairs)
+    # s.socket.delete_current_model()
+    s.reset_model()
+    s.generate(manipulatorModel)
 
 
 if __name__ == "__main__":
+    from math import pi
+    # test_geometry()
+    # test_simulation_socket()
     test_manipulator_creator()
+    # a = DiskGeometryBase(0,0,2*pi,0)
+    # b = DiskGeometryBase(0,0,0,0)
+    # print(a == b)

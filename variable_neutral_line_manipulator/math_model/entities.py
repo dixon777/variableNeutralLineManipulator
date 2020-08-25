@@ -21,9 +21,8 @@ class TendonInDiskMathModel(TendonGeometryBase):
         super().__init__(dist_from_axis)
         self.orientationMF = orientationMF
 
-    @property
-    def attr_keys(self):
-        return super().attr_keys + ["orientationMF"]
+    def local_attr_keys(self):
+        return ["orientationMF"]
 
 
 class DiskMathModel(BaseDataClass):
@@ -44,9 +43,8 @@ class DiskMathModel(BaseDataClass):
         self.knobbed_tendon_models = copy.copy(knobbed_tendon_models)
         self.continuous_tendon_models = copy.copy(continuous_tendon_models)
 
-    @property
-    def attr_keys(self):
-        return super().attr_keys + ["disk_geometry", "bottom_orientationMF", "knobbed_tendon_models", "continuous_tendon_models"]
+    def local_attr_keys(self):
+        return ["disk_geometry", "bottom_orientationMF", "knobbed_tendon_models", "continuous_tendon_models"]
 
 
 class SegmentMathModel(BaseDataClass):
@@ -160,9 +158,8 @@ class SegmentMathModel(BaseDataClass):
 
         return res
 
-    @property
-    def attr_keys(self):
-        return super().attr_keys + ["is_2_DoF", "n_joints", "disk_length", "orientationMF", "curve_radius", "tendon_dist_from_axis",
+    def local_attr_keys(self):
+        return ["is_2_DoF", "n_joints", "disk_length", "orientationMF", "curve_radius", "tendon_dist_from_axis",
                                     "end_disk_length"]
 
 
@@ -215,9 +212,8 @@ class TendonMathState(BaseDataClass):
         self.model: TendonInDiskMathModel = tendon_model
         self.tension_in_disk = tension_in_disk
 
-    @property
-    def attr_keys(self):
-        return super().attr_keys + ["model", "tension_in_disk", ]
+    def local_attr_keys(self):
+        return ["model", "tension_in_disk", ]
 
 
 class DiskMathState(BaseDataClass):

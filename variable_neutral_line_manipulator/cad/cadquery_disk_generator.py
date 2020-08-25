@@ -1,4 +1,4 @@
-from math import sqrt, cos, sin
+from math import sqrt, cos, sin, degrees
 import cadquery as cq
 from ..common.entities import *
     
@@ -37,7 +37,7 @@ def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):
 
     if top_curve_radius:
         top_curve_object = (cq.Workplane("YZ")
-                            .transformed(rotate=(0, top_orientationDF, 0))
+                            .transformed(rotate=(0, degrees(top_orientationDF), 0))
                             .moveTo(-(outer_diameter/2+TC), length+TC)
                             .vLineTo(sqrt(top_curve_radius**2-(outer_diameter/2+TC)**2)-top_curve_radius+length/2)
                             .radiusArc((outer_diameter/2+TC, sqrt(top_curve_radius**2-(outer_diameter/2+TC)**2)-top_curve_radius+length/2), top_curve_radius)

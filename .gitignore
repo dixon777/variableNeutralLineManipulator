@@ -24,3 +24,6 @@ tmp
 .dist/
 build/
 dist/
+
+mylog.log
+*.tmp
