@@ -6,32 +6,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from typing import List, Dict, Iterable, Tuple
 
-from .calculation import normalise_angle
-
-
-# def jsonify(item):
-#     if isinstance(item, (int, float, str, bool)):
-#         return item
-
-#     if isinstance(item, (list,np.ndarray)):
-#         return [jsonify(i) for i in item]
-
-#     if isinstance(item, dict):
-#         return {(str(i), jsonify(j)) for i, j in item.items()}
-
-#     if hasattr(item, '__iter__'):
-#         try:
-#             first_subitem = next(item.__iter__())
-#             if len(first_subitem) == 2:
-#                 d = {}
-#                 for i, j in dict(item).items():
-#                     d[str(i)] = jsonify(j)
-#                 return d
-#             else:
-#                 return [jsonify(i) for i in item]
-#         except StopIteration:
-#             return {}
-#     return item
+from .calculation import normalise_angle, normalise_to_range
 
 # Courtesy to dan_waterworth
 # https://stackoverflow.com/questions/4544630/automatically-growing-lists-in-python
@@ -128,7 +103,7 @@ class DiskGeometryBase(BaseDataClass):
         return  ["length", "bottom_curve_radius", "top_curve_radius"]
     
     def __eq__(self, other):
-        return super().__eq__(other) and normalise_angle(self.top_orientationDF) == normalise_angle(other.top_orientationDF)
+        return super().__eq__(other) and normalise_to_range(self.top_orientationDF, pi) == normalise_to_range(other.top_orientationDF, pi)
         
 
 

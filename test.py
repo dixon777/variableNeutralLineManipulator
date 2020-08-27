@@ -23,7 +23,8 @@ def test_geometry():
             tendon_guide_diameter=0.5
         ), 
     ]
-    disk_geometry_indices = generate_indices_disk_model_pairs(segments, 5.0)
+    manipulatorModel = ManipulatorGeometryModel(segments)
+    disk_geometry_indices = manipulatorModel.generate_indices_disk_model_pairs(5.0)
     cad_indices = generate_CAD_indices(disk_geometry_indices)
     export_CAD_indices_for_simulation(
         disk_geometry_indices, cad_indices, "./.temp")
@@ -61,11 +62,11 @@ def test_manipulator_creator():
             )
         ]
     manipulatorModel = ManipulatorGeometryModel(segments)
-    s = ManipulatorCreator()
-    # s.socket.delete_current_model()
+    s = ManipulatorCreator(manipulatorModel)
     s.reset_model()
-    s.generate(manipulatorModel)
-
+    s.generate_model()
+    s.set_forces([2.0,1.5,1,0.5])
+    s.run(700, 0.1)
 
 if __name__ == "__main__":
     from math import pi

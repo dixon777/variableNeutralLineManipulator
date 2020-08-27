@@ -27,7 +27,7 @@ def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):
 
     disk_object = (cq.Workplane("XY").circle(outer_diameter/2))
 
-    if curve_only and centre_hole_diameter > 0:
+    if (not curve_only) and centre_hole_diameter > 0:
         disk_object = disk_object.circle(centre_hole_diameter/2)
 
 
