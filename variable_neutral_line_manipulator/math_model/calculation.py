@@ -16,7 +16,7 @@ def m4_rotation(axis, radian):
     return m4.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
 
 
-def distal_to_proximal_frame(distalDiskBottomVecDF: np.ndarray,
+def distal_to_proximal_frame(vec_in_distal_disk_frame: np.ndarray,
                              top_joint_angle: float,
                              top_orientationDF: float) -> np.ndarray:
     """
@@ -24,7 +24,7 @@ def distal_to_proximal_frame(distalDiskBottomVecDF: np.ndarray,
         (Used primarily for transformation of contact reaction vectors)
     """
     return np.dot(m3_rotation((0, 0, 1.0), top_orientationDF),
-                  np.dot(m3_rotation((1.0, 0, 0), top_joint_angle), distalDiskBottomVecDF))
+                  np.dot(m3_rotation((1.0, 0, 0), top_joint_angle), vec_in_distal_disk_frame))
 
 
 def eval_tendon_guide_top_force(tensionInDisk: float,

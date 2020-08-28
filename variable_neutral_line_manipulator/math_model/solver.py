@@ -1,5 +1,5 @@
 from typing import List, Dict, Iterable
-from math import sin, cos, sqrt, pi, atan, atan2, isnan
+from math import sin, cos, sqrt, pi, atan, atan2, isnan, asin
 from abc import ABC, abstractmethod
 
 import numpy as np

@@ -209,7 +209,7 @@ class AdamViewSocket:
         }))
         
     def set_variable(self, name, value, unit=None):
-        return self.deal_with_command(_construct_cmd("variable create", {
+        return self.deal_with_command(_construct_cmd("variable modify", {
             "variable_name": name,
             "real_value": value,
             "unit": unit,
@@ -319,18 +319,18 @@ class ManipulatorCreator:
     ADAM_INFO_BUFFER_FILE_BASENAME = ".return_result.txt"
     CACHE_CAD_DETAILS_FILE_BASENAME = ".cad_details.json"
     SPREAD_SHEET_FILE_BASENAME = ".results.tab"
-    MARKER_OFFSET_FROM_CURVE = 0.03
+    MARKER_OFFSET_FROM_CURVE = 0.01
     TIMESTEP_UNTIL_MAX_TENSION_MAGNITUDE = 100
     
     # Configs
     # Body
-    CONFIG_DISK_DENSITY = 10.0
+    CONFIG_DISK_DENSITY = 100.0
 
     # Contact
-    CONFIG_CONTACT_STIFFNESS = 10**5
+    CONFIG_CONTACT_STIFFNESS = 5*10**6
     CONFIG_CONTACT_FORCE_EXPONENT = 3
     CONFIG_CONTACT_DAMPING = 3000
-    CONFIG_CONTACT_PENETRATION_DEPTH = 0.075
+    CONFIG_CONTACT_PENETRATION_DEPTH = 0.025
 
     CONFIG_CONTACT_FRICTION_COEF = 2*10**3
     CONFIG_CONTACT_FRICTION_VEL = 0.1
@@ -355,50 +355,51 @@ class ManipulatorCreator:
 
     # Name generation
     def _generate_part_name(self, index):
-        return f"disk_{index}"
+        return f"disk{index}"
 
     def _generate_tension_magnitude_variable_name(self, orientationMF):
-        return f"tendon_tension_magnitude__{int(degrees(normalise_angle(orientationMF)))}"
+        return f"var_tension_mag_{int(degrees(normalise_angle(orientationMF)))}"
 
     def _generate_tendon_force_between_disk(self, proximal_disk_index, orientationMF):
-        return f"tension_force__{proximal_disk_index}_{proximal_disk_index+1}_{int(degrees(normalise_angle(orientationMF)))}"
+        return f"tension_force_{proximal_disk_index}_{proximal_disk_index+1}_{int(degrees(normalise_angle(orientationMF)))}"
 
     def _generate_marker_disk_center_name(self, part_name):
-        return f"{part_name}__center"
+        return f"{part_name}_center"
 
     def _generate_marker_for_planar_constraint_name(self, part_name, is_top):
-        return f"{part_name}__planar_constraint_{'top' if is_top else 'bottom'}"
+        return f"{part_name}_planar_constraint_{'top' if is_top else 'bottom'}"
 
     def _generate_constraint_planar_name(self, index):
-        return f"planar__{index}_{index+1}"
+        return f"planar_{index}_{index+1}"
 
     def _generate_tendon_guide_end_marker_name(self, part_name, orientationMF, is_top):
-        return f"{part_name}__{int(degrees(normalise_angle(orientationMF)))}_{'top' if is_top else 'bottom'}"
+        return f"{part_name}_{int(degrees(normalise_angle(orientationMF)))}_{'top' if is_top else 'bottom'}"
 
     def _generate_contact_name(self, index):
-        return f"contact__{index}"
+        return f"contact{index}"
 
     def _generate_solid_geometry_name(self, index):
-        return f"disk_solid__{index}"
+        return f"disk{index}_solid"
 
     def _generate_measurement_joint_angle_name(self, index):
-        return f"joint_angle__{index}"
+        return f"joint{index}_angle"
 
     # def _generate_measurement_joint_angle_name(self, index, orientationMF):
     #     return f"joint_angle__{index}_{int(degrees(normalise_angle(orientationMF)))}"
 
-    def _generate_measurement_contact(self, index, item):
-        return f"contact_{index}_{item}"
+    def _generate_measurement_contact(self, index, is_top, item):
+        return f"disk{index}_{'top' if is_top else 'bottom'}_contact__{item}"
 
-    def _generate_measurement_all_contact_components(self, index):
-        return [self._generate_measurement_contact(index, item) for item in ["Fm", "Fx", "Fy", "Fz", "Tm", "Tx", "Ty", "Tz"]]
+    def _generate_measurement_all_contact_components(self, index, is_top):
+        return [self._generate_measurement_contact(index, is_top, item) for item in ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]]
 
     @property
     def _all_measurement_names(self):
         names = []
         for i in range(len(self.disk_models)-1):
             names.append(self._generate_measurement_joint_angle_name(i))
-            names += self._generate_measurement_all_contact_components(i)
+            names += self._generate_measurement_all_contact_components(i, True)
+            names += self._generate_measurement_all_contact_components(i, False)
         return names
 
     @ property
@@ -582,8 +583,8 @@ class ManipulatorCreator:
         for i in range(len(disk_models)-1):
             self.socket.create_contact(
                 self._generate_contact_name(i),
-                self._generate_solid_geometry_name(i),
                 self._generate_solid_geometry_name(i+1),
+                self._generate_solid_geometry_name(i),
                 self.CONFIG_CONTACT_STIFFNESS,
                 self.CONFIG_CONTACT_DAMPING,
                 self.CONFIG_CONTACT_PENETRATION_DEPTH,
@@ -604,9 +605,8 @@ class ManipulatorCreator:
                     self._generate_part_name(i+1), tendon_geometryMF.orientationMF, False)
                 self.socket.create_measure_function(
                     self._generate_measurement_joint_angle_name(i),
-                    function=f"AX({proximal_top_marker_name}, {distal_bottom_marker_name})",
+                    function=f"AX({distal_bottom_marker_name}, {proximal_top_marker_name})",
                     unit="angle",
-                    should_display=True,
                 )
 
             # Joint angle measured at each tendon
@@ -622,11 +622,18 @@ class ManipulatorCreator:
 
     def _generate_measurement_contact_force(self, disk_models: List[DiskGeometryModel]):
         for i in range(len(disk_models)-1):
-            for force_type_index, measurement_name in enumerate(self._generate_measurement_all_contact_components(i)):
-                # Force magnitude
+            for force_type_index, measurement_name in zip((2,3,4,6,7,8),self._generate_measurement_all_contact_components(i+1, False)):
+                # Magnitude of force at each direction
                 self.socket.create_measure_function(
                     measurement_name,
-                    function=f"CONTACT({self._generate_contact_name(i)}, 0, {force_type_index+1}, {self._generate_marker_disk_center_name(self._generate_part_name(i+1))})",
+                    function=f"CONTACT({self._generate_contact_name(i)}, 0, {force_type_index}, {self._generate_marker_disk_center_name(self._generate_part_name(i+1))})",
+                )
+                
+            for force_type_index, measurement_name in zip((2,3,4,6,7,8),self._generate_measurement_all_contact_components(i, True)):
+                # Magnitude of force at each direction
+                self.socket.create_measure_function(
+                    measurement_name,
+                    function=f"CONTACT({self._generate_contact_name(i)}, 1, {force_type_index}, {self._generate_marker_disk_center_name(self._generate_part_name(i))})",
                 )
 
     def _final_cleanup(self):
@@ -655,7 +662,7 @@ class ManipulatorCreator:
                 disk_length_accumulate += model.geometry.length
 
         self._generate_parametric_variables(
-            manipulatorModel.tendon_guide_geometriesMF)
+            self.tendon_guide_geometriesMF)
         self._connect_forces_between_tendon_guide_ends(disk_models)
         self._enforce_base_disk_ground_constraint()
         # self._enforce_planar_constraints(disk_models)
@@ -671,7 +678,7 @@ class ManipulatorCreator:
     def set_forces(self, vals):
         for tg, val in zip(self.tendon_guide_geometriesMF, vals):
             self.socket.set_variable(
-                self._generate_tension_magnitude_variable_name(tg.oreintationMF),
+                self._generate_tension_magnitude_variable_name(tg.orientationMF),
                 val,
             )
             

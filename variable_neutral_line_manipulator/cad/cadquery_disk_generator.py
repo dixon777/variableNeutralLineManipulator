@@ -1,6 +1,7 @@
 from math import sqrt, cos, sin, degrees
 import cadquery as cq
 from ..common.entities import *
+from typing import Union
     
 
 def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):

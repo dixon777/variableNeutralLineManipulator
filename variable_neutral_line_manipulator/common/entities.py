@@ -10,6 +10,8 @@ from .calculation import normalise_angle, normalise_to_range
 
 # Courtesy to dan_waterworth
 # https://stackoverflow.com/questions/4544630/automatically-growing-lists-in-python
+
+
 class GrowingList(list):
     def __setitem__(self, index, value):
         if index >= len(self):
@@ -32,17 +34,18 @@ class BaseDataClass():
         for base in [*self.__class__.__bases__, self.__class__]:
             keys += base.local_attr_keys(self) or []
         return keys
-    
+
     @property
     def eq_attr_keys(self):
         keys = []
         for base in [*self.__class__.__bases__, self.__class__]:
-            keys += base.local_eq_attr_keys(self) or base.local_attr_keys(self) or []
+            keys += base.local_eq_attr_keys(
+                self) or base.local_attr_keys(self) or []
         return keys
-    
+
     def local_attr_keys(self):
         return []
-    
+
     def local_eq_attr_keys(self):
         return None
 
@@ -93,18 +96,23 @@ class DiskGeometryBase(BaseDataClass):
         self.bottom_curve_radius = bottom_curve_radius
         self.top_orientationDF = top_orientationDF
         self.top_curve_radius = top_curve_radius
+    
+    @property  
+    def top_orientationDF_normalised_copy(self):
+        import copy
+        copied = copy.deepcopy(self)
+        copied.top_orientationDF = normalise_angle(self.top_orientationDF)
+        return copied
 
     def local_attr_keys(self):
-        return  ["length", "bottom_curve_radius",
-                                    "top_orientationDF", "top_curve_radius"]
-        
-    
+        return ["length", "bottom_curve_radius",
+                "top_orientationDF", "top_curve_radius"]
+
     def local_eq_attr_keys(self):
-        return  ["length", "bottom_curve_radius", "top_curve_radius"]
-    
+        return ["length", "bottom_curve_radius", "top_curve_radius"]
+
     def __eq__(self, other):
         return super().__eq__(other) and normalise_to_range(self.top_orientationDF, pi) == normalise_to_range(other.top_orientationDF, pi)
-        
 
 
 class TendonGeometryBase(BaseDataClass):
@@ -143,14 +151,12 @@ class TendonGuideGeometryMF(TendonGeometryBase):
 
     def local_attr_keys(self):
         return ["orientationMF", "diameter"]
-    
+
     def local_eq_attr_keys(self):
         return ["diameter"]
-    
+
     def __eq__(self, other):
         return super().__eq__(other) and normalise_angle(self.orientationMF) == normalise_angle(other.orientationMF)
-    
-    
 
 
 class TendonGuideGeometryDF(TendonGeometryBase):
@@ -174,10 +180,10 @@ class TendonGuideGeometryDF(TendonGeometryBase):
 
     def local_attr_keys(self):
         return ["orientationDF", "diameter"]
-    
+
     def local_eq_attr_keys(self):
         return ["diameter"]
-    
+
     def __eq__(self, other):
         return super().__eq__(other) and normalise_angle(self.orientationDF) == normalise_angle(other.orientationDF)
 
@@ -200,8 +206,7 @@ class DiskGeometry(DiskGeometryBase):
     def local_attr_keys(self):
         return ["outer_diameter", "centre_hole_diameter", "tendon_guide_geometriesDF"]
     
-
-
+    
 class DiskGeometryModel(BaseDataClass):
     def __init__(self, bottom_orientationMF, geometry):
         self.bottom_orientationMF = bottom_orientationMF
@@ -213,12 +218,50 @@ class DiskGeometryModel(BaseDataClass):
 
     def local_attr_keys(self):
         return ["bottom_orientationMF", "geometry"]
-    
+
     def local_eq_attr_keys(self):
-        return  ["geometry"]
-    
+        return ["geometry"]
+
     def __eq__(self, other):
         return super().__eq__(other) and normalise_angle(self.bottom_orientationMF) == normalise_angle(other.bottom_orientationMF)
+
+
+class DiskGeo(DiskGeometryBase):
+    def __init__(self,
+                 outer_diameter,
+                 centre_hole_diameter=None,
+                 tendon_guide_geometriesDF=[],
+                 *args, **kwargs
+                 ):
+        super().__init__(*args, **kwargs)
+        self.outer_diameter = outer_diameter
+        
+    def local_attr_keys(self):
+        return ["outer_diameter"]
+    
+    def top_orientationMF(self, disk_orientationMF):
+        return self.top_orientationDF + disk_orientationMF
+    
+    
+class DiskGeo(BaseDataClass):
+    def __init__(self, bottom_orientationMF, geometry, tendon_guide_geometriesMF):
+        self.bottom_orientationMF = bottom_orientationMF
+        self.geometry: DiskGeometry = geometry
+        self.tendon_guide_geometriesMF = tendon_guide_geometriesMF
+
+    def local_attr_keys(self):
+        return ["bottom_orientationMF", "geometry", "tendon_guide_geometriesMF"]
+
+    def local_eq_attr_keys(self):
+        return ["geometry", "tendon_guide_geometriesMF"]
+
+    def __eq__(self, other):
+        return super().__eq__(other) and normalise_angle(self.bottom_orientationMF) == normalise_angle(other.bottom_orientationMF)
+
+
+    
+
+
 
 
 class Segment2DoFGeometryModel(BaseDataClass):
@@ -269,13 +312,13 @@ class Segment2DoFGeometryModel(BaseDataClass):
     def _to_all_tendon_guide_geometriesDF(tendon_guide_geometriesMF, disk_orientation):
         return sorted((TendonGuideGeometryDF.from_MF(geometryMF, disk_orientation) for geometryMF in tendon_guide_geometriesMF), key=lambda x: x.orientationDF)
 
-    def generate_base_disk_model(self, length, distal_tendon_geometriesMF=[]):
+    def generate_base_disk_model(self, length=None, distal_tendon_geometriesMF=[]):
         disk_orientationMF = self.orientationMF
         all_tendon_guide_geometriesMF = self.tendon_guide_geometriesMF + \
             distal_tendon_geometriesMF
         return DiskGeometryModel(
             bottom_orientationMF=disk_orientationMF,
-            geometry=DiskGeometry(length=length,
+            geometry=DiskGeometry(length=length if length else self.disk_length,
                                   outer_diameter=self.disk_outer_diameter,
                                   bottom_curve_radius=0,
                                   top_orientationDF=0,
@@ -284,39 +327,11 @@ class Segment2DoFGeometryModel(BaseDataClass):
                                   tendon_guide_geometriesDF=self._to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))
 
     def generate_disk_models(self, end_top_orientationMF=None, end_top_curve_radius=None, distal_tendon_geometriesMF=[]):
-        all_tendon_guide_geometriesMF = (
-            self.tendon_guide_geometriesMF + distal_tendon_geometriesMF)
-        
-        res = []
-        for i in range(len(self.n_joints)-1):
-            disk_orientationMF = normalise_angle(self.orientationMF + (pi*(i/2) if self.is_2_DoF else 0))
-            res.append(
-                DiskGeometryModel(
-                    bottom_orientationMF=disk_orientationMF,
-                    geometry=DiskGeometry(length=self.disk_length,
-                                          outer_diameter=self.disk_outer_diameter,
-                                          bottom_curve_radius=self.curve_radius,
-                                          top_orientationDF=pi/2 if self.is_2_DoF else 0,
-                                          top_curve_radius=self.curve_radius,
-                                          centre_hole_diameter=self.centre_hole_diameter,
-                                          tendon_guide_geometriesDF=self._to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))
-            )
-        
-        res.append(
-            DiskGeometryModel(
-                bottom_orientationMF=disk_orientationMF,
-                geometry=DiskGeometry(length=self.disk_length,
-                                        outer_diameter=self.disk_outer_diameter,
-                                        bottom_curve_radius=self.curve_radius,
-                                        top_orientationDF=pi/2 if self.is_2_DoF else 0,
-                                        top_curve_radius=self.curve_radius,
-                                        centre_hole_diameter=self.centre_hole_diameter,
-                                        tendon_guide_geometriesDF=self._to_all_tendon_guide_geometriesDF(all_tendon_guide_geometriesMF, disk_orientationMF)))
+        return indices_entity_pairs_to_ordered_list(
+            self.generate_indices_disk_model_pairs(end_top_orientationMF=end_top_orientationMF,
+                                                   end_top_curve_radius=end_top_curve_radius,
+                                                   distal_tendon_geometriesMF=distal_tendon_geometriesMF)
         )
-            
-        return res
-        
-            
 
     def generate_indices_disk_model_pairs(self, end_top_orientationMF=None, end_top_curve_radius=None, distal_tendon_geometriesMF=[]):
         res = []
@@ -400,8 +415,8 @@ class Segment2DoFGeometryModel(BaseDataClass):
         return res
 
     def local_attr_keys(self):
-        return  ["is_2_DoF", "n_joints", "disk_length", "orientationMF", "curve_radius", "tendon_dist_from_axis",
-                                    "end_disk_length", "disk_outer_diameter", "centre_hole_diameter", "tendon_guide_diameter"]
+        return ["is_2_DoF", "n_joints", "disk_length", "orientationMF", "curve_radius", "tendon_dist_from_axis",
+                "end_disk_length", "disk_outer_diameter", "centre_hole_diameter", "tendon_guide_diameter"]
 
 
 class ManipulatorGeometryModel:
@@ -422,8 +437,8 @@ class ManipulatorGeometryModel:
         disk_geometry_indices = []
         tendon_guide_geometriesMF = []
 
-        n_joints_count = sum((segment.num_joints for segment in segments)
-                             ) + (1 if base_disk_length and base_disk_length > 0.0 else 0)
+        n_joints_count = (sum((segment.num_joints for segment in segments)
+                              ) + 1)
 
         end_top_orientationMF = 0
         end_top_curve_radius = None
@@ -443,9 +458,8 @@ class ManipulatorGeometryModel:
             end_top_orientationMF = segment.bottom_orientationMF
             end_top_curve_radius = segment.bottom_curve_radius
 
-        if base_disk_length is not None:
-            disk_geometry_indices.insert(0, ((0,), segments[0].generate_base_disk_model(
-                base_disk_length, tendon_guide_geometriesMF)))
+        disk_geometry_indices.insert(0, ((0,), segments[0].generate_base_disk_model(
+            base_disk_length, tendon_guide_geometriesMF)))
 
         return disk_geometry_indices
 

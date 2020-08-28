@@ -3,7 +3,7 @@ import copy
 from math import pi
 import numpy as np
 
-from ..common.entities import DiskGeometryBase, TendonGeometryBase, BaseDataClass
+from ..common.entities import DiskGeometryBase, TendonGeometryBase, BaseDataClass, indices_entity_pairs_to_ordered_list
 from .calculation import *
 
 
@@ -51,7 +51,6 @@ class SegmentMathModel(BaseDataClass):
     """
         Math definition of segment
     """
-
     def __init__(self, is_2_DoF, n_joints, disk_length, orientationMF, curve_radius, tendon_dist_from_axis, end_disk_length):
         self.n_joints = n_joints
         self.is_2_DoF = is_2_DoF
@@ -77,13 +76,17 @@ class SegmentMathModel(BaseDataClass):
     def knobbed_tendon_guide_modelsMF(self):
         return [TendonInDiskMathModel(orientationMF=self.orientationMF + relative_orientation, dist_from_axis=self.tendon_dist_from_axis)
                 for relative_orientation in ((pi/2, 3*pi/2) if not self.is_2_DoF else (0, pi/2, pi, 3*pi/2))]
+        
+    def generate_disk_math_models(self,end_top_orientationMF=0.0, end_top_curve_radius=None, distal_segment_tendon_models=[]):
+        return indices_entity_pairs_to_ordered_list(self.generate_disk_math_model_indices(end_top_orientationMF=end_top_orientationMF, 
+                                                                                           end_top_curve_radius=end_top_curve_radius, 
+                                                                                           distal_segment_tendon_models=distal_segment_tendon_models))
 
     def generate_disk_math_model_indices(self, end_top_orientationMF=0.0, end_top_curve_radius=None, distal_segment_tendon_models=[]):
         res = []
         knobbed_tendon_guide_models_at_end = self.knobbed_tendon_guide_modelsMF
         all_tendon_guide_models = (knobbed_tendon_guide_models_at_end +
                                    distal_segment_tendon_models)
-
         # 1 DoF
         if not self.is_2_DoF:
 
@@ -102,7 +105,7 @@ class SegmentMathModel(BaseDataClass):
 
             res.append(((self.n_joints-1, ), DiskMathModel(
                 bottom_orientationMF=self.orientationMF,
-                disk_geometry=DiskGeometryBase(length=self.disk_length,
+                disk_geometry=DiskGeometryBase(length=end_disk_length if end_disk_length else self.disk_length,
                                                bottom_curve_radius=self.curve_radius,
                                                top_orientationDF=end_top_orientationMF,
                                                top_curve_radius=end_top_curve_radius,),
@@ -133,7 +136,7 @@ class SegmentMathModel(BaseDataClass):
                     bottom_orientationMF=self.orientationMF + pi/2,
                     disk_geometry=DiskGeometryBase(length=self.disk_length,
                                                    bottom_curve_radius=self.curve_radius,
-                                                   top_orientationDF=pi/2,
+                                                   top_orientationDF=-pi/2,
                                                    top_curve_radius=self.curve_radius,),
 
                     continuous_tendon_models=all_tendon_guide_models
@@ -146,7 +149,7 @@ class SegmentMathModel(BaseDataClass):
 
             end_disk_model = DiskMathModel(
                 bottom_orientationMF=disk_orientationMF,
-                disk_geometry=DiskGeometryBase(length=self.disk_length,
+                disk_geometry=DiskGeometryBase(length=self.end_disk_length if self.end_disk_length else self.disk_length,
                                                bottom_curve_radius=self.curve_radius,
                                                top_orientationDF=end_top_orientationMF - disk_orientationMF,
                                                top_curve_radius=end_top_curve_radius,),
