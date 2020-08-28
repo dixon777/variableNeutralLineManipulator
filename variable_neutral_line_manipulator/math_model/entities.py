@@ -3,12 +3,12 @@ import copy
 from math import pi
 import numpy as np
 
-from ..common.entities import DiskGeometryBase, TendonGeometryBase, BaseDataClass, indices_entity_pairs_to_ordered_list
+from ..common.entities import DiskGeometryBase, TendonData, BaseDataClass, indices_entity_pairs_to_ordered_list
 from .calculation import *
 
 
 
-class TendonInDiskMathModel(TendonGeometryBase):
+class TendonInDiskMathModel(TendonData):
     """
         Geometric definition of the full tendon model for mathemtaic model computation
         @param:

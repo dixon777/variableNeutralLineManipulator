@@ -6,7 +6,7 @@ import json
 from math import degrees
 from collections.abc import Iterable
 
-from ..common.entities import *
+from .entities import *
 from ..cad.cadquery_disk_generator import generate_disk_CAD, export_CAD
 from ..common.calculation import normalise_angle
 from ..math_model.calculation import eval_tendon_guide_top_end_disp, eval_tendon_guide_bottom_end_disp
@@ -207,7 +207,7 @@ class AdamViewSocket:
             "use_range": False,
             "use_allowed_values": False,
         }))
-        
+
     def set_variable(self, name, value, unit=None):
         return self.deal_with_command(_construct_cmd("variable modify", {
             "variable_name": name,
@@ -225,7 +225,7 @@ class AdamViewSocket:
             "units": unit,
             "create_measure_display": should_display,
         }))
-        
+
     # SImulation
     def run_transient_simulation_once(self, model_name, time_step_size, end_time):
         return self.deal_with_command(_construct_cmd("simulation single_run transient", {
@@ -233,7 +233,7 @@ class AdamViewSocket:
             "initial_static": False,
             "type": "DYNAMIC",
             "step_size": time_step_size,
-            "end_time":end_time,
+            "end_time": end_time,
         }))
 
     # Imports
@@ -315,13 +315,13 @@ class AdamViewSocket:
         return self.get_info("defaults", {})
 
 
-class ManipulatorCreator:
+class SimManipulatorAdamExecuter:
     ADAM_INFO_BUFFER_FILE_BASENAME = ".return_result.txt"
     CACHE_CAD_DETAILS_FILE_BASENAME = ".cad_details.json"
     SPREAD_SHEET_FILE_BASENAME = ".results.tab"
     MARKER_OFFSET_FROM_CURVE = 0.01
     TIMESTEP_UNTIL_MAX_TENSION_MAGNITUDE = 100
-    
+
     # Configs
     # Body
     CONFIG_DISK_DENSITY = 100.0
@@ -336,14 +336,13 @@ class ManipulatorCreator:
     CONFIG_CONTACT_FRICTION_VEL = 0.1
 
     def __init__(self,
-                 manipulatorModel: ManipulatorGeometryModel,
+                 manipulatorModel: SimManipulatorModel,
                  port=5002,
                  model_name="MANIPULATOR",
                  temp_dir_path="./.temp_adam"):
         self.manipulatorModel = manipulatorModel
-        self.disk_models = indices_entity_pairs_to_ordered_list(
-            manipulatorModel.generate_indices_disk_model_pairs())
-        self.tendon_guide_geometriesMF = manipulatorModel.tendon_guide_geometriesMF
+        self.disk_models = manipulatorModel.generate_disk_models()
+        self.tendon_datas = manipulatorModel.tendon_datas
         self.model_name = model_name
         self.temp_dir_path = os.path.abspath(temp_dir_path)
         os.makedirs(self.temp_dir_path, exist_ok=True)
@@ -399,7 +398,8 @@ class ManipulatorCreator:
         for i in range(len(self.disk_models)-1):
             names.append(self._generate_measurement_joint_angle_name(i))
             names += self._generate_measurement_all_contact_components(i, True)
-            names += self._generate_measurement_all_contact_components(i, False)
+            names += self._generate_measurement_all_contact_components(
+                i, False)
         return names
 
     @ property
@@ -417,7 +417,7 @@ class ManipulatorCreator:
         with open(self._cache_details_path, "w") as f:
             return json.dump(details, f, cls=BaseDataClass.Encoder, indent=4)
 
-    def _cache_find_CAD_path(self, geometry: DiskGeometry):
+    def _cache_find_CAD_path(self, geometry: SimDiskGeometry):
         cad_details = self._cache_get_CAD_details()
         for i, cad_item in enumerate(cad_details):
             if cad_item["geometry"] == geometry:
@@ -434,7 +434,7 @@ class ManipulatorCreator:
                 break
         return None
 
-    def _cache_generate_CAD_details_entry(self, geometry: DiskGeometry):
+    def _cache_generate_CAD_details_entry(self, geometry: SimDiskGeometry):
         cad_details = self._cache_get_CAD_details()
         largest_index = -1
         for cad_item in cad_details:
@@ -453,7 +453,7 @@ class ManipulatorCreator:
         cad_details.append(entry)
         self._cache_store_CAD_details(cad_details)
 
-    def _import_and_cache_CAD(self, disk_geometry: DiskGeometry, part_name: str):
+    def _import_and_cache_CAD(self, disk_geometry: SimDiskGeometry, part_name: str):
         # search from cache
         cad_path = self._cache_find_CAD_path(disk_geometry)
 
@@ -464,7 +464,11 @@ class ManipulatorCreator:
 
         # Import and cache if it does not exist
         else:
-            disk_cad_obj = generate_disk_CAD(disk_geometry, True)
+            disk_cad_obj = generate_disk_CAD(length=disk_geometry.length,
+                                             outer_diameter=disk_geometry.outer_diameter,
+                                             bottom_curve_radius=disk_geometry.bottom_curve_radius,
+                                             top_curve_radius=disk_geometry.top_curve_radius,
+                                             top_orientationDF=disk_geometry.top_orientationDF)
             temp_step_file_path = self._generate_path(".temp.step")
             export_CAD(disk_cad_obj, path=temp_step_file_path)
 
@@ -489,7 +493,7 @@ class ManipulatorCreator:
         print("Error: Fail to modify solid name")
         return False
 
-    def _create_markers_per_disk(self, model: DiskGeometryModel, part_name: str):
+    def _create_markers_per_disk(self, model: SimDiskModel, part_name: str):
         disk_geometry = model.geometry
 
         # Create disk's center marker (may differ from center of mass marker(auto generated))
@@ -498,45 +502,55 @@ class ManipulatorCreator:
                 part_name),
         )
 
-        for tendon_geometryDF in disk_geometry.tendon_guide_geometriesDF:
+        for tendon_data in model.tendon_datas:
             # Create marker at tendon guide bottom end
             if disk_geometry.bottom_curve_radius:
                 disp = eval_tendon_guide_bottom_end_disp(
-                    disk_geometry.length, disk_geometry.bottom_curve_radius, tendon_geometryDF.dist_from_axis, tendon_geometryDF.orientationDF)
+                    disk_geometry.length, 
+                    disk_geometry.bottom_curve_radius, 
+                    tendon_data.dist_from_axis, 
+                    tendon_data.orientationMF - model.bottom_orientationMF)
                 # Offset the marker away from the curve surface
                 disp[2] += self.MARKER_OFFSET_FROM_CURVE
                 self.socket.create_marker(
                     self._generate_tendon_guide_end_marker_name(
-                        part_name, model.bottom_orientationMF + tendon_geometryDF.orientationDF, is_top=False),
+                        part_name,
+                        tendon_data.orientationMF,
+                        is_top=False),
                     location=disp
                 )
 
             # Create marker at tendon guide top end
             if disk_geometry.top_curve_radius:
                 disp = eval_tendon_guide_top_end_disp(
-                    disk_geometry.length, disk_geometry.top_curve_radius, tendon_geometryDF.dist_from_axis, tendon_geometryDF.orientationDF, disk_geometry.top_orientationDF)
+                    disk_geometry.length, disk_geometry.top_curve_radius, 
+                    tendon_data.dist_from_axis, 
+                    tendon_data.orientationMF - model.bottom_orientationMF, 
+                    disk_geometry.top_orientationDF)
                 # Offset the marker away from the curve surface
                 disp[2] -= self.MARKER_OFFSET_FROM_CURVE
                 self.socket.create_marker(
                     self._generate_tendon_guide_end_marker_name(
-                        part_name, model.bottom_orientationMF + tendon_geometryDF.orientationDF, is_top=True),
+                        part_name,
+                        tendon_data.orientationMF,
+                        is_top=True),
                     location=disp,
                     orientation=(0, 0, degrees(
                         disk_geometry.top_orientationDF))
                 )
 
-    def _define_mass_properties_per_disk(self, model: DiskGeometryModel, part_name: str):
-        self.socket.create_part_rigid_body_mass_properties(part_name, self.CONFIG_DISK_DENSITY)
-        # Shouldn't rename auto-generated center of mass marker
+    def _define_mass_properties_per_disk(self, model: SimDiskModel, part_name: str):
+        self.socket.create_part_rigid_body_mass_properties(
+            part_name, self.CONFIG_DISK_DENSITY)
 
-    def _generate_parametric_variables(self, tendon_guide_geometriesMF: List[TendonGuideGeometryMF]):
-        for tg in tendon_guide_geometriesMF:
+    def _generate_parametric_variables(self, tendon_datas: List[SimTendonData]):
+        for tg in tendon_datas:
             self.socket.create_variable(
                 self._generate_tension_magnitude_variable_name(tg.orientationMF), 1.0)
 
-    def _connect_forces_between_tendon_guide_ends(self, disk_models: List[DiskGeometryModel]):
+    def _connect_forces_between_tendon_guide_ends(self, disk_models: List[SimDiskModel]):
         for i, (proximal_disk_model, distal_disk_model) in enumerate(zip(disk_models[:-1], disk_models[1:])):
-            for tg in distal_disk_model.tendon_guide_geometriesMF:
+            for tg in distal_disk_model.tendon_datas:
                 self.socket.create_single_component_force(
                     self._generate_tendon_force_between_disk(
                         i, tg.orientationMF),
@@ -553,33 +567,33 @@ class ManipulatorCreator:
         self.socket.create_constraint_fixed("ground_constraint", i_marker_name=self._generate_marker_disk_center_name(
             self._generate_part_name(0)), j_marker_name="ground_center")
 
-    def _enforce_planar_constraints(self, disk_models: List[DiskGeometryModel]):
-        for i, (proximal_disk_model, distal_disk_model) in enumerate(zip(disk_models[:-1], disk_models[1:])):
-            # Create new marker at proximal disk's top
-            self.socket.modify_part_rigid_body(self._generate_part_name(i))
-            self.socket.create_marker(self._generate_marker_for_planar_constraint_name(self._generate_part_name(i), is_top=True),
-                                      location=(
-                                          0, 0, proximal_disk_model.geometry.length/2),
-                                      orientation=(
-                                          degrees(proximal_disk_model.geometry.top_orientationDF), 90, 0),
-                                      relative_to=self._generate_marker_disk_center_name(self._generate_part_name(i)))
+    # def _enforce_planar_constraints(self, disk_models: List[SimDiskModel]):
+    #     for i, (proximal_disk_model, distal_disk_model) in enumerate(zip(disk_models[:-1], disk_models[1:])):
+    #         # Create new marker at proximal disk's top
+    #         self.socket.modify_part_rigid_body(self._generate_part_name(i))
+    #         self.socket.create_marker(self._generate_marker_for_planar_constraint_name(self._generate_part_name(i), is_top=True),
+    #                                   location=(
+    #                                       0, 0, proximal_disk_model.geometry.length/2),
+    #                                   orientation=(
+    #                                       degrees(proximal_disk_model.geometry.top_orientationDF), 90, 0),
+    #                                   relative_to=self._generate_marker_disk_center_name(self._generate_part_name(i)))
 
-            # Create new marker at distal disk's bottom
-            self.socket.modify_part_rigid_body(self._generate_part_name(i+1))
-            self.socket.create_marker(self._generate_marker_for_planar_constraint_name(self._generate_part_name(i+1), is_top=False),
-                                      location=(
-                                          0, 0, -distal_disk_model.geometry.length/2),
-                                      orientation=(0, 90, 0),
-                                      relative_to=self._generate_marker_disk_center_name(self._generate_part_name(i+1)))
+    #         # Create new marker at distal disk's bottom
+    #         self.socket.modify_part_rigid_body(self._generate_part_name(i+1))
+    #         self.socket.create_marker(self._generate_marker_for_planar_constraint_name(self._generate_part_name(i+1), is_top=False),
+    #                                   location=(
+    #                                       0, 0, -distal_disk_model.geometry.length/2),
+    #                                   orientation=(0, 90, 0),
+    #                                   relative_to=self._generate_marker_disk_center_name(self._generate_part_name(i+1)))
 
-            # Add constraint
-            self.socket.create_constraint_planar_joint(self._generate_constraint_planar_name(i),
-                                                       i_marker_name=self._generate_marker_for_planar_constraint_name(self._generate_part_name(i+1),
-                                                                                                                      is_top=False),
-                                                       j_marker_name=self._generate_marker_for_planar_constraint_name(self._generate_part_name(i),
-                                                                                                                      is_top=True),)
+    #         # Add constraint
+    #         self.socket.create_constraint_planar_joint(self._generate_constraint_planar_name(i),
+    #                                                    i_marker_name=self._generate_marker_for_planar_constraint_name(self._generate_part_name(i+1),
+    #                                                                                                                   is_top=False),
+    #                                                    j_marker_name=self._generate_marker_for_planar_constraint_name(self._generate_part_name(i),
+    #                                                                                                                   is_top=True),)
 
-    def _generate_contacts(self, disk_models: List[DiskGeometryModel]):
+    def _generate_contacts(self, disk_models: List[SimDiskModel]):
         for i in range(len(disk_models)-1):
             self.socket.create_contact(
                 self._generate_contact_name(i),
@@ -595,10 +609,10 @@ class ManipulatorCreator:
                 self.CONFIG_CONTACT_FRICTION_VEL,
             )
 
-    def _generate_measurement_joint_angles(self, disk_models: List[DiskGeometryModel]):
+    def _generate_measurement_joint_angles(self, disk_models: List[SimDiskModel]):
         for i, distal_disk_model in enumerate(disk_models[1:]):
-            if len(distal_disk_model.tendon_guide_geometriesMF) > 0:
-                tendon_geometryMF = distal_disk_model.tendon_guide_geometriesMF[0]
+            if len(distal_disk_model.tendon_datas) > 0:
+                tendon_geometryMF = distal_disk_model.tendon_datas[0]
                 proximal_top_marker_name = self._generate_tendon_guide_end_marker_name(
                     self._generate_part_name(i), tendon_geometryMF.orientationMF, True)
                 distal_bottom_marker_name = self._generate_tendon_guide_end_marker_name(
@@ -609,27 +623,16 @@ class ManipulatorCreator:
                     unit="angle",
                 )
 
-            # Joint angle measured at each tendon
-            # for tendon_geometryMF in distal_disk_model.tendon_guide_geometriesMF:
-            #     proximal_top_marker_name = self._generate_tendon_guide_end_marker_name(self._generate_part_name(i), tendon_geometryMF.orientationMF, True)
-            #     distal_bottom_marker_name = self._generate_tendon_guide_end_marker_name(self._generate_part_name(i+1), tendon_geometryMF.orientationMF, False)
-            #     self.socket.create_measure_function(
-            #         self._generate_measurement_joint_angle_name(
-            #             i, tendon_geometryMF.orientationMF),
-            #         function=f"AX({proximal_top_marker_name}, {distal_bottom_marker_name})",
-            #         unit="angle",
-            #     )
-
-    def _generate_measurement_contact_force(self, disk_models: List[DiskGeometryModel]):
+    def _generate_measurement_contact_force(self, disk_models: List[SimDiskModel]):
         for i in range(len(disk_models)-1):
-            for force_type_index, measurement_name in zip((2,3,4,6,7,8),self._generate_measurement_all_contact_components(i+1, False)):
+            for force_type_index, measurement_name in zip((2, 3, 4, 6, 7, 8), self._generate_measurement_all_contact_components(i+1, False)):
                 # Magnitude of force at each direction
                 self.socket.create_measure_function(
                     measurement_name,
                     function=f"CONTACT({self._generate_contact_name(i)}, 0, {force_type_index}, {self._generate_marker_disk_center_name(self._generate_part_name(i+1))})",
                 )
-                
-            for force_type_index, measurement_name in zip((2,3,4,6,7,8),self._generate_measurement_all_contact_components(i, True)):
+
+            for force_type_index, measurement_name in zip((2, 3, 4, 6, 7, 8), self._generate_measurement_all_contact_components(i, True)):
                 # Magnitude of force at each direction
                 self.socket.create_measure_function(
                     measurement_name,
@@ -645,7 +648,7 @@ class ManipulatorCreator:
             force_unit="newton", mass_unit="kg", length_unit="mm", time_unit="second", angle_unit="degree")
 
         disk_models = self.disk_models
-        tendon_guide_geometriesMF = self.tendon_guide_geometriesMF
+        tendon_datas = self.tendon_datas
         disk_length_accumulate = 0
 
         for i, model in enumerate(disk_models):
@@ -662,7 +665,7 @@ class ManipulatorCreator:
                 disk_length_accumulate += model.geometry.length
 
         self._generate_parametric_variables(
-            self.tendon_guide_geometriesMF)
+            self.tendon_datas)
         self._connect_forces_between_tendon_guide_ends(disk_models)
         self._enforce_base_disk_ground_constraint()
         # self._enforce_planar_constraints(disk_models)
@@ -674,19 +677,19 @@ class ManipulatorCreator:
     def reset_model(self):
         self.socket.delete_model(self.model_name)
         self.socket.create_model(self.model_name)
-        
+
     def set_forces(self, vals):
-        for tg, val in zip(self.tendon_guide_geometriesMF, vals):
+        for tg, val in zip(self.tendon_datas, vals):
             self.socket.set_variable(
-                self._generate_tension_magnitude_variable_name(tg.orientationMF),
+                self._generate_tension_magnitude_variable_name(
+                    tg.orientationMF),
                 val,
             )
-            
+
     def run(self, end_time, time_step_size):
-        self.socket.run_transient_simulation_once(self.model_name, time_step_size, end_time)
+        self.socket.run_transient_simulation_once(
+            self.model_name, time_step_size, end_time)
 
-
-        
 
 # if __name__ == "__main__":
 #     s = AdamViewSocket(model_name="MODEL_12")

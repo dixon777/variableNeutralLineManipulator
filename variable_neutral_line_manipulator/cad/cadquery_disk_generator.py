@@ -2,16 +2,25 @@ from math import sqrt, cos, sin, degrees
 import cadquery as cq
 from ..common.entities import *
 from typing import Union
-    
 
-def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):
-    outer_diameter = disk_geometry.outer_diameter
-    length = disk_geometry.length
-    bottom_curve_radius = disk_geometry.bottom_curve_radius
-    top_curve_radius = disk_geometry.top_curve_radius
-    top_orientationDF = disk_geometry.top_orientationDF
-    centre_hole_diameter = disk_geometry.centre_hole_diameter
-    tendon_guide_geometries = disk_geometry.tendon_guide_geometriesDF
+def generate_disk_CAD(
+    length,
+    outer_diameter,
+    bottom_curve_radius,
+    top_curve_radius,
+    top_orientationDF,
+    *args,
+    **kwargs
+    # centre_hole_diameter=None,
+    # tendon_guide_geometries=None
+):
+    # outer_diameter = disk_geometry.outer_diameter
+    # length = disk_geometry.length
+    # bottom_curve_radius = disk_geometry.bottom_curve_radius
+    # top_curve_radius = disk_geometry.top_curve_radius
+    # top_orientationDF = disk_geometry.top_orientationDF
+    # centre_hole_diameter = disk_geometry.centre_hole_diameter
+    # tendon_guide_geometries = disk_geometry.tendon_guide_geometriesDF
 
     # Validation
     # errors = validate_disk_param(outer_diameter,
@@ -28,8 +37,8 @@ def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):
 
     disk_object = (cq.Workplane("XY").circle(outer_diameter/2))
 
-    if (not curve_only) and centre_hole_diameter > 0:
-        disk_object = disk_object.circle(centre_hole_diameter/2)
+    # if centre_hole_diameter:
+    #     disk_object = disk_object.circle(centre_hole_diameter/2)
 
 
     disk_object = disk_object.extrude(length/2, both=True)
@@ -58,17 +67,14 @@ def generate_disk_CAD(disk_geometry: DiskGeometry, curve_only=False):
         disk_object = disk_object.cut(bottom_curve_object)
 
     
-    if curve_only:
-        return disk_object
-    
     # tendon guides
-    tendon_guide_objects = cq.Workplane("XY")
-    for tg in tendon_guide_geometries:
-        print(tg)
-        tendon_guide_objects = (tendon_guide_objects.moveTo(tg.dist_from_axis*cos(tg.orientationBF), tg.dist_from_axis*sin(tg.orientationBF))
-                       .circle(tg.diameter/2))
-    tendon_guide_objects = tendon_guide_objects.extrude(length/2+TC, both=True)
-    disk_object = (disk_object.cut(tendon_guide_objects))
+    # tendon_guide_objects = cq.Workplane("XY")
+    # for tg in tendon_guide_geometries:
+    #     print(tg)
+    #     tendon_guide_objects = (tendon_guide_objects.moveTo(tg.dist_from_axis*cos(tg.orientationBF), tg.dist_from_axis*sin(tg.orientationBF))
+    #                    .circle(tg.diameter/2))
+    # tendon_guide_objects = tendon_guide_objects.extrude(length/2+TC, both=True)
+    # disk_object = (disk_object.cut(tendon_guide_objects))
     
     return disk_object
 
