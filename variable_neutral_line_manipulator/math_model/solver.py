@@ -4,10 +4,12 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+from ..common.entities import *
 from .entities import *
+from .calculation import *
 
 
-def _eval_top_components(current_disk_model: DiskMathModel, distal_disk_state: DiskMathState):
+def _eval_top_components(current_disk_model: DiskModel, distal_disk_state: DiskState):
     if distal_disk_state is None:
         return (np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3))
 
@@ -18,15 +20,15 @@ def _eval_top_components(current_disk_model: DiskMathModel, distal_disk_state: D
     # Top vectors
     tendon_guide_top_end_force_disp_pairs = [
         (eval_tendon_guide_top_force(
-            tm.tension_in_disk, top_contact_joint_angle, disk_geometry.top_orientationDF),
+            ts.tension_in_disk, top_contact_joint_angle, disk_geometry.top_orientationDF),
             eval_tendon_guide_top_end_disp(
             disk_geometry.length,
             disk_geometry.top_curve_radius,
-            tm.model.dist_from_axis,
-            tm.model.orientationMF - current_disk_model.bottom_orientationMF,
+            ts.model.dist_from_axis,
+            ts.model.orientation - current_disk_model.bottom_orientationMF,
             disk_geometry.top_orientationDF,
         ))
-        for tm in top_tendon_states]
+        for ts in top_tendon_states]
 
     # Top total force
     top_contact_forceDF = distal_to_proximal_frame(
@@ -53,16 +55,22 @@ def _eval_top_components(current_disk_model: DiskMathModel, distal_disk_state: D
     return top_contact_forceDF, top_contact_pure_momentDF, top_total_forceDF, top_total_momentDF
 
 
-def _eval_bottom_tendon_guide_components(current_disk_model: DiskMathModel, distal_disk_state: DiskMathState, input_forces: List[float]):
+def _eval_bottom_tendon_guide_components(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float]):
     disk_geometry = current_disk_model.disk_geometry
 
-    bottom_knobbed_tendon_states = [TendonMathState(model, tension) for model, tension in zip(
-        current_disk_model.knobbed_tendon_models, input_forces)] if input_forces is not None and len(input_forces) > 0 else []
+    bottom_knobbed_tendon_states = ([MathTendonPrimitiveState(
+        model,
+        tension,
+    )
+        for model, tension in zip(
+        current_disk_model.knobbed_tendon_models, input_forces)]
+        if input_forces is not None and len(input_forces) > 0 else [])
+
     bottom_continous_tendon_states = distal_disk_state.tendon_states if distal_disk_state is not None else []
-    bottom_tendon_states: List[TendonMathState] = (
+    bottom_tendon_states: List[MathTendonPrimitiveState] = (
         bottom_knobbed_tendon_states + bottom_continous_tendon_states)
     bottom_tendon_state_disp_pairs = tuple((s, eval_tendon_guide_bottom_end_disp(
-        disk_geometry.length, disk_geometry.bottom_curve_radius, s.model.dist_from_axis, s.model.orientationMF -
+        disk_geometry.length, disk_geometry.bottom_curve_radius, s.model.dist_from_axis, s.model.orientation -
         current_disk_model.bottom_orientationMF
     ))for s in bottom_tendon_states)
 
@@ -71,15 +79,15 @@ def _eval_bottom_tendon_guide_components(current_disk_model: DiskMathModel, dist
 
 class _SolverBase(ABC):
     @abstractmethod
-    def solve(self, manipulator_model: ManipulatorMathModel, nested_input_forces: Iterable[List[float]]) -> List[DiskMathState]:
+    def solve(self, manipulator_model: ManipulatorModel, nested_input_forces: Iterable[List[float]]) -> List[DiskState]:
         pass
 
 
 class DirectSolver(_SolverBase):
-    def solve(self, manipulator_model: ManipulatorMathModel, nested_input_forces: Iterable[List[float]]) -> List[DiskMathState]:
+    def solve(self, manipulator_model: ManipulatorModel, nested_input_forces: Iterable[List[float]]) -> List[DiskState]:
         disk_states = []
         last_disk_state = None
-        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(nested_input_forces):
+        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(nested_input_forces, include_base=False):
             last_disk_state = DirectSolver.solve_single_disk(
                 disk_model, last_disk_state, input_forces)
             if last_disk_state is None:
@@ -88,7 +96,7 @@ class DirectSolver(_SolverBase):
         return disk_states
 
     @staticmethod
-    def solve_single_disk(current_disk_model: DiskMathModel, distal_disk_state: DiskMathState, input_forces: List[float]):
+    def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float]):
         disk_geometry = current_disk_model.disk_geometry
         top_tendon_states = distal_disk_state.tendon_states if distal_disk_state else []
         top_contact_joint_angle = distal_disk_state.bottom_joint_angle if distal_disk_state is not None else None
@@ -164,25 +172,32 @@ class DirectSolver(_SolverBase):
         bottom_contact_pure_momentDF = (-top_momentDF - bottom_tendon_force_momentDF -
                                         np.cross(eval_bottom_contact_disp(disk_geometry.length, disk_geometry.bottom_curve_radius, bottom_joint_angle), bottom_contact_forceDF))
 
-        return DiskMathState(current_disk_model,
-                             bottom_knobbed_tendon_states,
-                             bottom_continous_tendon_states,
-                             bottom_contact_forceDF,
-                             bottom_contact_pure_momentDF,
-                             bottom_joint_angle,
-                             top_contact_forceDF,
-                             top_contact_pure_momentDF,
-                             top_contact_joint_angle)
+        return DiskState(current_disk_model,
+                         bottom_contact_forceDF,
+                         bottom_contact_pure_momentDF,
+                         bottom_joint_angle,
+                         [ts.to_general(
+                             bottom_joint_angle=bottom_joint_angle,
+                             top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
+                             top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in bottom_knobbed_tendon_states],
+                         [ts.to_general(
+                             bottom_joint_angle=bottom_joint_angle,
+                             top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
+                             top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in
+                          bottom_continous_tendon_states],
+                         top_contact_forceDF,
+                         top_contact_pure_momentDF,
+                         top_contact_joint_angle)
 
 
 class IterativeSolver(_SolverBase):
     def __init__(self, precision=0.0000000001):
         self.precision = precision
 
-    def solve(self, manipulator_model: ManipulatorMathModel, nested_input_forces: List[Iterable[float]]) -> List[DiskMathState]:
+    def solve(self, manipulator_model: ManipulatorModel, nested_input_forces: List[Iterable[float]]) -> List[DiskState]:
         disk_states = []
         last_disk_state = None
-        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(nested_input_forces):
+        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(nested_input_forces, include_base=False):
             last_disk_state = IterativeSolver.solve_single_disk(
                 disk_model, last_disk_state, input_forces, self.precision)
             if last_disk_state is None:
@@ -191,7 +206,7 @@ class IterativeSolver(_SolverBase):
         return disk_states
 
     @staticmethod
-    def solve_single_disk(current_disk_model: DiskMathModel, distal_disk_state: DiskMathState, input_forces: List[float], precision: float):
+    def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float], precision: float):
         disk_geometry = current_disk_model.disk_geometry
         top_tendon_states = distal_disk_state.tendon_states if distal_disk_state else []
         top_contact_joint_angle = distal_disk_state.bottom_joint_angle if distal_disk_state is not None else None
@@ -227,16 +242,23 @@ class IterativeSolver(_SolverBase):
         if bottom_joint_angle is None:
             return None
         (bottom_contact_forceDF, bottom_contact_pure_momentDF) = res
-        return DiskMathState(current_disk_model,
-                             bottom_knobbed_tendon_states,
-                             bottom_continous_tendon_states,
-                             bottom_contact_forceDF,
-                             bottom_contact_pure_momentDF,
-                             bottom_joint_angle,
-                             top_contact_forceDF,
-                             top_contact_pure_momentDF,
-                             top_contact_joint_angle
-                             )
+        return DiskState(current_disk_model,
+                         bottom_contact_forceDF,
+                         bottom_contact_pure_momentDF,
+                         bottom_joint_angle,
+                         [ts.to_general(
+                             bottom_joint_angle=bottom_joint_angle,
+                             top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
+                             top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in bottom_knobbed_tendon_states],
+                         [ts.to_general(
+                             bottom_joint_angle=bottom_joint_angle,
+                             top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
+                             top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in
+                          bottom_continous_tendon_states],
+                         top_contact_forceDF,
+                         top_contact_pure_momentDF,
+                         top_contact_joint_angle
+                         )
 
     @staticmethod
     def equation_binary_solve(func, lower, upper, init=None, precision=0.0000000001):

@@ -14,7 +14,8 @@ from ..math_model.calculation import eval_tendon_guide_top_end_disp, eval_tendon
 
 def _to_Adam_val(v):
     if isinstance(v, str):
-        return f"\"{v}\""
+        new_v = v.replace('"', '\'')
+        return f"\"{new_v}\""
     elif isinstance(v, bool):
         return "yes" if v else "no"
     elif isinstance(v, (int, float)):
@@ -25,15 +26,34 @@ def _to_Adam_val(v):
     raise ValueError(f"Unsupported type for conversion: {type(v)}")
 
 
-def _construct_cmd(init, params, add_question_mark=False):
-    s = f"cmd {init} "
+def _construct_cmd(init, params={}, without_prefix=False):
+    s = f"{'cmd ' if not without_prefix else ''}{init} "
     for p in params:
         if params[p] is None:
             continue
         s += f"{p} = {_to_Adam_val(params[p])} "
-    if add_question_mark:
-        s += "?"
     return s
+
+
+def adam_read_spreadsheet(path):
+    import re
+    res = {}
+    with open(path, "r") as f:
+        for i in range(6):
+            next(f)
+
+        # read attribute
+        attr_line = f.readline()
+
+        lines = f.read()
+
+        # read values at equilibrium
+        equilibrium_val_line = lines.splitlines()[-4]
+
+    attrs = [re.search("(?<=.)\w+(?=\")", s).group(0)
+             for s in attr_line.split('\t')]
+    vals = [float(v) for v in equilibrium_val_line.split('\t')]
+    return {attr: val for attr, val in zip(attrs, vals)}
 
 
 class AdamDetails(BaseDataClass):
@@ -42,18 +62,19 @@ class AdamDetails(BaseDataClass):
             self.content = f.read()
 
     @property
-    def attr_keys(self):
-        return super().attr_keys + ["content"]
+    def local_attr_keys(self):
+        return ["content"]
 
 
 class AdamViewSocket:
-    def __init__(self, port=5002, return_text_path="./.return_result.txt"):
+    def __init__(self, port=5002, return_text_prefix="./.return_result"):
         self.port = port
-        self.return_text_path = os.path.abspath(return_text_path)
-        # self.create_model(model_name)
+        self.return_text_prefix = os.path.abspath(return_text_prefix)
 
-    def deal_with_command(self, cmd):
-        print(f"Send: {str(cmd)}")
+    def deal_with_command(self, cmd, params=None):
+        if params:
+            cmd = _construct_cmd(cmd, params)
+        # print(f"Send: {str(cmd)}")
         # Must reconnect the server before every command is sent
         self.soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.soc.connect(("localhost", self.port))
@@ -62,7 +83,8 @@ class AdamViewSocket:
         self.soc.send(cmd)
         data = self.soc.recv(1024)
         success = data[-1] == ord('0')
-        print(f"{ 'Success' if success else 'Failure'}\n")
+        if not success:
+            print(f"Failure")
         return success
 
     # Default
@@ -143,9 +165,6 @@ class AdamViewSocket:
         }))
 
     # Forces
-    # def create_force_vector(self, vector_name, i_marker_name, ):
-    #     raise NotImplementedError()
-
     def create_single_component_force(self, force_name, i_marker_name, j_marker_name, function,):
         return self.deal_with_command(_construct_cmd("force create direct single_component_force", {
             "single_component_force_name": force_name,
@@ -227,16 +246,69 @@ class AdamViewSocket:
         }))
 
     # SImulation
-    def run_transient_simulation_once(self, model_name, time_step_size, end_time):
-        return self.deal_with_command(_construct_cmd("simulation single_run transient", {
+    def create_sim_script(self, name, commands):
+        return self.deal_with_command("simulation script create", {
+            "sim_script_name": name,
+            "commands": commands
+        })
+
+    def modify_sim_script(self, name, commands):
+        return self.deal_with_command("simulation script modify", {
+            "sim_script_name": name,
+            "commands": commands
+        })
+
+    def delete_sim_script(self, name):
+        return self.deal_with_command("simulation script delete", {
+            "sim_script_name": name,
+        })
+
+    def import_sim_script(self, script_name, path):
+        return self.deal_with_command("simulation script read_acf", {
+            "sim_script_name": script_name,
+            "file_name": os.path.abspath(path)
+        })
+
+    def export_sim_script(self, script_name, path):
+        return self.deal_with_command("simulation script write_acf", {
+            "sim_script_name": script_name,
+            "file_name": os.path.abspath(path)
+        })
+
+    def run_sim_scripted(self, model_name, script_name):
+        return self.deal_with_command(_construct_cmd("simulation single_run scripted", {
+            "model_name": model_name,
+            "sim_script_name": script_name,
+            "reset_before_and_after": False,
+        }))
+
+    def set_simulation_equilibrium_param(self, model_name, max_iterations=None):
+        return self.deal_with_command(_construct_cmd("executive_control set equilibrium_parameters", {
+            "model_name": model_name,
+            "maxit": max_iterations
+        }))
+
+    def run_simulation_equilibrium(self, model_name):
+        return self.deal_with_command(_construct_cmd("simulation single_run equilibrium", {
+            "model_name": model_name,
+        }))
+
+    def run_simulation_transient(self, model_name, step_size, end_time=None, duration=None):
+        return self.deal_with_command("simulation single_run transient", {
             "model_name": model_name,
             "initial_static": False,
             "type": "DYNAMIC",
-            "step_size": time_step_size,
+            "step_size": step_size,
             "end_time": end_time,
-        }))
+            "duration": duration,
+        })
+
+    def run_simulation_reset(self):
+        return self.deal_with_command("simulation single_run reset", {
+        })
 
     # Imports
+
     def import_geometry(self, path, part_name=None, type_of_geometry="stp", location=None, orientation=None, relative_to=None):
         return self.deal_with_command(_construct_cmd("file geometry read", {
             "type_of_geometry": type_of_geometry,
@@ -260,6 +332,11 @@ class AdamViewSocket:
             "relative_to": relative_to,
         }))
 
+    def import_cmd(self, path):
+        return self.deal_with_command("file command read", {
+            "file_name": os.path.abspath(path),
+        })
+
     # Exports
     def export_parasolid(self, path, part_name=None, encoding="ascii"):
         return self.deal_with_command(_construct_cmd("file parasolid write", {
@@ -269,20 +346,43 @@ class AdamViewSocket:
             "part_name": part_name,
         }))
 
-    def export_spread_sheet_measures(self, path, result_names):
+    def export_spread_sheet(self, path, result_names):
         return self.deal_with_command(_construct_cmd("file spread_sheet write", {
             "file_name": os.path.abspath(path),
-            "rsesult_set_name": result_names,
+            "result_set_name": result_names,
         }))
+
+    def extract_spread_sheet(self, result_names):
+        path = f"{self.return_text_prefix}.tab"
+        if os.path.exists(path):
+            os.remove(path)
+        return adam_read_spreadsheet(path) if self.export_spread_sheet(path, result_names) else None
+
+    # Plots
+    def set_auto_plot_param(self, analysis_name,
+                            include_displacements=False,
+                            include_velocity=False):
+        return self.deal_with_command(_construct_cmd("xy_plots auto_plot output_requests", {
+            "analysis_name": analysis_name,
+            "displacements": "on" if include_displacements else "off",
+            "velocities": "on" if include_velocity else "off",
+        }))
+
+    def create_plot(self, plot_name,  data_name=None, measurement_name=None):
+        return self.deal_with_command("xy_plots curve create", {
+            "plot_name": plot_name,
+            "vaxis_data": data_name,
+            "vmeasure": measurement_name,
+        })
 
     # Info
     def get_info(self, item_name, dictionary):
-        if os.path.exists(self.return_text_path):
-            os.remove(self.return_text_path)
-        return AdamDetails(self.return_text_path) if self.deal_with_command(_construct_cmd(f"list_info {item_name}", {
+        path = os.path.exists(f"{self.return_text_prefix}.txt")
+        os.remove(path)
+        return AdamDetails(path) if self.deal_with_command(_construct_cmd(f"list_info {item_name}", {
             "write_to_terminal": "off",
             "brief": "on",
-            "file_name": os.path.abspath(self.return_text_path),
+            "file_name": os.path.abspath(path),
             **dictionary
         })) else None
 
@@ -315,42 +415,111 @@ class AdamViewSocket:
         return self.get_info("defaults", {})
 
 
+class CADCacheManager:
+    def __init__(self, dir_path, cache_details_file_basename="cad_details.json"):
+        super().__init__()
+        self._dir_path = os.path.abspath(dir_path)
+        os.makedirs(self._dir_path, exist_ok=True)
+        self._cache_details_path = self._generate_path(
+            cache_details_file_basename)
+
+    def _generate_path(self, *subpaths):
+        return os.path.join(self._dir_path, *subpaths)
+
+    @property
+    def details(self):
+        if not (os.path.exists(self._cache_details_path)):
+            return []
+        with open(self._cache_details_path, "r") as f:
+            content = f.read()
+            return json.loads(content, cls=BaseDataClass.Decoder) if content else []
+
+    def store_details(self, details):
+        with open(self._cache_details_path, "w") as f:
+            return json.dump(details, f, cls=BaseDataClass.Encoder, indent=4)
+
+    def search_path(self, geometry: SimDiskGeometry, check_existance=True):
+        cad_details = self.details
+        for i, cad_item in enumerate(cad_details):
+            if cad_item["geometry"] == geometry:
+                path = self._generate_path(cad_item["path"])
+                if not check_existance or os.path.exists(path):
+                    return path
+
+                # If the identical geometry is in the record but the path does not exist
+                print(
+                    f"Error: CAD is marked cached in the file [{self._cache_details_path}] but the path [{path}] does not exist")
+                print("Entry is removed")
+                del cad_details[i]
+                self.store_details(cad_details)
+                break
+        return None
+
+    def _generate_new_entry(self, geometry: SimDiskGeometry):
+        cad_details = self.details
+        largest_index = -1
+        for cad_item in cad_details:
+            largest_index = max(
+                (largest_index, int(os.path.basename(cad_item["path"]).split(".")[0])))
+            if cad_item["geometry"] == geometry:
+                print("Has duplicate. Terminate caching new model")
+
+        return {
+            "path": self._generate_path(f"{largest_index+1}.xmt_txt"),
+            "geometry": dict(geometry)
+        }
+
+    def add_entry(self, geometry: SimDiskGeometry):
+        cad_details = self.details
+        cad_details.append(self._generate_new_entry(geometry))
+        self.store_details(cad_details)
+
+    def remove_entry(self, geometry: SimDiskGeometry):
+        filtered_details = [
+            cad_item for cad_item in self.CAD_details if cad_item["geometry"] != geometry]
+        self.store_details(filtered_details)
+
+
 class SimManipulatorAdamExecuter:
-    ADAM_INFO_BUFFER_FILE_BASENAME = ".return_result.txt"
-    CACHE_CAD_DETAILS_FILE_BASENAME = ".cad_details.json"
-    SPREAD_SHEET_FILE_BASENAME = ".results.tab"
+    ADAM_INFO_BUFFER_FILE_PREFIX = ".return_result"
+    CAD_CACHE_SUB_PATH = "cad_cache"
     MARKER_OFFSET_FROM_CURVE = 0.01
-    TIMESTEP_UNTIL_MAX_TENSION_MAGNITUDE = 100
+    TIME_STEP_PER_ITERATION = 100
 
     # Configs
     # Body
     CONFIG_DISK_DENSITY = 100.0
 
     # Contact
-    CONFIG_CONTACT_STIFFNESS = 5*10**6
-    CONFIG_CONTACT_FORCE_EXPONENT = 3
+    CONFIG_CONTACT_STIFFNESS = 5*10**7
+    CONFIG_CONTACT_FORCE_EXPONENT = 4
     CONFIG_CONTACT_DAMPING = 3000
     CONFIG_CONTACT_PENETRATION_DEPTH = 0.025
 
-    CONFIG_CONTACT_FRICTION_COEF = 2*10**3
+    CONFIG_CONTACT_FRICTION_COEF = 3*10**3
     CONFIG_CONTACT_FRICTION_VEL = 0.1
 
+    # Sim
+    CONFIG_SCRIPT_NAME = "iterative_solver_script"
+
     def __init__(self,
-                 manipulatorModel: SimManipulatorModel,
+                 manipulatorModel: ManipulatorModel,
                  port=5002,
                  model_name="MANIPULATOR",
                  temp_dir_path="./.temp_adam"):
-        self.manipulatorModel = manipulatorModel
-        self.disk_models = manipulatorModel.generate_disk_models()
-        self.tendon_datas = manipulatorModel.tendon_datas
+        self.disk_models: List[DiskModel] = manipulatorModel.get_disk_models(
+            include_base=True)
+        self.tendon_models: List[TendonModel] = manipulatorModel.tendon_models
         self.model_name = model_name
         self.temp_dir_path = os.path.abspath(temp_dir_path)
         os.makedirs(self.temp_dir_path, exist_ok=True)
         self.socket: AdamViewSocket = AdamViewSocket(
-            port, self._generate_path(self.ADAM_INFO_BUFFER_FILE_BASENAME))
+            port, self._generate_path(self.ADAM_INFO_BUFFER_FILE_PREFIX))
+        self.cad_cache = CADCacheManager(
+            self._generate_path(self.CAD_CACHE_SUB_PATH))
 
-    def _generate_path(self, base_path):
-        return os.path.join(self.temp_dir_path, base_path)
+    def _generate_path(self, *subpaths):
+        return os.path.join(self.temp_dir_path, *subpaths)
 
     # Name generation
     def _generate_part_name(self, index):
@@ -360,7 +529,7 @@ class SimManipulatorAdamExecuter:
         return f"var_tension_mag_{int(degrees(normalise_angle(orientationMF)))}"
 
     def _generate_tendon_force_between_disk(self, proximal_disk_index, orientationMF):
-        return f"tension_force_{proximal_disk_index}_{proximal_disk_index+1}_{int(degrees(normalise_angle(orientationMF)))}"
+        return f"tension_vector_{proximal_disk_index}_{proximal_disk_index+1}_{int(degrees(normalise_angle(orientationMF)))}"
 
     def _generate_marker_disk_center_name(self, part_name):
         return f"{part_name}_center"
@@ -397,168 +566,141 @@ class SimManipulatorAdamExecuter:
         names = []
         for i in range(len(self.disk_models)-1):
             names.append(self._generate_measurement_joint_angle_name(i))
-            names += self._generate_measurement_all_contact_components(i, True)
+            # names += self._generate_measurement_all_contact_components(i, True)
             names += self._generate_measurement_all_contact_components(
                 i, False)
         return names
 
-    @ property
-    def _cache_details_path(self):
-        return self._generate_path(self.CACHE_CAD_DETAILS_FILE_BASENAME)
+    def _import_CADs(self, disk_models):
+        success = True
+        for i, model in enumerate(disk_models):
+            part_name = self._generate_part_name(i)
+            disk_geometry = SimDiskGeometry.from_base_geometry(
+                model.disk_geometry, model.tendon_models)
 
-    def _cache_get_CAD_details(self):
-        if not (os.path.exists(self._cache_details_path)):
-            return []
-        with open(self._cache_details_path, "r") as f:
-            content = f.read()
-            return json.loads(content, cls=BaseDataClass.Decoder) if content else []
+            # search from cache
+            cad_path = self.cad_cache.search_path(disk_geometry, check_existance=True)
 
-    def _cache_store_CAD_details(self, details):
-        with open(self._cache_details_path, "w") as f:
-            return json.dump(details, f, cls=BaseDataClass.Encoder, indent=4)
+            if cad_path is not None:
+                success &= self.socket.import_parasolid(
+                    path=cad_path, part_name=part_name)
 
-    def _cache_find_CAD_path(self, geometry: SimDiskGeometry):
-        cad_details = self._cache_get_CAD_details()
-        for i, cad_item in enumerate(cad_details):
-            if cad_item["geometry"] == geometry:
-                path = self._generate_path(cad_item["path"])
-                if os.path.exists(path):
-                    return path
+            # Import and cache if it does not exist
+            else:
+                disk_cad_obj = generate_disk_CAD(length=disk_geometry.length,
+                                                 outer_diameter=disk_geometry.outer_diameter,
+                                                 bottom_curve_radius=disk_geometry.bottom_curve_radius,
+                                                 top_curve_radius=disk_geometry.top_curve_radius,
+                                                 top_orientationDF=disk_geometry.top_orientationDF)
+                temp_step_file_path = self._generate_path(".temp.step")
+                export_CAD(disk_cad_obj, path=temp_step_file_path)
 
-                # If the identical geometry is in the record but the path does not exist
-                print(
-                    f"Error: CAD is marked cached in the file [{self._cache_details_path}] but the path [{path}] does not exist")
-                print("Entry is removed")
-                del cad_details[i]
-                self._cache_store_CAD_details(cad_details)
-                break
-        return None
+                if(self.socket.create_part_rigid_body(part_name=part_name)):
+                    if(self.socket.import_geometry(temp_step_file_path, part_name=part_name)):
+                        self.cad_cache.add_entry(disk_geometry)
+                        if not (self.socket.export_parasolid(self.cad_cache.search_path(disk_geometry, check_existance=False), part_name)):
+                            self.cad_cache.remove_entry(disk_geometry)
 
-    def _cache_generate_CAD_details_entry(self, geometry: SimDiskGeometry):
-        cad_details = self._cache_get_CAD_details()
-        largest_index = -1
-        for cad_item in cad_details:
-            largest_index = max(
-                (largest_index, int(cad_item["path"].split(".")[0])))
-            if cad_item["geometry"] == geometry:
-                print("Has duplicate. Terminate caching new model")
+                        os.remove(temp_step_file_path)
 
-        return {
-            "path": f"{largest_index+1}.xmt_txt",
-            "geometry": dict(geometry)
-        }
-
-    def _cache_store_CAD_details_entry(self, entry):
-        cad_details = self._cache_get_CAD_details()
-        cad_details.append(entry)
-        self._cache_store_CAD_details(cad_details)
-
-    def _import_and_cache_CAD(self, disk_geometry: SimDiskGeometry, part_name: str):
-        # search from cache
-        cad_path = self._cache_find_CAD_path(disk_geometry)
-
-        success = False
-        if cad_path is not None:
-            success = self.socket.import_parasolid(
-                path=cad_path, part_name=part_name)
-
-        # Import and cache if it does not exist
-        else:
-            disk_cad_obj = generate_disk_CAD(length=disk_geometry.length,
-                                             outer_diameter=disk_geometry.outer_diameter,
-                                             bottom_curve_radius=disk_geometry.bottom_curve_radius,
-                                             top_curve_radius=disk_geometry.top_curve_radius,
-                                             top_orientationDF=disk_geometry.top_orientationDF)
-            temp_step_file_path = self._generate_path(".temp.step")
-            export_CAD(disk_cad_obj, path=temp_step_file_path)
-
-            if(self.socket.create_part_rigid_body(part_name=part_name)):
-                if(self.socket.import_geometry(temp_step_file_path, part_name=part_name)):
-                    entry = self._cache_generate_CAD_details_entry(
-                        disk_geometry)
-                    if(self.socket.export_parasolid(self._generate_path(entry["path"]), part_name)):
-                        self._cache_store_CAD_details_entry(entry)
-                        success = True
-
-                    os.remove(temp_step_file_path)
+            if not success:
+                return False
+            
+            self._modify_geometry_solid_name(i)
 
         return success
 
     def _modify_geometry_solid_name(self, index):
         new_name = self._generate_solid_geometry_name(index)
-        for i in range(10):
-            if self.socket.rename_entity(f"SOLID{i}", new_name):
-                return True
 
-        print("Error: Fail to modify solid name")
-        return False
+        for j in range(100): # may lead to error
+            if self.socket.rename_entity(f"SOLID{j}", new_name):
+                break
+        else:
+            print(f"Error: Fail to capture the solid name for disk{index}")
+            return False
 
-    def _create_markers_per_disk(self, model: SimDiskModel, part_name: str):
-        disk_geometry = model.geometry
+        return True
 
-        # Create disk's center marker (may differ from center of mass marker(auto generated))
-        self.socket.create_marker(
-            self._generate_marker_disk_center_name(
-                part_name),
-        )
+    def _create_markers(self, disk_models):
+        for i, model in enumerate(disk_models):
+            disk_geometry = model.disk_geometry
+            part_name = self._generate_part_name(i)
 
-        for tendon_data in model.tendon_datas:
-            # Create marker at tendon guide bottom end
-            if disk_geometry.bottom_curve_radius:
-                disp = eval_tendon_guide_bottom_end_disp(
-                    disk_geometry.length, 
-                    disk_geometry.bottom_curve_radius, 
-                    tendon_data.dist_from_axis, 
-                    tendon_data.orientationMF - model.bottom_orientationMF)
-                # Offset the marker away from the curve surface
-                disp[2] += self.MARKER_OFFSET_FROM_CURVE
-                self.socket.create_marker(
-                    self._generate_tendon_guide_end_marker_name(
-                        part_name,
-                        tendon_data.orientationMF,
-                        is_top=False),
-                    location=disp
-                )
+            # Redirect path name
+            self.socket.modify_part_rigid_body(part_name)
 
-            # Create marker at tendon guide top end
-            if disk_geometry.top_curve_radius:
-                disp = eval_tendon_guide_top_end_disp(
-                    disk_geometry.length, disk_geometry.top_curve_radius, 
-                    tendon_data.dist_from_axis, 
-                    tendon_data.orientationMF - model.bottom_orientationMF, 
-                    disk_geometry.top_orientationDF)
-                # Offset the marker away from the curve surface
-                disp[2] -= self.MARKER_OFFSET_FROM_CURVE
-                self.socket.create_marker(
-                    self._generate_tendon_guide_end_marker_name(
-                        part_name,
-                        tendon_data.orientationMF,
-                        is_top=True),
-                    location=disp,
-                    orientation=(0, 0, degrees(
-                        disk_geometry.top_orientationDF))
-                )
+            # Create disk's center marker (may differ from center of mass marker(auto generated))
+            self.socket.create_marker(
+                self._generate_marker_disk_center_name(
+                    part_name),
+            )
 
-    def _define_mass_properties_per_disk(self, model: SimDiskModel, part_name: str):
-        self.socket.create_part_rigid_body_mass_properties(
-            part_name, self.CONFIG_DISK_DENSITY)
+            for tendon_model in model.tendon_models:
+                # Create marker at tendon guide bottom end
+                if disk_geometry.bottom_curve_radius:
+                    disp = eval_tendon_guide_bottom_end_disp(
+                        disk_geometry.length,
+                        disk_geometry.bottom_curve_radius,
+                        tendon_model.dist_from_axis,
+                        tendon_model.orientation - model.bottom_orientationMF)
+                    # Offset the marker away from the curve surface
+                    disp[2] += self.MARKER_OFFSET_FROM_CURVE
+                    self.socket.create_marker(
+                        self._generate_tendon_guide_end_marker_name(
+                            part_name,
+                            tendon_model.orientation,
+                            is_top=False),
+                        location=disp
+                    )
 
-    def _generate_parametric_variables(self, tendon_datas: List[SimTendonData]):
-        for tg in tendon_datas:
+                # Create marker at tendon guide top end
+                if disk_geometry.top_curve_radius:
+                    disp = eval_tendon_guide_top_end_disp(
+                        disk_geometry.length, disk_geometry.top_curve_radius,
+                        tendon_model.dist_from_axis,
+                        tendon_model.orientation - model.bottom_orientationMF,
+                        disk_geometry.top_orientationDF)
+                    # Offset the marker away from the curve surface
+                    disp[2] -= self.MARKER_OFFSET_FROM_CURVE
+                    self.socket.create_marker(
+                        self._generate_tendon_guide_end_marker_name(
+                            part_name,
+                            tendon_model.orientation,
+                            is_top=True),
+                        location=disp,
+                        orientation=(0, 0, degrees(
+                            disk_geometry.top_orientationDF))
+                    )
+
+    def _move_disks_to_init_pos(self, disk_init_loc_orientations):
+        for i, pos in enumerate(disk_init_loc_orientations):
+            self.socket.modify_part_rigid_body(
+                self._generate_part_name(i), **pos)
+
+    def _define_mass_properties(self, disk_models: List[DiskModel]):
+        for i in range(len(disk_models)):
+            self.socket.create_part_rigid_body_mass_properties(
+                self._generate_part_name(i), self.CONFIG_DISK_DENSITY)
+
+    def _generate_parametric_variables(self, tendon_models: List[TendonModel]):
+        for tg in tendon_models:
             self.socket.create_variable(
-                self._generate_tension_magnitude_variable_name(tg.orientationMF), 1.0)
+                self._generate_tension_magnitude_variable_name(tg.orientation), 1.0)
 
-    def _connect_forces_between_tendon_guide_ends(self, disk_models: List[SimDiskModel]):
+    def _connect_forces_between_tendon_guide_ends(self, disk_models: List[DiskModel]):
         for i, (proximal_disk_model, distal_disk_model) in enumerate(zip(disk_models[:-1], disk_models[1:])):
-            for tg in distal_disk_model.tendon_datas:
+            for tg in distal_disk_model.tendon_models:
                 self.socket.create_single_component_force(
                     self._generate_tendon_force_between_disk(
-                        i, tg.orientationMF),
+                        i, tg.orientation),
                     self._generate_tendon_guide_end_marker_name(
-                        self._generate_part_name(i+1), tg.orientationMF, is_top=False),
+                        self._generate_part_name(i+1), tg.orientation, is_top=False),
                     self._generate_tendon_guide_end_marker_name(
-                        self._generate_part_name(i), tg.orientationMF, is_top=True),
-                    function=f"-{self._generate_tension_magnitude_variable_name(tg.orientationMF)}*MIN((TIME/{self.TIMESTEP_UNTIL_MAX_TENSION_MAGNITUDE})**2, 1)"
+                        self._generate_part_name(i), tg.orientation, is_top=True),
+                    # function=f"-{self._generate_tension_magnitude_variable_name(tg.orientation)}*MIN((TIME/{self.TIME_STEP_PER_ITERATION})**2, 1)"
+                    function=f"-{self._generate_tension_magnitude_variable_name(tg.orientation)}"
+
                 )
 
     def _enforce_base_disk_ground_constraint(self):
@@ -567,22 +709,22 @@ class SimManipulatorAdamExecuter:
         self.socket.create_constraint_fixed("ground_constraint", i_marker_name=self._generate_marker_disk_center_name(
             self._generate_part_name(0)), j_marker_name="ground_center")
 
-    # def _enforce_planar_constraints(self, disk_models: List[SimDiskModel]):
+    # def _enforce_planar_constraints(self, disk_models: List[DiskModel]):
     #     for i, (proximal_disk_model, distal_disk_model) in enumerate(zip(disk_models[:-1], disk_models[1:])):
     #         # Create new marker at proximal disk's top
     #         self.socket.modify_part_rigid_body(self._generate_part_name(i))
     #         self.socket.create_marker(self._generate_marker_for_planar_constraint_name(self._generate_part_name(i), is_top=True),
     #                                   location=(
-    #                                       0, 0, proximal_disk_model.geometry.length/2),
+    #                                       0, 0, proximal_disk_model.disk_geometry.length/2),
     #                                   orientation=(
-    #                                       degrees(proximal_disk_model.geometry.top_orientationDF), 90, 0),
+    #                                       degrees(proximal_disk_model.disk_geometry.top_orientationDF), 90, 0),
     #                                   relative_to=self._generate_marker_disk_center_name(self._generate_part_name(i)))
 
     #         # Create new marker at distal disk's bottom
     #         self.socket.modify_part_rigid_body(self._generate_part_name(i+1))
     #         self.socket.create_marker(self._generate_marker_for_planar_constraint_name(self._generate_part_name(i+1), is_top=False),
     #                                   location=(
-    #                                       0, 0, -distal_disk_model.geometry.length/2),
+    #                                       0, 0, -distal_disk_model.disk_geometry.length/2),
     #                                   orientation=(0, 90, 0),
     #                                   relative_to=self._generate_marker_disk_center_name(self._generate_part_name(i+1)))
 
@@ -593,7 +735,7 @@ class SimManipulatorAdamExecuter:
     #                                                    j_marker_name=self._generate_marker_for_planar_constraint_name(self._generate_part_name(i),
     #                                                                                                                   is_top=True),)
 
-    def _generate_contacts(self, disk_models: List[SimDiskModel]):
+    def _generate_contacts(self, disk_models: List[DiskModel]):
         for i in range(len(disk_models)-1):
             self.socket.create_contact(
                 self._generate_contact_name(i),
@@ -609,21 +751,21 @@ class SimManipulatorAdamExecuter:
                 self.CONFIG_CONTACT_FRICTION_VEL,
             )
 
-    def _generate_measurement_joint_angles(self, disk_models: List[SimDiskModel]):
+    def _generate_measurement_joint_angles(self, disk_models: List[DiskModel]):
         for i, distal_disk_model in enumerate(disk_models[1:]):
-            if len(distal_disk_model.tendon_datas) > 0:
-                tendon_geometryMF = distal_disk_model.tendon_datas[0]
+            if len(distal_disk_model.tendon_models) > 0:
+                tendon_geometryMF = distal_disk_model.tendon_models[0]
                 proximal_top_marker_name = self._generate_tendon_guide_end_marker_name(
-                    self._generate_part_name(i), tendon_geometryMF.orientationMF, True)
+                    self._generate_part_name(i), tendon_geometryMF.orientation, True)
                 distal_bottom_marker_name = self._generate_tendon_guide_end_marker_name(
-                    self._generate_part_name(i+1), tendon_geometryMF.orientationMF, False)
+                    self._generate_part_name(i+1), tendon_geometryMF.orientation, False)
                 self.socket.create_measure_function(
                     self._generate_measurement_joint_angle_name(i),
                     function=f"AX({distal_bottom_marker_name}, {proximal_top_marker_name})",
                     unit="angle",
                 )
 
-    def _generate_measurement_contact_force(self, disk_models: List[SimDiskModel]):
+    def _generate_measurement_contact_force(self, disk_models: List[DiskModel]):
         for i in range(len(disk_models)-1):
             for force_type_index, measurement_name in zip((2, 3, 4, 6, 7, 8), self._generate_measurement_all_contact_components(i+1, False)):
                 # Magnitude of force at each direction
@@ -632,43 +774,42 @@ class SimManipulatorAdamExecuter:
                     function=f"CONTACT({self._generate_contact_name(i)}, 0, {force_type_index}, {self._generate_marker_disk_center_name(self._generate_part_name(i+1))})",
                 )
 
-            for force_type_index, measurement_name in zip((2, 3, 4, 6, 7, 8), self._generate_measurement_all_contact_components(i, True)):
-                # Magnitude of force at each direction
-                self.socket.create_measure_function(
-                    measurement_name,
-                    function=f"CONTACT({self._generate_contact_name(i)}, 1, {force_type_index}, {self._generate_marker_disk_center_name(self._generate_part_name(i))})",
-                )
-
     def _final_cleanup(self):
         self.socket.modify_part_rigid_body("ground")
 
+    @property
+    def _disks_init_location_orientation(self):
+        disk_length_accumulate = 0
+        for model in self.disk_models:
+            yield {"location": (0, 0, disk_length_accumulate), "orientation": (0, 0, degrees(model.bottom_orientationMF))}
+            disk_length_accumulate += model.disk_geometry.length
+
+    def _eval_tension_mags_at_step(self, final_values, current_step, total_steps):
+        res = []
+        for final_val in final_values:
+            ratio = (current_step+1) / total_steps
+            res.append((final_val-1)*ratio + 1)
+        return res
+
     def generate_model(self):
+        self.socket.create_model(self.model_name)
+        
+        disk_models = self.disk_models
+        tendon_models = self.tendon_models
+
         # set default unit
         self.socket.set_default_units(
             force_unit="newton", mass_unit="kg", length_unit="mm", time_unit="second", angle_unit="degree")
 
-        disk_models = self.disk_models
-        tendon_datas = self.tendon_datas
-        disk_length_accumulate = 0
+        if not self._import_CADs(disk_models):
+            print("Fail to import CAD")
 
-        for i, model in enumerate(disk_models):
-            part_name = self._generate_part_name(i)
-            if(self._import_and_cache_CAD(model.geometry, part_name)):
-                self._modify_geometry_solid_name(i)
-                self._define_mass_properties_per_disk(model, part_name)
-                self._create_markers_per_disk(model, part_name)
-                # Move the disk to designated location
-                self.socket.modify_part_rigid_body(
-                    part_name, orientation=(0, 0, degrees(model.bottom_orientationMF)))
-                self.socket.modify_part_rigid_body(
-                    part_name, location=(0, 0, disk_length_accumulate))
-                disk_length_accumulate += model.geometry.length
-
-        self._generate_parametric_variables(
-            self.tendon_datas)
+        self._define_mass_properties(disk_models)
+        self._create_markers(disk_models)
+        self._move_disks_to_init_pos(self._disks_init_location_orientation)
+        self._generate_parametric_variables(tendon_models)
         self._connect_forces_between_tendon_guide_ends(disk_models)
         self._enforce_base_disk_ground_constraint()
-        # self._enforce_planar_constraints(disk_models)
         self._generate_contacts(disk_models)
         self._generate_measurement_joint_angles(disk_models)
         self._generate_measurement_contact_force(disk_models)
@@ -676,26 +817,90 @@ class SimManipulatorAdamExecuter:
 
     def reset_model(self):
         self.socket.delete_model(self.model_name)
-        self.socket.create_model(self.model_name)
 
-    def set_forces(self, vals):
-        for tg, val in zip(self.tendon_datas, vals):
-            self.socket.set_variable(
-                self._generate_tension_magnitude_variable_name(
-                    tg.orientationMF),
-                val,
-            )
+    def run_sim(self, vals, total_steps=10, iteration_per_step=50, max_iterations_search_eqilibrium=30):
+        # Reset disks' positions to neutral state
+        self._move_disks_to_init_pos(self._disks_init_location_orientation)
 
-    def run(self, end_time, time_step_size):
-        self.socket.run_transient_simulation_once(
-            self.model_name, time_step_size, end_time)
+        # Increase static equilibrium iteration numbers
+        self.socket.set_simulation_equilibrium_param(
+            self.model_name,
+            max_iterations=max_iterations_search_eqilibrium)
 
+        # Create or modify simulation script
+        commands = (
+            _construct_cmd(
+                "simulation single_run reset",
+                without_prefix=True),
+            _construct_cmd(
+                "simulation single_run transient", {
+                    "model_name": self.model_name,
+                    "end_time": iteration_per_step,
+                    "step_size": 1,
+                }, without_prefix=True),
+            _construct_cmd(
+                "simulation single_run equilibrium", {
+                    "model_name": self.model_name,
+                }, without_prefix=True),
+            _construct_cmd(
+                "simulation single_run transient", {
+                    "model_name": self.model_name,
+                    "duration": 10,
+                    "step_size": 1,
+                }, without_prefix=True),
+            _construct_cmd(
+                "simulation single_run equilibrium", {
+                    "model_name": self.model_name,
+                }, without_prefix=True),
+        )
 
-# if __name__ == "__main__":
-#     s = AdamViewSocket(model_name="MODEL_12")
-#     # s.export_parasolid("./bbcb", part_name="PART_2")
+        if not self.socket.create_sim_script(self.CONFIG_SCRIPT_NAME, commands):
+            self.socket.modify_sim_script(self.CONFIG_SCRIPT_NAME, commands)
 
-#     print(s.get_model_info())
-#     # s.create_rigid_body_part("BASE_DISK")
-#     # s.import_geometry(os.path.realpath("./base.x_t"), part_name="BASE_DISK", location=(3,3,3))
-#     # print(s.get_part_info(part_name="PART_2"))
+        for step in range(total_steps):
+            print(f"Progress: {step+1}/{total_steps}")
+            # Update tension magnitudes
+            for tg, val in zip(self.tendon_models, self._eval_tension_mags_at_step(vals, step, total_steps)):
+                self.socket.set_variable(
+                    self._generate_tension_magnitude_variable_name(
+                        tg.orientation),
+                    val
+                )
+
+            # Run script
+            self.socket.run_sim_scripted(
+                self.model_name, self.CONFIG_SCRIPT_NAME)
+
+            # Make the simulation generate the records the disks' positions for next iteration
+            self.socket.set_auto_plot_param("Last_run", True)
+
+            # Do not update initial position at the last step
+            if step == total_steps-1:
+                break
+
+            # Update initial position of the disks [2nd to last] from the auto-generated records
+            for i in range(1, len(self.disk_models)):
+                res = self.socket.extract_spread_sheet(f"disk{i}_XFORM")
+                self.socket.modify_part_rigid_body(
+                    part_name=self._generate_part_name(i),
+                    location=[res["X"], res["Y"], res["Z"]],
+                    orientation=[res["PSI"], res["THETA"], res["PHI"]],
+                )
+
+        disk_states = []
+        for i, model in enumerate(self.disk_models[1:]):
+            force_moment = []
+            for contact_component in self._generate_measurement_all_contact_components(i+1, False):
+                res = self.socket.extract_spread_sheet(contact_component)
+                force_moment.append(res["Q"])
+
+            res = self.socket.extract_spread_sheet(
+                self._generate_measurement_joint_angle_name(i))
+            bottom_joint_angle = res["Q"]
+            disk_states.append(DiskState(
+                model,
+                bottom_contact_forceDF=force_moment[:3],
+                bottom_contact_pure_momentDF=force_moment[3:],
+                bottom_joint_angle=bottom_joint_angle,
+            ))
+        return disk_states

@@ -80,8 +80,7 @@ def generate_disk_CAD(
 
 
 def export_CAD(obj, path=None, export_type="step", override=True, tolerance=0.001):
-    import os
-    print(export_type)
+    import os    
     
     export_type_conversion_dict = {
         "step":cq.exporters.ExportTypes.STEP,

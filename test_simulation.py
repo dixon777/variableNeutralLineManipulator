@@ -1,32 +1,24 @@
 from variable_neutral_line_manipulator.simulation.entities import *
 from variable_neutral_line_manipulator.simulation.adam_command import *
-
-def test_simulation_socket():
-    s = AdamViewSocket()
-    print(s.get_default_settings())
-
-
-def test_manipulator_creator():
+    
+def postprocess():
     segments = [
-            SimSegment2DoFModel(
-                is_2_DoF=True, 
-                n_joints=1,
+            SegmentModel(
+                n_joints=18,
                 disk_length=5, 
-                orientationMF=0, 
+                base_orientationMF=0, 
+                distal_orientationDF=pi/2,
                 curve_radius=3, 
                 tendon_dist_from_axis=2, 
                 end_disk_length=None, 
-                disk_outer_diameter=5,
             )
         ]
-    manipulatorModel = SimManipulatorModel(segments)
+    manipulatorModel = ManipulatorModel(segments)
     s = SimManipulatorAdamExecuter(manipulatorModel)
     s.reset_model()
     s.generate_model()
-    s.set_forces([2.0,1.5,1,0.5])
-    # s.run(3000, 1)
+    s.run_sim([2,1.5,1,0.5], total_steps=40, iteration_per_step=200, max_iterations_search_eqilibrium=50)
     
-    
+
 if __name__ == "__main__":
-    # test_simulation_socket()
-    test_manipulator_creator()
+    postprocess()
