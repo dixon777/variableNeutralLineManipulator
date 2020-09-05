@@ -9,6 +9,23 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/gui_main.py",
+            "cwd": "${fileDirname}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Simulation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_simulation.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Math model",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_math_model.py",
+            "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
         {
@@ -16,26 +33,6 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Remote Attach",
-            "type": "python",
-            "request": "attach",
-            "port": 5678,
-            "host": "localhost",
-            "pathMappings": [
-                {
-                    "localRoot": "${workspaceFolder}",
-                    "remoteRoot": "."
-                }
-            ]
-        },
-        {
-            "name": "Python: Module",
-            "type": "python",
-            "request": "launch",
-            "module": "snake_joint_3d",
             "console": "integratedTerminal"
         },
         {

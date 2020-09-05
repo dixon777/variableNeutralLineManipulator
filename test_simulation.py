@@ -1,10 +1,10 @@
 from variable_neutral_line_manipulator.simulation.entities import *
 from variable_neutral_line_manipulator.simulation.adam_command import *
     
-def postprocess():
+def process():
     segments = [
             SegmentModel(
-                n_joints=18,
+                n_joints=10,
                 disk_length=5, 
                 base_orientationMF=0, 
                 distal_orientationDF=pi/2,
@@ -17,8 +17,13 @@ def postprocess():
     s = SimManipulatorAdamExecuter(manipulatorModel)
     s.reset_model()
     s.generate_model()
-    s.run_sim([2,1.5,1,0.5], total_steps=40, iteration_per_step=200, max_iterations_search_eqilibrium=50)
     
+    res = s.run_sim([2,1.5,1,0.5], total_iterations=1,
+                    duration=0.001,
+                    step_size=0.0000005, 
+                    max_iterations_search_eqilibrium=300)
+    res = s.extract_state()
+    print(res)
 
 if __name__ == "__main__":
-    postprocess()
+    process()

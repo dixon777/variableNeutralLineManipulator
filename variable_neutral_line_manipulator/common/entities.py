@@ -61,16 +61,17 @@ class BaseDataClass(ABC):
         return None
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__) and all(self.__dict__[key] == other.__dict__[key] for key in self.eq_attr_keys)
+        return isinstance(other, self.__class__) and all(getattr(self,key) == getattr(other,key) for key in self.eq_attr_keys)
 
     def __hash__(self):
-        return hash((self.__dict__[k] for k in self.eq_attr_keys))
+        return hash((getattr(self,k) for k in self.eq_attr_keys))
 
     def __iter__(self):
         yield "__class_name__", self.__class__.__name__
         for k in self.attr_keys:
-            j = self.__dict__[k]
-            yield k, j
+            if hasattr(self, k):
+                j = getattr(self, k)
+                yield k, j
 
     def __repr__(self):
         return str(dict(self))
@@ -158,7 +159,7 @@ class TendonModel(BaseDataClass):
         return super().__eq__(other) and normalise_angle(self.orientation) == normalise_angle(other.orientation)
 
     def __hash__(self):
-        return hash((self.__dict__[k] for k in self.eq_attr_keys))
+        return hash((getattr(self,k) for k in self.eq_attr_keys))
 
 class DiskModel(BaseDataClass):
     """

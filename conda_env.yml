@@ -1,0 +1,9 @@
+name: variable_neutral_line_manipulator
+channels:
+  - freecad
+  - conda-forge
+  - defaults
+dependencies:
+  - cadquery=2
+  - pyrr
+
