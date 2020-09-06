@@ -97,12 +97,12 @@ class Logger(metaclass=Singleton):
         """
             Decorator
         """
-        def __c(*args, **kwargs):
+        def __inner(*args, **kwargs):
             Logger.addSpace()
             res = func(*args, **kwargs)
             Logger.reduceSpace()
             return res
-        return __c
+        return __inner
                 
     @classmethod
     def setLevel(cls, level):
@@ -122,6 +122,11 @@ class Logger(metaclass=Singleton):
     @classmethod
     def W(cls, s, extraSpace=0):
         cls._instance.warning(cls.spaceStr(s, extraSpace))
+        return cls
+    
+    @classmethod
+    def E(cls, s, extraSpace=0):
+        cls._instance.error(cls.spaceStr(s, extraSpace))
         return cls
         
     @classmethod

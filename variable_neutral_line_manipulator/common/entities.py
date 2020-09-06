@@ -373,8 +373,8 @@ class TendonState(TendonStateBase):
                  bottom_tensionDF: np.ndarray,
                  top_tensionDF: np.ndarray):
         super().__init__(model)
-        self.bottom_tensionDF = np.array(bottom_tensionDF)
-        self.top_tensionDF = np.array(top_tensionDF)
+        self.bottom_tensionDF = np.array(bottom_tensionDF) if bottom_tensionDF is not None else None
+        self.top_tensionDF = np.array(top_tensionDF) if top_tensionDF is not None else None
 
     @property
     def tension_in_disk(self):

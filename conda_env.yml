@@ -1,9 +1,11 @@
-name: variable_neutral_line_manipulator
+name: vnlm_math_model
 channels:
   - freecad
   - conda-forge
+  - cadquery
   - defaults
 dependencies:
+  - python=3.7
   - cadquery=2
   - pyrr
 
