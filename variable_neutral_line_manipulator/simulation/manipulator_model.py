@@ -1,9 +1,6 @@
-import time
-import socket
 import os
-import re
 import json
-from math import degrees, radians
+from math import degrees
 from collections.abc import Iterable
 from typing import List,  Union, Dict
 
@@ -12,431 +9,13 @@ from ..common import Logger
 from ..cad.cadquery_disk_generator import generate_disk_CAD, export_CAD
 from ..common.calculation import normalise_angle
 from ..math_model.calculation import eval_tendon_guide_top_end_disp, eval_tendon_guide_bottom_end_disp
+from .adam_middleware import *
 
 
-def _to_Adam_val(v):
-    if isinstance(v, str):
-        new_v = v.replace('"', '\'')
-        return f"\"{new_v}\""
-    elif isinstance(v, bool):
-        return "yes" if v else "no"
-    elif isinstance(v, (int, float)):
-        return f"{v}"
-    elif isinstance(v, Iterable):
-        return ",".join(map(_to_Adam_val, v))
-
-    raise ValueError(f"Unsupported type for conversion: {type(v)}")
-
-
-def adam_construct_cmd(init, params={}, without_prefix=False):
-    s = f"{'cmd ' if not without_prefix else ''}{init} "
-    for p in params:
-        if params[p] is None:
-            continue
-        s += f"{p} = {_to_Adam_val(params[p])} "
-    return s
-
-
-def adam_read_spreadsheet(path):
-    import re
-    res = {}
-    with open(path, "r") as f:
-        for i in range(6):
-            next(f)
-
-        # read attribute
-        attr_line = f.readline()
-
-        lines = f.read()
-
-        # read values at equilibrium
-        equilibrium_val_line = lines.splitlines()[-4]
-
-    attrs = [re.search("(?<=.)\w+(?=\")", s).group(0)
-             for s in attr_line.split('\t')]
-    vals = [float(v) for v in equilibrium_val_line.split('\t')]
-    return {attr: val for attr, val in zip(attrs, vals)}
-
-
-class AdamDetails(BaseDataClass):
-    def __init__(self, path):
-        with open(path, "r") as f:
-            self.content = f.read()
-
-    @property
-    def local_attr_keys(self):
-        return ["content"]
-
-
-class AdamViewSocket:
-    def __init__(self, 
-                 port=5002, 
-                 return_text_prefix="./.return_result",
-                 reset_script_name="AUTO_GENERATED_sim_reset_script"):
-        self.port = port
-        self.return_text_prefix = os.path.abspath(return_text_prefix)
-        self.reset_script_name  =reset_script_name
-        
-    def deal_with_cmd(self, cmd:str, params:Union[None, Dict[str, Union[int, float, str, bool, Iterable]]]=None):
-        if params:
-            cmd = adam_construct_cmd(cmd, params)
-        Logger.D(f"Send cmd: {str(cmd)}")
-        # Must reconnect the server before every command is sent
-        self.soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.soc.connect(("localhost", self.port))
-        if isinstance(cmd, str):
-            cmd = cmd.encode("ascii")
-        self.soc.send(cmd)
-        data = self.soc.recv(1024)
-        success = data[-1] == ord('0')
-        if not success:
-            Logger.D(f"cmd is not accepted")
-        return success
-
-    # Default
-
-    def set_default_units(self, force_unit=None, mass_unit=None, length_unit=None, time_unit=None, angle_unit=None):
-        return self.deal_with_cmd("default units", {
-            "force": force_unit,
-            "mass": mass_unit,
-            "length": length_unit,
-            "time": time_unit,
-            "angle": angle_unit,
-        })
-
-    # Entity (for geometry)
-    def rename_entity(self, name, new_name):
-        return self.deal_with_cmd("entity modify", {
-            "entity_name": name,
-            "new_entity_name": new_name
-        })
-
-    # Models
-    def create_model(self, model_name):
-        return self.deal_with_cmd("model create", {
-            "model_name": model_name
-        })
-
-    def delete_model(self, model_name):
-        return self.deal_with_cmd("model delete", {
-            "model_name": model_name
-        })
-
-    # Parts
-    def create_part_rigid_body(self, part_name, comments=None, is_ground_part=None):
-        return self.deal_with_cmd("part create rigid_body name_and_position", {
-            "part_name": part_name,
-            "comments": comments,
-            "ground_part": is_ground_part,
-        })
-
-    def modify_part_rigid_body(self, part_name, location=None, orientation=None, relative_to=None, is_ground_part=None):
-        return self.deal_with_cmd("part modify rigid_body name_and_position", {
-            "part_name": part_name,
-            "location": location,
-            "orientation": orientation,
-            "relative_to": relative_to,
-            "ground_part": is_ground_part,
-        })
-
-    def create_part_rigid_body_mass_properties(self, part_name, density):
-        return self.deal_with_cmd("part create rigid_body mass_properties", {
-            "part_name": part_name,
-            "density": density,
-        })
-
-    # Markers
-    def create_marker(self, marker_name, location=None, orientation=None, relative_to=None, reference_marker_name=None):
-        return self.deal_with_cmd("marker create", {
-            "marker_name": marker_name,
-            "location": location,
-            "orientation": orientation,
-            "relative_to": relative_to,
-            "reference_marker_name": reference_marker_name
-        })
-
-    def modify_marker(self, marker_name, new_marker_name=None, location=None, orientation=None, relative_to=None, reference_marker_name=None):
-        return self.deal_with_cmd("marker modify", {
-            "marker_name": marker_name,
-            "new_marker_name": new_marker_name,
-            "location": location,
-            "orientation": orientation,
-            "relative_to": relative_to,
-            "reference_marker_name": reference_marker_name
-        })
-
-    def create_floating_marker(self, marker_name):
-        return self.deal_with_cmd("floating_marker create", {
-            "marker_name": marker_name,
-        })
-
-    # Forces
-    def create_single_component_force(self, force_name, i_marker_name, j_marker_name, function,):
-        return self.deal_with_cmd("force create direct single_component_force", {
-            "single_component_force_name": force_name,
-            "i_marker_name": i_marker_name,
-            "j_marker_name": j_marker_name,
-            "action_only": "off",
-            "function": function
-        })
-
-    # Contact
-    def create_contact(self, name, i_geometry_name, j_geometry_name, stiffness, damping, max_intrusion, exponent, mu_static, mu_dynamic, friction_transition_velocity, stiction_transition_velocity):
-        return self.deal_with_cmd("contact create", {
-            "contact_name": name,
-            "i_geometry_name": i_geometry_name,
-            "j_geometry_name": j_geometry_name,
-            "stiffness": stiffness,
-            "damping": damping,
-            "dmax": max_intrusion,
-            "exponent": exponent,
-            "coulomb_friction": "on",
-            "mu_static": mu_static,
-            "mu_dynamic": mu_dynamic,
-            "friction_transition_velocity": friction_transition_velocity,
-            "stiction_transition_velocity": stiction_transition_velocity,
-            "augmented_lagrangian_formulation": False,
-        })
-
-    # Constraints
-    def create_constraint_fixed(self, name, i_part_name=None, j_part_name=None, i_marker_name=None, j_marker_name=None, location=None, orientation=None, relative_to=None):
-        return self.deal_with_cmd("constraint create joint fixed", {
-            "joint_name": name,
-            "i_part_name": i_part_name,
-            "j_part_name": j_part_name,
-            "i_marker_name": i_marker_name,
-            "j_marker_name": j_marker_name,
-            "location": location,
-            "orientation": orientation,
-            "relative_to": relative_to
-        })
-
-    def create_constraint_planar_joint(self, name, i_part_name=None, j_part_name=None, i_marker_name=None, j_marker_name=None, location=None, orientation=None, relative_to=None):
-        return self.deal_with_cmd("constraint create joint planar", {
-            "joint_name": name,
-            "i_part_name": i_part_name,
-            "j_part_name": j_part_name,
-            "i_marker_name": i_marker_name,
-            "j_marker_name": j_marker_name,
-            "location": location,
-            "orientation": orientation,
-            "relative_to": relative_to
-        })
-
-    # Variables
-    def create_variable(self, name, value, unit=None):
-        return self.deal_with_cmd("variable create", {
-            "variable_name": name,
-            "real_value": value,
-            "unit": unit,
-            "use_range": False,
-            "use_allowed_values": False,
-        })
-
-    def set_variable(self, name, value, unit=None):
-        return self.deal_with_cmd("variable modify", {
-            "variable_name": name,
-            "real_value": value,
-            "unit": unit,
-            "use_range": False,
-            "use_allowed_values": False,
-        })
-
-    # Measures
-    def create_measure_function(self, name, function, unit=None, should_display=False):
-        return self.deal_with_cmd("measure create function", {
-            "measure_name": name,
-            "function": function,
-            "units": unit,
-            "create_measure_display": should_display,
-        })
-
-    # SImulation
-    def create_sim_script(self, name, commands):
-        return self.deal_with_cmd("simulation script create", {
-            "sim_script_name": name,
-            "commands": commands
-        })
-        
-    def modify_sim_script(self, name, commands):
-        return self.deal_with_cmd("simulation script modify", {
-            "sim_script_name": name,
-            "commands": commands
-        })
-
-    def delete_sim_script(self, name):
-        return self.deal_with_cmd("simulation script delete", {
-            "sim_script_name": name,
-        })
-
-    def run_sim_script(self, model_name, script_name):
-        return self.deal_with_cmd("simulation single_run scripted", {
-            "model_name": model_name,
-            "sim_script_name": script_name,
-            "reset_before_and_after": False,
-        })
-
-    def config_sim_general(self, server_choice=None):
-        return self.deal_with_cmd("simulation set", {
-            "choice_for_solver": server_choice
-        })
-
-    def set_sim_equilibrium_param(self, model_name, max_iterations=None):
-        return self.deal_with_cmd("executive_control set equilibrium_parameters", {
-            "model_name": model_name,
-            "maxit": max_iterations
-        })
-
-    def run_sim_equilibrium(self, model_name):
-        return self.deal_with_cmd("simulation single_run equilibrium", {
-            "model_name": model_name,
-        })
-
-    def run_sim_transient(self, model_name, step_size, solver_type="DYNAMIC", end_time=None, duration=None, initial_static=None):
-        return self.deal_with_cmd("simulation single_run transient", {
-            "model_name": model_name,
-            "initial_static": initial_static,
-            "type": solver_type,
-            "step_size": step_size,
-            "end_time": end_time,
-            "duration": duration,
-        })
-
-    def run_sim_reset(self, model_name):
-        # Adam View does not respond at all if "simulation single_run reset" command is transferred into it via command server, 
-        # but the command works when it is executed in the sim script
-        # Therefore, the following strategy involves writing a command script to the model
-        # and activate it whenever this function gets called
-        i = 0
-        script_name = self.reset_script_name
-        while not self.create_sim_script(script_name, "simulation single_run reset"):
-            i += 1
-            script_name += f"{i}"
-        
-        res = self.run_sim_script(model_name, self.reset_script_name)
-        self.delete_sim_script(script_name)
-        return res
-
-    # Imports
-    def import_geometry(self, path, part_name=None, type_of_geometry="stp", location=None, orientation=None, relative_to=None):
-        return self.deal_with_cmd("file geometry read", {
-            "type_of_geometry": type_of_geometry,
-            "file": os.path.abspath(path),
-            # mutually exclusive with part_name
-            "model_name": self.current_model_name if not part_name else None,
-            "part_name": part_name,
-            "location": location,
-            "orientation": orientation,
-            "relative_to": relative_to,
-        })
-
-    def import_parasolid(self, path, part_name=None, encoding="ascii", location=None, orientation=None, relative_to=None):
-        return self.deal_with_cmd("file parasolid read", {
-            "file_name": os.path.abspath(path),
-            "type": encoding,
-            "model_name": self.current_model_name if not part_name else None,
-            "part_name": part_name,
-            "location": location,
-            "orientation": orientation,
-            "relative_to": relative_to,
-        })
-
-    def import_cmd(self, path):
-        return self.deal_with_cmd("file command read", {
-            "file_name": os.path.abspath(path),
-        })
-        
-    def import_sim_script(self, script_name, path):
-        return self.deal_with_cmd("simulation script read_acf", {
-            "sim_script_name": script_name,
-            "file_name": os.path.abspath(path)
-        })
-
-    # Exports
-    def export_parasolid(self, path, part_name=None, encoding="ascii"):
-        return self.deal_with_cmd("file parasolid write", {
-            "file_name": os.path.abspath(path),
-            "type": encoding,
-            "model_name": self.current_model_name if not part_name else None,
-            "part_name": part_name,
-        })
-
-    def export_spread_sheet(self, path, result_names):
-        return self.deal_with_cmd("file spread_sheet write", {
-            "file_name": os.path.abspath(path),
-            "result_set_name": result_names,
-        })
-
-    def extract_spread_sheet(self, result_names):
-        path = f"{self.return_text_prefix}.tab"
-        if os.path.exists(path):
-            os.remove(path)
-        return adam_read_spreadsheet(path) if self.export_spread_sheet(path, result_names) else {}
-
-    def export_sim_script(self, script_name, path):
-        return self.deal_with_cmd("simulation script write_acf", {
-            "sim_script_name": script_name,
-            "file_name": os.path.abspath(path)
-        })
-        
-    # Plots
-    def set_auto_plot_param(self, analysis_name,
-                            include_displacements=False,
-                            include_velocity=False):
-        return self.deal_with_cmd("xy_plots auto_plot output_requests", {
-            "analysis_name": analysis_name,
-            "displacements": "on" if include_displacements else "off",
-            "velocities": "on" if include_velocity else "off",
-        })
-
-    def create_plot(self, plot_name,  data_name=None, measurement_name=None):
-        return self.deal_with_cmd("xy_plots curve create", {
-            "plot_name": plot_name,
-            "vaxis_data": data_name,
-            "vmeasure": measurement_name,
-        })
-
-    # Info
-    def get_info(self, item_name, dictionary):
-        path = os.path.exists(f"{self.return_text_prefix}.txt")
-        os.remove(path)
-        return AdamDetails(path) if self.deal_with_cmd(f"list_info {item_name}", {
-            "write_to_terminal": "off",
-            "brief": "on",
-            "file_name": os.path.abspath(path),
-            **dictionary
-        }) else None
-
-    def get_model_info(self, model_name=None):
-        return self.get_info("model", {
-            "model_name": model_name,
-        })
-
-    def get_part_info(self, part_name=None):
-        return self.get_info("part", {
-            "model_name": part_name,
-        })
-
-    def get_entity_info(self, entity_name=None):
-        return self.get_info("entity", {
-            "entity_name": entity_name,
-        })
-
-    def get_geometry_info(self, geometry_name=None):
-        return self.get_info("geometry", {
-            "geometry_name": geometry_name,
-        })
-
-    def get_database_names(self, entity_name=None):
-        return self.get_info("names", {
-            "entity_name": entity_name,
-        })
-
-    def get_default_settings(self):
-        return self.get_info("defaults", {})
-
-
-class CADCacheManager:
+class _CadCacheManager:
+    CONSTANT_KEY_SUB_PATH = "sub_path"
+    CONSTANT_KEY_GEOMETRY = "geometry"
+    
     def __init__(self, dir_path, cache_details_file_basename="cad_details.json"):
         super().__init__()
         self._dir_path = os.path.abspath(dir_path)
@@ -462,10 +41,10 @@ class CADCacheManager:
     def search_path(self, geometry: SimDiskGeometry, check_existance=True):
         cad_details = self.details
         for i, cad_item in enumerate(cad_details):
-            if cad_item["geometry"] == geometry:
-                path = self._generate_path(cad_item["path"])
+            if cad_item[self.CONSTANT_KEY_GEOMETRY] == geometry:
+                path = self._generate_path(cad_item[self.CONSTANT_KEY_SUB_PATH])
                 if not check_existance or os.path.exists(path):
-                    return path
+                    return self._generate_path(path)
 
                 # If the identical geometry is in the record but the path does not exist
                 Logger.W(
@@ -482,13 +61,13 @@ class CADCacheManager:
         largest_index = -1
         for cad_item in cad_details:
             largest_index = max(
-                (largest_index, int(os.path.basename(cad_item["path"]).split(".")[0])))
-            if cad_item["geometry"] == geometry:
+                (largest_index, int(os.path.basename(cad_item[self.CONSTANT_KEY_SUB_PATH]).split(".")[0])))
+            if cad_item[self.CONSTANT_KEY_GEOMETRY] == geometry:
                 Logger.W("Has duplicate. Terminate caching new model")
 
         return {
-            "path": self._generate_path(f"{largest_index+1}.xmt_txt"),
-            "geometry": dict(geometry)
+            self.CONSTANT_KEY_SUB_PATH: f"{largest_index+1}.xmt_txt",
+            self.CONSTANT_KEY_GEOMETRY: dict(geometry)
         }
 
     def add_entry(self, geometry: SimDiskGeometry):
@@ -502,7 +81,8 @@ class CADCacheManager:
         self.store_details(filtered_details)
 
 
-class SimManipulatorAdamNameGenerator():
+class _ManipulatorAdamSimNameGenerator():
+    '''Generator which creates meaningful names for all items within Adams View'''
 
     @staticmethod
     def _convert_angle(angle_in_rad):
@@ -547,8 +127,14 @@ class SimManipulatorAdamNameGenerator():
 
     # Measurements
     @classmethod
-    def measurement_joint_angle_name(cls, joint_index):
-        return f"mm_joint{joint_index}_angle"
+    def measurement_joint_angle_name(cls, joint_index, orientationMF=None, dist_from_axis=None):
+        return (f"mm_joint{joint_index}_angle" + 
+                (f'_o{cls._convert_angle(orientationMF)}' if orientationMF is not None else '') +
+                (f"_d{int(dist_from_axis)}" if dist_from_axis is not None else ''))
+    
+    # @classmethod
+    # def measurement_joint_angle_validation_name(cls, joint_index, orientationMF, dist_from_axis):
+    #     return f"mm_joint{joint_index}_angle_validation_o{cls._convert_angle(orientationMF)}_d{dist_from_axis}"
 
     @classmethod
     def measurement_contact_component_name(cls, disk_index, is_top_surface, item):
@@ -567,11 +153,20 @@ class SimManipulatorAdamNameGenerator():
         return [cls.measurement_tension_component_name(disk_index, orientationMF, dist_from_axis, is_top_surface, item) for item in ["Fx", "Fy", "Fz"]]
 
 
-class SimManipulatorAdamExecuter:
+class SimManipulatorAdamModel:
+    """
+    It contains methods for building and running simulation, extracting info from Adam Views with custom config
+    
+    Params:
+     - manipulator_model: Manipulator model
+     - port: Port listened by Adams View command server
+     - cache_dir_path: Temporary file which holds all caches required for simulation
+     - configs: All model related configs (Currently it has no effect) TODO
+    """
     ADAM_INFO_BUFFER_FILE_PREFIX = ".return_result"
-    CAD_CACHE_SUB_PATH = "cad_cache"
+    CAD_CACHE_SUB_DIR = "cad_cache"     # Sub directory for CAD cache
     MARKER_OFFSET_FROM_CURVE = 0.01
-    TIME_STEP_PER_ITERATION = 100
+    CONSTANT_MODEL_NAME_IN_ADAM = "MANIPULATOR"
 
     # Configs
     # Body
@@ -584,7 +179,7 @@ class SimManipulatorAdamExecuter:
     CONFIG_CONTACT_DAMPING = 1*10**2
     CONFIG_CONTACT_PENETRATION_DEPTH = 0.05
 
-    CONFIG_CONTACT_FRICTION_COEF = 2*10**7
+    CONFIG_CONTACT_FRICTION_COEF = 1*10**8
     CONFIG_CONTACT_FRICTION_VEL = 1
 
     DEFAULT_OVERLAPPING_LENGTH = 0.005
@@ -593,26 +188,28 @@ class SimManipulatorAdamExecuter:
     CONFIG_SCRIPT_NAME = "iterative_solver_script"
 
     def __init__(self,
-                 manipulatorModel: ManipulatorModel,
-                 port=5002,
-                 model_name="MANIPULATOR",
-                 temp_dir_path="./.temp_adam"):
-        self.disk_models: List[DiskModel] = manipulatorModel.get_disk_models(
+                 manipulator_model: ManipulatorModel,
+                 port=5002, # Should be always 5002
+                 cache_dir_path="./.manipulator_adam_cache",
+                 configs={} # TODO
+                 ):
+        self.disk_models: List[DiskModel] = manipulator_model.get_disk_models(
             include_base=True)
-        self.tendon_models: List[TendonModel] = manipulatorModel.tendon_models
-        self.model_name = model_name
-        self.temp_dir_path = os.path.abspath(temp_dir_path)
-        os.makedirs(self.temp_dir_path, exist_ok=True)
+        self.tendon_models: List[TendonModel] = manipulator_model.tendon_models
+        self.model_name = self.CONSTANT_MODEL_NAME_IN_ADAM
+        self._cache_dir_path = os.path.abspath(cache_dir_path)
+        os.makedirs(self._cache_dir_path, exist_ok=True)
+        self.configs = configs # TODO
 
         self.socket: AdamViewSocket = AdamViewSocket(
             port, self._generate_path(self.ADAM_INFO_BUFFER_FILE_PREFIX))
 
-        self.cad_cache = CADCacheManager(
-            self._generate_path(self.CAD_CACHE_SUB_PATH))
-        self.name_gen = SimManipulatorAdamNameGenerator()
+        self.cad_cache = _CadCacheManager(
+            self._generate_path(self.CAD_CACHE_SUB_DIR))
+        self.name_gen = _ManipulatorAdamSimNameGenerator()
 
     def _generate_path(self, *subpaths):
-        return os.path.join(self.temp_dir_path, *subpaths)
+        return os.path.join(self._cache_dir_path, *subpaths)
 
     def _import_CADs(self, disk_models):
         success = True
@@ -778,19 +375,27 @@ class SimManipulatorAdamExecuter:
 
     def _generate_measurement_joint_angles(self, disk_models: List[DiskModel]):
         for i, distal_disk_model in enumerate(disk_models[1:]):
-            if len(distal_disk_model.tendon_models) > 0:
-                tendon_model = distal_disk_model.tendon_models[0]
+            for j, tendon_model in enumerate(distal_disk_model.tendon_models):
                 proximal_top_marker_name = self.name_gen.tendon_guide_end_marker_name(
                     i, tendon_model.orientation, tendon_model.dist_from_axis, True)
                 distal_bottom_marker_name = self.name_gen.tendon_guide_end_marker_name(
                     i+1, tendon_model.orientation, tendon_model.dist_from_axis, False)
                 self.socket.create_measure_function(
-                    self.name_gen.measurement_joint_angle_name(i),
+                    self.name_gen.measurement_joint_angle_name(i, tendon_model.orientation, tendon_model.dist_from_axis),
                     function=f"AX({distal_bottom_marker_name}, {proximal_top_marker_name})",
                     unit="angle",
-
                 )
-
+                
+                if j == 0:
+                    self.socket.create_measure_function(
+                        self.name_gen.measurement_joint_angle_name(i),
+                        function=f"AX({distal_bottom_marker_name}, {proximal_top_marker_name})",
+                        unit="angle",
+                    )
+                
+                
+                
+                
     def _generate_measurement_contact_force(self, disk_models: List[DiskModel]):
         for i in range(len(disk_models)-1):
             # Top surface of i-th disk
@@ -872,8 +477,39 @@ class SimManipulatorAdamExecuter:
                 function=f"CONTACT({self.name_gen.force_contact_name(i)}, 0, 1, {self.name_gen.disk_center_marker_name(i+1)})",
                 # should_display=True
             )
+            
+    def _extract_one_state_from_spreadsheet(self, result_set_name, component_name="Q"):
+        res = self.socket.extract_spread_sheet(result_set_name)
+        if isinstance(component_name, str):
+            return res.get(component_name, None)
+        elif isinstance(component_name, list):
+            return [res.get(c, None) for c in component_name]
+        else:
+            raise ValueError()
+    
+    def _validate_state(self):
+        res = True
+        for i, distal_disk_model in enumerate(self.disk_models[1:]):
+            first_angle =  self._extract_one_state_from_spreadsheet(
+                    self.name_gen.measurement_joint_angle_name(i)
+                    )
+            for j, tendon_model in enumerate(distal_disk_model.tendon_models):
+                other_angle = self._extract_one_state_from_spreadsheet(
+                    self.name_gen.measurement_joint_angle_name(i, 
+                                                               tendon_model.orientation, 
+                                                               tendon_model.dist_from_axis) )
+                if first_angle != other_angle:
+                    print(f"Angles at joint{i}, orientation {degrees(tendon_model.orientation)} deg, dist {tendon_model.dist_from_axis} are not inconsistent with others")
+                    print(f" First angle = {degrees(first_angle)}")
+                    print(f" This angle = {degrees(other_angle)}\n")
+                    res = False
+        return res
+
 
     def generate_model(self, initial_disk_overlap_length=DEFAULT_OVERLAPPING_LENGTH):
+        """
+        Config and set up the simulation model
+        """
         # Pick c++ implementation solver
         self.socket.config_sim_general("cplusplus")
 
@@ -910,6 +546,9 @@ class SimManipulatorAdamExecuter:
         self._final_cleanup()
 
     def clear_model(self):
+        """
+        Remove model. Meaningful only when it is followed by generate_model()
+        """
         self.socket.delete_model(self.model_name)
 
     def run_sim(self,
@@ -919,9 +558,12 @@ class SimManipulatorAdamExecuter:
                 duration=0.5,
                 max_iterations_search_eqilibrium=30,
                 initial_disk_overlap_length=DEFAULT_OVERLAPPING_LENGTH,):
-        # Reset disks' positions to neutral state
-        self._move_disks_to_pos(
-            self._disks_init_location_orientation(initial_disk_overlap_length))
+        """
+        Run simulation on the model and extract its final steady state results. 
+        generate_model() should have been run.
+        """
+        # Reset state
+        self.socket.run_sim_reset(self.model_name)
 
         # Increase static equilibrium iteration numbers
         self.socket.set_sim_equilibrium_param(
@@ -948,30 +590,35 @@ class SimManipulatorAdamExecuter:
             )
 
         # Run simulation
-        self.socket.run_sim_reset(self.model_name)
         self.socket.run_sim_equilibrium(self.model_name)
-        self.socket.run_sim_transient(self.model_name,
-                                      step_size=step_size,
-                                      solver_type="STATIC",
-                                      duration=duration)
-
+        
         # Make the simulation generate the records the disks' positions for next iteration
         self.socket.set_auto_plot_param("Last_run", True)
-
-        return self.extract_state()
-
-    def _extract_one_state_from_spreadsheet(self, result_set_name, component_name="Q"):
-        res = self.socket.extract_spread_sheet(result_set_name)
-        if isinstance(component_name, str):
-            return res.get(component_name, None)
-        elif isinstance(component_name, list):
-            return [res.get(c, None) for c in component_name]
-        else:
-            raise ValueError()
-
-    def extract_state(self):
+        
+        # Validation the state regularly during the simulation to ensure the simulation conforms the assumption of math model, which is that
+        # the orientations of tendon sections between each pair of tendon guide ends of the same joint are identical)
+        # The errors might occurs if the potential friction at one timestep is insufficient to prevent slipping
+        duration_between_validation = step_size*1000
+        temp_duration_end_time = duration_between_validation
+        while temp_duration_end_time < duration:
+            print(f"Progress: {temp_duration_end_time:.2f}/{duration:.2f} ({temp_duration_end_time/duration*100:.2f}%)")
+            self.socket.run_sim_transient(self.model_name,
+                                        step_size=step_size,
+                                        solver_type="STATIC",
+                                        end_time=min(temp_duration_end_time, duration))
+            if not self._validate_state():
+                return False
+            temp_duration_end_time += duration_between_validation        
+        
+        return True
+   
+    def extract_final_state(self):
+        if not self._validate_state():
+            print("Warning: Joint angles are not consistent, thus the assumption is incorrect")
+            
         disk_states = []
-        for i, model in enumerate(self.disk_models):
+        for i in range(1, len(self.disk_models)):
+            model = self.disk_models[i]
             if i < len(self.disk_models) - 1:
                 top_force_moment = [self._extract_one_state_from_spreadsheet(
                     contact_component,
@@ -982,13 +629,12 @@ class SimManipulatorAdamExecuter:
 
                 
 
-            if i > 0:
-                bottom_force_moment = [self._extract_one_state_from_spreadsheet(
-                    contact_component,
-                ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, False)]
+            bottom_force_moment = [self._extract_one_state_from_spreadsheet(
+                contact_component,
+            ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, False)]
 
-                bottom_joint_angle = self._extract_one_state_from_spreadsheet(
-                    self.name_gen.measurement_joint_angle_name(i-1))
+            bottom_joint_angle = self._extract_one_state_from_spreadsheet(
+                self.name_gen.measurement_joint_angle_name(i-1))
             
             knobbed_tendon_states = []
             continuous_tendon_states = []

@@ -79,15 +79,15 @@ def _eval_bottom_tendon_guide_components(current_disk_model: DiskModel, distal_d
 
 class _SolverBase(ABC):
     @abstractmethod
-    def solve(self, manipulator_model: ManipulatorModel, nested_input_forces: Iterable[List[float]]) -> List[DiskState]:
+    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> List[DiskState]:
         pass
 
 
 class DirectSolver(_SolverBase):
-    def solve(self, manipulator_model: ManipulatorModel, nested_input_forces: Iterable[List[float]]) -> List[DiskState]:
+    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> List[DiskState]:
         disk_states = []
         last_disk_state = None
-        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(nested_input_forces, include_base=False):
+        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(input_forces, include_base=False):
             last_disk_state = DirectSolver.solve_single_disk(
                 disk_model, last_disk_state, input_forces)
             if last_disk_state is None:
@@ -194,10 +194,10 @@ class IterativeSolver(_SolverBase):
     def __init__(self, precision=0.0000000001):
         self.precision = precision
 
-    def solve(self, manipulator_model: ManipulatorModel, nested_input_forces: List[Iterable[float]]) -> List[DiskState]:
+    def solve(self, manipulator_model: ManipulatorModel, input_forces: List[float]) -> List[DiskState]:
         disk_states = []
         last_disk_state = None
-        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(nested_input_forces, include_base=False):
+        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(input_forces, include_base=False):
             last_disk_state = IterativeSolver.solve_single_disk(
                 disk_model, last_disk_state, input_forces, self.precision)
             if last_disk_state is None:

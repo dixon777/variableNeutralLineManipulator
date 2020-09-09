@@ -19,6 +19,7 @@ python/venv/
 
 tmp
 .temp*
+.manipulator_adam_cache
 
 .vscode/
 .dist/
@@ -27,3 +28,4 @@ dist/
 
 mylog.log
 *.tmp
+*.csv

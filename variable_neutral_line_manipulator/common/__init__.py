@@ -1,4 +1,4 @@
-import logging, os
+import logging, os, time
 from datetime import datetime
 
 # def preCond(f):
@@ -153,3 +153,19 @@ class Logger(metaclass=Singleton):
         return logging.getLogger(name) if name else cls._instance
     
 
+class Timer:
+    def __init__(self):
+        super().__init__()
+        self.start = 0
+        self.end = 0
+        
+    def __enter__(self):
+        self.start = time.perf_counter()
+        self.end = self.start
+    
+    def __exit__(self, *args):
+        self.end = time.perf_counter()
+        
+    @property
+    def duration(self):
+        return self.end - self.start

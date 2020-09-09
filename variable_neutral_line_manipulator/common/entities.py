@@ -135,7 +135,9 @@ class DiskGeometryBase(BaseDataClass):
         return ["length", "bottom_curve_radius", "top_curve_radius"]
 
     def __eq__(self, other):
-        return super().__eq__(other) and normalise_half_angle(self.top_orientationDF,) == normalise_half_angle(other.top_orientationDF)
+        return (super().__eq__(other) and 
+                (normalise_half_angle(self.top_orientationDF,) == normalise_half_angle(other.top_orientationDF) if self.top_curve_radius
+                  else True)) # Meaningless to check the top_orientationDF if top_curve_radius is None or 0 (top_curve_radius has been checked)
 
 class TendonModel(BaseDataClass):
     """
@@ -327,6 +329,10 @@ class ManipulatorModel(BaseDataClass):
         self.indices_disk_model_pairs.insert(0, ((0,), segments[0].generate_base_disk_model(distal_disk_tendon_modelsMF)))
 
     @property
+    def num_joints(self):
+        return sum(s.num_joints for s in self.segments)
+    
+    @property
     def tendon_models(self):
         return sorted(set(tm for s in self.segments for tm in s.knobbed_tendon_modelsMF), key=lambda x: x.orientation)
 
@@ -341,16 +347,24 @@ class ManipulatorModel(BaseDataClass):
             indices_entity_pairs=self.get_indices_disk_model_pairs(include_base)
         )
     
-    def get_reversed_disk_model_input_forces_iterable(self, nested_input_forces, include_base:bool):
+    def get_reversed_disk_model_input_forces_iterable(self, input_forces, include_base:bool):
+        input_force_map = {tendon_model: input_force for tendon_model, input_force in zip(self.tendon_models, input_forces)}
         disk_models = self.get_disk_models(include_base)
 
         for disk_model in reversed(disk_models):
             if len(disk_model.knobbed_tendon_models) > 0:
-                input_forces = nested_input_forces[-1]
-                nested_input_forces = nested_input_forces[:-1]
-                yield disk_model, input_forces
+                yield disk_model, [input_force_map[tendon_model] for tendon_model in disk_model.knobbed_tendon_models]
             else:
                 yield disk_model, None
+                
+                
+    def is_input_force_valid(self,input_forces):
+        tendon_models = self.tendon_models
+        if len(input_forces) != len(tendon_models):
+            print(f"Error: There should be {len(tendon_models)} force components, but you only input {len(input_forces)} components")
+            return False
+
+        return True
 
 
 class TendonStateBase(BaseDataClass):
@@ -410,6 +424,23 @@ class DiskState(BaseDataClass):
         self.top_contact_forceDF = top_contact_forceDF
         self.top_contact_pure_momentDF = top_contact_pure_momentDF
         self.top_joint_angle = top_joint_angle
+        
+    @property
+    def has_bottom_contact(self):
+        return self.bottom_contact_forceDF is not None
+    
+    @property
+    def has_top_contact(self):
+        return self.top_contact_forceDF is not None
+        
+    @property
+    def bottom_contact_force_and_pure_momentDF(self):
+        return list(self.bottom_contact_forceDF) + list(self.bottom_contact_pure_momentDF)
+    
+    
+    @property
+    def top_contact_force_and_pure_momentDF(self):
+        return list(self.top_contact_forceDF) + list(self.top_contact_pure_momentDF)
 
     # @property
     # def tendon_guide_top_end_state_force_disp_tuple(self):

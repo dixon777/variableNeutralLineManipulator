@@ -1,10 +1,11 @@
 from variable_neutral_line_manipulator.simulation.entities import *
-from variable_neutral_line_manipulator.simulation.adam_command import *
+from variable_neutral_line_manipulator.simulation.manipulator_model import *
+from variable_neutral_line_manipulator.common import Timer
 from math import degrees
 def process():
     segments = [
             SegmentModel(
-                n_joints=3,
+                n_joints=10,
                 disk_length=5, 
                 base_orientationMF=0, 
                 distal_orientationDF=pi/2,
@@ -14,17 +15,17 @@ def process():
             )
         ]
     manipulatorModel = ManipulatorModel(segments)
-    s = SimManipulatorAdamExecuter(manipulatorModel)
+    s = SimManipulatorAdamModel(manipulatorModel)
     s.clear_model()
     s.generate_model()
     
-    res = s.run_sim([2,1.5,1,0.5], 
+    s.run_sim([2,1.5,1,0.5], 
                     total_iterations=1,
                     duration=0.1,
-                    step_size=0.000002, 
-                    max_iterations_search_eqilibrium=100)
-    # res = s.extract_state()
-    print(res)
+                    step_size=0.00001, 
+                    max_iterations_search_eqilibrium=500)
+    disk_states = s.extract_final_state()
+    print(disk_states)
 
 if __name__ == "__main__":
     import logging
