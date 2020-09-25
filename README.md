@@ -15,20 +15,9 @@ conda activate vnlm_math_model
 ```
 
 # Run the program
-1. To compute the results evaluated from math model, run the following:
-    ```bash
-    python run_math_model.py
-    ```
-2. To validate the results from rigid body simulation with Adams View, 
-    1. Turn on the Adams View command server listening (Tutorial is available in Adams View Help tab accessible via the question mark button at the top menu bar of the main interface)
-    2. Run the following:
-    ```bash
-    python run_sim.py
-    ```
-
-3. To compare the results evaluated from the math model and simulation, respectively, on CSV file,
-    1. Turn on the Adams View command server listening (Tutorial is available in Adams View Help tab accessible via the question mark button at the top menu bar of the main interface)
-    2. Run the following:
-    ```bash
-    python run_both.py
-    ```
+To compare the results evaluated from the math model and simulation, respectively, on CSV file,
+1. Turn on the Adams View command server listening (Tutorial is available in Adams View Help tab accessible via the question mark button at the top menu bar of the main interface)
+2. Run the following:
+```bash
+python run_cmd.py
+```
