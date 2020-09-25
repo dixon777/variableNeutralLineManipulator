@@ -1,18 +1,39 @@
 from math import degrees
 from typing import List
 from .entities import ManipulatorModel, DiskState
+import numpy as np
 
-def generate_manipulator_model_table(manipulator_model:ManipulatorModel):
+def generate_manipulator_model_table(manipulator_model:ManipulatorModel, input_tensions: List[float]):
     res = [
-        ["Segments:"],
+        ["Manipulator model:"],
         ["Num joints", f"{manipulator_model.num_joints}"]
     ]
-    
+    # Segments
+    res += [
+        ["Segments:"],
+    ]
     for i, s in enumerate(manipulator_model.segments):
-        res.append([f"{i}"])
-        for k, v in dict(s).entries():
-            res.append([k, f"{v}"])
+        res.append([f"Segment {i}:"])
+        for k, v in dict(s).items():
+            if k == "__class_name__":
+                continue
+            elif k == "base_orientationMF" or k == "distal_orientationDF":
+                res.append([k, f"{degrees(v):.2f}"])
+            else:
+                res.append([k, f"{v:.2f}" if isinstance(v,float) else f"{v}"])
         res.append([""])
+        
+    res += [
+        ["Tendon models:"],
+        ["Index", "Dist from axis", "Orientation (deg)", "Tension"],
+    ]
+    
+    # Input tensions
+    for i, (tm, tension) in enumerate(zip(manipulator_model.tendon_models,input_tensions)):
+        res.append(
+            [i, f"{tm.dist_from_axis:.2f}", f"{degrees(tm.orientation):.2f}", f"{tension:.2f}"]
+        )
+    return res
 
 def generate_disk_states_compare_table(math_disk_states: List[DiskState], 
                                        sim_disk_states: List[DiskState]):
@@ -58,3 +79,26 @@ def generate_disk_states_compare_table(math_disk_states: List[DiskState],
     
     return res
 
+
+
+def ensure_equal_num_cells_per_row(rows):
+    max_row_len = max(len(r) for r in rows)
+    for r in rows:
+        r += [""]*(max_row_len - len(r))
+    return rows
+
+def ensure_equal_num_rows(tables):
+    max_rows = max(len(t) for t in tables)
+    for i in range(len(tables)):
+        tables[i] += [[""]*len(tables[i][0]) for _ in range(max_rows - len(tables[i]))]
+    return tables
+
+def combine_tables(*tables):
+    tables = [ensure_equal_num_cells_per_row(t) for t in tables]
+    tables = ensure_equal_num_rows(tables)
+    tables = [np.array(t) for t in tables]
+    combined_table = tables[0]
+    
+    for t in tables[1:]:
+        combined_table = np.hstack((combined_table, np.array([""]*len(t)).reshape((-1,1)), t))
+    return combined_table

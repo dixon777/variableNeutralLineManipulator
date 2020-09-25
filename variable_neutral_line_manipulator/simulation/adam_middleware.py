@@ -10,7 +10,8 @@ from typing import List,  Union, Dict
 from ..common.entities import *
 from ..common import Logger
 
-def _adams_convert_value(v:Union[str, bool ,int, float, Iterable]) -> str:
+
+def _adams_convert_value(v: Union[str, bool, int, float, Iterable]) -> str:
     '''Convert Python value to Adam View's format'''
     if isinstance(v, str):
         new_v = v.replace('"', '\'')
@@ -55,37 +56,51 @@ def _adams_read_spreadsheet_steady_state_value(path):
     vals = [float(v) for v in equilibrium_val_line.split('\t')]
     return {attr: val for attr, val in zip(attrs, vals)}
 
+
 class AdamViewSocket:
     """
     Python interface for communication with Adams View command server via localhost network
-    
+
     Params:
      - port: Port listened by Adams View command server
      - return_text_prefix: The basename prefix (basename without extension) of the files exported by Adams View
      - reset_script_name: Name of script for resetting simulation to initial config.
         Since such command cannot be properly executed by passing it directly to Adams View command server, thus it is worked around by executing a predefined script.
     """
-    def __init__(self, 
+
+    def __init__(self,
                  port=5002,  # Should be always 5002
                  return_text_prefix="./.return_result",
                  reset_script_name="AUTO_GENERATED_sim_reset_script"):
         self.port = port
         self.return_text_prefix = os.path.abspath(return_text_prefix)
-        self.reset_script_name  =reset_script_name
-        
-    def deal_with_cmd(self, cmd:str, params:Union[None, Dict[str, Union[int, float, str, bool, Iterable]]]=None):
+        self.reset_script_name = reset_script_name
+
+    def deal_with_cmd(self,
+                      cmd: str,
+                      params: Union[None, Dict[str, Union[int,
+                                                          float, str, bool, Iterable]]] = None,
+                      timeout: float = None,):
         if params:
             cmd = _adams_construct_cmd(cmd, params)
         Logger.D(f"Send cmd: {str(cmd)}")
         # Must reconnect the server before every command is sent
         self.soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.soc.settimeout(timeout)
         try:
             self.soc.connect(("localhost", self.port))
         except ConnectionRefusedError as e:
-            print(f"Connection is refused. Please make sure Adam Views command server is listening to port {self.port}")
+            print(
+                f"Connection is refused. Please make sure Adam Views command server is listening to port {self.port}")
         if isinstance(cmd, str):
             cmd = cmd.encode("ascii")
-        self.soc.send(cmd)
+
+        try:
+            self.soc.send(cmd)
+        except TimeoutError as e:
+            print("Timeout!!")
+            raise e
+
         data = self.soc.recv(1024)
         success = data[-1] == ord('0')
         if not success:
@@ -166,7 +181,7 @@ class AdamViewSocket:
 
     def create_floating_marker(self, marker_name):
         return self.deal_with_cmd("floating_marker create", {
-            "marker_name": marker_name,
+            "floating_marker_name": marker_name,
         })
 
     # Forces
@@ -177,6 +192,20 @@ class AdamViewSocket:
             "j_marker_name": j_marker_name,
             "action_only": "off",
             "function": function
+        })
+        
+    def create_vector_force(self, force_name, i_marker_name, j_part_name, 
+                            ref_marker_name,
+                            x_force_function="0",y_force_function="0", z_force_function="0"):
+        return self.deal_with_cmd("force create direct force_vector", {
+            "force_vector_name": force_name,
+            "i_marker_name": i_marker_name,
+            "j_part_name": j_part_name,
+            "ref_marker_name": ref_marker_name,
+            "x_force_function": x_force_function,
+            "y_force_function": y_force_function,
+            "z_force_function": z_force_function,
+            
         })
 
     # Contact
@@ -256,7 +285,7 @@ class AdamViewSocket:
             "sim_script_name": name,
             "commands": commands
         })
-        
+
     def modify_sim_script(self, name, commands):
         return self.deal_with_cmd("simulation script modify", {
             "sim_script_name": name,
@@ -280,10 +309,14 @@ class AdamViewSocket:
             "choice_for_solver": server_choice
         })
 
-    def set_sim_equilibrium_param(self, model_name, max_iterations=None):
+    def set_sim_equilibrium_param(self, model_name, max_iterations=None, stability=None, tlimit=None, alimit=None, static_method=None):
         return self.deal_with_cmd("executive_control set equilibrium_parameters", {
             "model_name": model_name,
-            "maxit": max_iterations
+            "maxit": max_iterations,
+            "tlimit":tlimit,
+            "alimit": alimit,
+            "stability": stability,
+            "static_method": static_method,
         })
 
     def run_sim_equilibrium(self, model_name):
@@ -291,18 +324,20 @@ class AdamViewSocket:
             "model_name": model_name,
         })
 
-    def run_sim_transient(self, model_name, step_size, solver_type="DYNAMIC", end_time=None, duration=None, initial_static=None):
+    def run_sim_transient(self, model_name, number_of_steps=None, step_size=None, solver_type="DYNAMIC", end_time=None, duration=None, initial_static=None, timeout=None):
         return self.deal_with_cmd("simulation single_run transient", {
             "model_name": model_name,
             "initial_static": initial_static,
             "type": solver_type,
+            "number_of_steps": number_of_steps,
             "step_size": step_size,
             "end_time": end_time,
             "duration": duration,
-        })
+        },
+            timeout=timeout)
 
     def run_sim_reset(self, model_name):
-        # Adam View does not respond at all if "simulation single_run reset" command is transferred into it via command server, 
+        # Adam View does not respond at all if "simulation single_run reset" command is transferred into it via command server,
         # but the command works when it is executed in the sim script
         # Therefore, the following strategy involves writing a command script to the model
         # and activate it whenever this function gets called
@@ -311,7 +346,7 @@ class AdamViewSocket:
         while not self.create_sim_script(script_name, "simulation single_run reset"):
             i += 1
             script_name += f"{i}"
-        
+
         res = self.run_sim_script(model_name, self.reset_script_name)
         self.delete_sim_script(script_name)
         return res
@@ -344,7 +379,7 @@ class AdamViewSocket:
         return self.deal_with_cmd("file command read", {
             "file_name": os.path.abspath(path),
         })
-        
+
     def import_sim_script(self, script_name, path):
         return self.deal_with_cmd("simulation script read_acf", {
             "sim_script_name": script_name,
@@ -377,7 +412,7 @@ class AdamViewSocket:
             "sim_script_name": script_name,
             "file_name": os.path.abspath(path)
         })
-        
+
     # Plots
     def set_auto_plot_param(self, analysis_name,
                             include_displacements=False,
@@ -395,20 +430,32 @@ class AdamViewSocket:
             "vmeasure": measurement_name,
         })
 
-    # # Info
-    # def get_info(self, item_name, dictionary):
-    #     path = os.path.exists(f"{self.return_text_prefix}.txt")
-    #     os.remove(path)
-    #     if self.deal_with_cmd(f"list_info {item_name}", {
-    #         "write_to_terminal": "off",
-    #         "brief": "on",
-    #         "file_name": os.path.abspath(path),
-    #         **dictionary
-    #     }):
-    #         with open(path, "r") as f:
-    #             return f.read()
-    #     return None
-
+    # Info
+    def get_info(self, item_name, dictionary):
+        path = f"{self.return_text_prefix}.txt"
+        if os.path.exists(path):
+            os.remove(path)
+        if self.deal_with_cmd(f"list_info {item_name}", {
+            "write_to_terminal": "off",
+            "brief": "on",
+            "file_name": os.path.abspath(path),
+            **dictionary
+        }):
+            with open(path, "r") as f:
+                return f.read()
+        return None
+    
+    def get_variable_info(self, variable_name):
+        return self.get_info("variable", {
+            "variable_name": variable_name,
+        })
+        
+    def get_variable_real_value(self, variable_name):
+        res = self.get_variable_info(variable_name)
+        if res:
+            res = float(re.search(r"(?<=Real Value\(s\)\W{5})\d.\d",res).group(0))
+        return res
+    
     # def get_model_info(self, model_name=None):
     #     return self.get_info("model", {
     #         "model_name": model_name,
@@ -436,4 +483,3 @@ class AdamViewSocket:
 
     # def get_default_settings(self):
     #     return self.get_info("defaults", {})
-

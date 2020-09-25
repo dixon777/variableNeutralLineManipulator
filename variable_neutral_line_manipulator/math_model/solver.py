@@ -79,12 +79,14 @@ def _eval_bottom_tendon_guide_components(current_disk_model: DiskModel, distal_d
 
 class _SolverBase(ABC):
     @abstractmethod
-    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> List[DiskState]:
-        pass
+    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> ManipulatorState:
+        if len(manipulator_model.tendon_models) != len(input_forces):
+            raise ValueError("Num of tension inputs does not match num of tendons")
 
 
 class DirectSolver(_SolverBase):
-    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> List[DiskState]:
+    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> ManipulatorState:
+        super().solve(manipulator_model, input_forces)
         disk_states = []
         last_disk_state = None
         for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(input_forces, include_base=False):
@@ -93,7 +95,7 @@ class DirectSolver(_SolverBase):
             if last_disk_state is None:
                 break
             disk_states.insert(0, last_disk_state)
-        return disk_states
+        return ManipulatorState(manipulator_model, input_forces, disk_states)
 
     @staticmethod
     def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float]):
@@ -194,7 +196,8 @@ class IterativeSolver(_SolverBase):
     def __init__(self, precision=0.0000000001):
         self.precision = precision
 
-    def solve(self, manipulator_model: ManipulatorModel, input_forces: List[float]) -> List[DiskState]:
+    def solve(self, manipulator_model: ManipulatorModel, input_forces: List[float]) -> ManipulatorState:
+        super().solve(manipulator_model, input_forces)
         disk_states = []
         last_disk_state = None
         for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(input_forces, include_base=False):
@@ -203,7 +206,7 @@ class IterativeSolver(_SolverBase):
             if last_disk_state is None:
                 break
             disk_states.insert(0, last_disk_state)
-        return disk_states
+        return ManipulatorState(manipulator_model, input_forces, disk_states)
 
     @staticmethod
     def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float], precision: float):

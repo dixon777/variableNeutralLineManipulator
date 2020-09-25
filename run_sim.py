@@ -1,6 +1,6 @@
 from variable_neutral_line_manipulator.simulation.entities import *
-from variable_neutral_line_manipulator.simulation.manipulator_model import *
-from variable_neutral_line_manipulator.common import Timer
+from variable_neutral_line_manipulator.simulation.sim_model import *
+from variable_neutral_line_manipulator.common.common import Timer
 from math import degrees
 def process():
     segments = [
@@ -20,7 +20,6 @@ def process():
     s.generate_model()
     
     s.run_sim([2,1.5,1,0.5], 
-                    total_iterations=1,
                     duration=0.1,
                     step_size=0.00001, 
                     max_iterations_search_eqilibrium=500)

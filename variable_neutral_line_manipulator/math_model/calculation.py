@@ -83,8 +83,8 @@ def eval_tendon_guide_bottom_end_disp(length: float,
     return np.array((
         tendon_dist_from_axis*cos(tendon_orientationDF),
         tendon_dist_from_axis*sin(tendon_orientationDF),
-        -sqrt(bottom_curve_radius**2 - horizontalDispAlongCurve**2) +
-        bottom_curve_radius - length/2
+        (-sqrt(bottom_curve_radius**2 - horizontalDispAlongCurve**2) +
+        bottom_curve_radius - length/2) if bottom_curve_radius is not None else (-length/2)
     ))
 
 
