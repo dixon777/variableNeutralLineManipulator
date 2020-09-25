@@ -7,7 +7,7 @@ import numpy as np
 from typing import List, Dict, Iterable, Tuple
 
 from ..common.entities import *
-from ..common.calculation import normalise_angle, normalise_to_range
+from ..util import normalise_angle, normalise_to_range
 
 
 class SimDiskGeometry(DiskGeometryBase):

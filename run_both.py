@@ -1,6 +1,7 @@
+
+from variable_neutral_line_manipulator.util import Timer, Logger, combine_tables
 from variable_neutral_line_manipulator.common.entities import *
-from variable_neutral_line_manipulator.common.common import Timer, Logger
-from variable_neutral_line_manipulator.common.result import generate_disk_states_compare_table, generate_manipulator_model_table, combine_tables
+from variable_neutral_line_manipulator.common.result import generate_disk_states_compare_table, generate_manipulator_model_table
 
 from variable_neutral_line_manipulator.simulation.sim_model import SimManipulatorAdamModel
 from variable_neutral_line_manipulator.math_model.solver import DirectSolver
@@ -13,9 +14,8 @@ def write_to_csv(path, table):
         writer = csv.writer(f)
         writer.writerows(table)
 
-
-def process():
-    input_forces = np.array([2,3,2,2], dtype=float)
+    
+def create_manipulator_model():
     segments = [
         SegmentModel(
             n_joints=2,
@@ -36,10 +36,10 @@ def process():
         #     end_disk_length=None,
         # ),
     ]
-    manipulator_model = ManipulatorModel(segments)
+    return ManipulatorModel(segments)
     
     
-
+def eval_from_sim(manipulator_model, input_forces:List[float]):
     # Simulation
     s = SimManipulatorAdamModel(manipulator_model)
     
@@ -53,28 +53,35 @@ def process():
                 solver_rotational_limit=pi/10,
                 solver_stability=6e-5) # 6e-5
     
-    # sim_manipulator_state = s.extract_final_state()
-    # sim_disk_states = sim_manipulator_state.disk_states
-    
-    # # Math model
-    # math_manipulator_state = DirectSolver().solve(
-    #     manipulator_model, input_forces
-    # )
-    # math_disk_states = math_manipulator_state.disk_states
+    return s.extract_final_state()
+ 
+def eval_rom_math_model(manipulator_model: ManipulatorModel, input_forces:List[float]):   
+    # Math model
+    return DirectSolver().solve(
+        manipulator_model, input_forces
+    )
 
-    # # Write results to result.csv
-    # model_table = generate_manipulator_model_table(manipulator_model, input_forces)
     
-    # result_table = generate_disk_states_compare_table(
-    #     math_disk_states,
-    #     sim_disk_states
-    # )
+    
+def write_results(manipulator_model, input_forces, math_manipulator_state, sim_manipulator_state):
+    """ Write results to result.csv """
+    model_table = generate_manipulator_model_table(manipulator_model, input_forces)
+    
+    result_table = generate_disk_states_compare_table(
+        math_manipulator_state,
+        sim_manipulator_state
+    )
         
-    # write_to_csv("result.csv", combine_tables(model_table, result_table))
+    write_to_csv("result.csv", combine_tables(model_table, result_table))
 
 
 if __name__ == "__main__":
     import logging
     Logger.switchLogger("manipulator")
     Logger.setLevel(logging.ERROR)
-    process()
+    
+    input_forces = np.array([2,3,2,2], dtype=float)
+    model = create_manipulator_model()
+    sim_state = eval_from_sim(model, input_forces)
+    math_state = eval_rom_math_model(model, input_forces)
+    write_results(model, input_forces, math_state, sim_state)

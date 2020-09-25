@@ -5,9 +5,8 @@ from collections.abc import Iterable
 from typing import List,  Union, Dict
 
 from .entities import *
-from ..common.common import Logger
+from ..util import Logger, normalise_angle
 from ..cad.cadquery_disk_generator import generate_disk_CAD, export_CAD
-from ..common.calculation import normalise_angle
 from ..math_model.calculation import eval_tendon_guide_top_end_disp, eval_tendon_guide_bottom_end_disp
 from .adam_middleware import *
 

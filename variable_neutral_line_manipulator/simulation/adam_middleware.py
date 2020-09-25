@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from typing import List,  Union, Dict
 
 from ..common.entities import *
-from ..common import Logger
+from ..util import Logger
 
 
 def _adams_convert_value(v: Union[str, bool, int, float, Iterable]) -> str:

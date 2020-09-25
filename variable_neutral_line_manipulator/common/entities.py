@@ -6,11 +6,9 @@ from abc import ABC
 from typing import List, Dict, Iterable, Tuple
 import numpy as np
 
-from .calculation import normalise_angle, normalise_to_range, normalise_half_angle
-from .common import BaseDataClass, indices_entity_pairs_to_ordered_list
+from ..util import BaseDataClass, indices_entity_pairs_to_ordered_list, normalise_angle, normalise_to_range, normalise_half_angle
 # Courtesy to dan_waterworth
 # https://stackoverflow.com/questions/4544630/automatically-growing-lists-in-python
-
 
 
 class DiskGeometryBase(BaseDataClass):
@@ -36,7 +34,7 @@ class DiskGeometryBase(BaseDataClass):
         copied = copy.deepcopy(self)
         copied.top_orientationDF = normalise_angle(self.top_orientationDF)
         return copied
-    
+
     def top_orientationMF(self, disk_orientationMF):
         return self.top_orientationDF + disk_orientationMF
 
@@ -48,9 +46,10 @@ class DiskGeometryBase(BaseDataClass):
         return ["length", "bottom_curve_radius", "top_curve_radius"]
 
     def __eq__(self, other):
-        return (super().__eq__(other) and 
+        return (super().__eq__(other) and
                 (normalise_half_angle(self.top_orientationDF,) == normalise_half_angle(other.top_orientationDF) if self.top_curve_radius
-                  else True)) # Meaningless to check the top_orientationDF if top_curve_radius is None or 0 (top_curve_radius has been checked)
+                 else True))  # Meaningless to check the top_orientationDF if top_curve_radius is None or 0 (top_curve_radius has been checked)
+
 
 class TendonModel(BaseDataClass):
     """
@@ -75,6 +74,7 @@ class TendonModel(BaseDataClass):
 
     def __hash__(self):
         return hash(normalise_angle(self.orientation))
+
 
 class DiskModel(BaseDataClass):
     """
@@ -131,23 +131,24 @@ class SegmentModel(BaseDataClass):
         both tendons are merged into one and such tendon is consideredd to be the knobbed tendon of the respective distal segment instead of this segment.
         """
         all_possible_tendon_models = [TendonModel(orientation=self.base_orientationMF + relative_orientation,
-                                   dist_from_axis=self.tendon_dist_from_axis)
-                       for relative_orientation in
-                       ((pi/2, 3*pi/2) + (()
-                                          if self.distal_orientationDF == 0 else
-                                          (self.distal_orientationDF+pi/2, self.distal_orientationDF+3*pi/2)))]
+                                                  dist_from_axis=self.tendon_dist_from_axis)
+                                      for relative_orientation in
+                                      ((pi/2, 3*pi/2) + (()
+                                                         if self.distal_orientationDF == 0 else
+                                                         (self.distal_orientationDF+pi/2, self.distal_orientationDF+3*pi/2)))]
         return sorted([t for t in all_possible_tendon_models if t not in distal_segment_tendon_models],
                       key=lambda x: x.orientation)
-        
+
     def generate_base_disk_model(self, distal_tendon_models=[], length=None):
         disk_orientationMF = self.base_orientationMF
-        all_tendon_models = self.get_knobbed_tendon_modelsMF(distal_tendon_models) + distal_tendon_models
+        all_tendon_models = self.get_knobbed_tendon_modelsMF(
+            distal_tendon_models) + distal_tendon_models
         return DiskModel(
             bottom_orientationMF=disk_orientationMF,
             disk_geometry=DiskGeometryBase(length=length if length else self.disk_length,
-                                     bottom_curve_radius=None,
-                                     top_orientationDF=0,
-                                     top_curve_radius=self.curve_radius),
+                                           bottom_curve_radius=None,
+                                           top_orientationDF=0,
+                                           top_curve_radius=self.curve_radius),
             continuous_tendon_models=all_tendon_models,)
 
     def generate_disk_models(self, end_top_orientationMF=0.0, end_top_curve_radius=None, distal_segment_tendon_models=[]):
@@ -159,12 +160,13 @@ class SegmentModel(BaseDataClass):
             )
         )
 
-    def generate_indices_disk_model_pairs(self, 
-                                          end_top_orientationMF=0.0, 
-                                          end_top_curve_radius=None, 
+    def generate_indices_disk_model_pairs(self,
+                                          end_top_orientationMF=0.0,
+                                          end_top_curve_radius=None,
                                           distal_segment_tendon_models=[]):
         res = []
-        knobbed_tendon_modelsMF = self.get_knobbed_tendon_modelsMF(distal_segment_tendon_models)
+        knobbed_tendon_modelsMF = self.get_knobbed_tendon_modelsMF(
+            distal_segment_tendon_models)
         all_tendon_models = (knobbed_tendon_modelsMF +
                              distal_segment_tendon_models)
 
@@ -232,44 +234,48 @@ class ManipulatorModel(BaseDataClass):
                 end_top_orientationMF, end_top_curve_radius, distal_disk_tendon_modelsMF)
             n_joints_count -= segment.num_joints
             self.indices_disk_model_pairs = (
-                [(tuple((i + n_joints_count + 1) for i in indices), disk_model) # +1 to ensure base disk
+                [(tuple((i + n_joints_count + 1) for i in indices), disk_model)  # +1 to ensure base disk
                  for indices, disk_model in segment_only_indices_disk_model_pairs]
                 + self.indices_disk_model_pairs)
-            
+
             if i == len(segments)-1:
                 break
 
             # Update state
-            distal_disk_tendon_modelsMF += segment.get_knobbed_tendon_modelsMF(distal_disk_tendon_modelsMF)
+            distal_disk_tendon_modelsMF += segment.get_knobbed_tendon_modelsMF(
+                distal_disk_tendon_modelsMF)
             end_top_orientationMF = segment.bottom_orientationMF
             end_top_curve_radius = segment.bottom_curve_radius
-            
-        self.indices_disk_model_pairs.insert(0, ((0,), segments[0].generate_base_disk_model(distal_disk_tendon_modelsMF)))
+
+        self.indices_disk_model_pairs.insert(
+            0, ((0,), segments[0].generate_base_disk_model(distal_disk_tendon_modelsMF)))
 
     @property
     def num_joints(self):
         return sum(s.num_joints for s in self.segments)
-    
+
     @property
     def tendon_models(self):
         return sorted(set(tm for s in self.segments for tm in s.get_knobbed_tendon_modelsMF()), key=lambda x: x.orientation)
 
-    def get_indices_disk_model_pairs(self, include_base:bool):
+    def get_indices_disk_model_pairs(self, include_base: bool):
         return [
             ((i if include_base else i-1 for i in indices), model)
             for indices, model in self.indices_disk_model_pairs[0 if include_base else 1:]
         ]
-    
-    def get_disk_models(self, include_base:bool):
+
+    def get_disk_models(self, include_base: bool):
         return indices_entity_pairs_to_ordered_list(
-            indices_entity_pairs=self.get_indices_disk_model_pairs(include_base)
+            indices_entity_pairs=self.get_indices_disk_model_pairs(
+                include_base)
         )
-        
-    def get_tendon_model_to_input_force_map(self, input_forces:List[float]):
+
+    def get_tendon_model_to_input_force_map(self, input_forces: List[float]):
         return {tendon_model: input_force for tendon_model, input_force in zip(self.tendon_models, input_forces)}
-    
-    def get_reversed_disk_model_input_forces_iterable(self, input_forces:List[float], include_base:bool):
-        tendon_model_to_input_force_map = self.get_tendon_model_to_input_force_map(input_forces)
+
+    def get_reversed_disk_model_input_forces_iterable(self, input_forces: List[float], include_base: bool):
+        tendon_model_to_input_force_map = self.get_tendon_model_to_input_force_map(
+            input_forces)
         disk_models = self.get_disk_models(include_base)
 
         for disk_model in reversed(disk_models):
@@ -277,12 +283,12 @@ class ManipulatorModel(BaseDataClass):
                 yield disk_model, [tendon_model_to_input_force_map[tendon_model] for tendon_model in disk_model.knobbed_tendon_models]
             else:
                 yield disk_model, None
-                
-                
-    def is_input_force_valid(self,input_forces):
+
+    def is_input_force_valid(self, input_forces):
         tendon_models = self.tendon_models
         if len(input_forces) != len(tendon_models):
-            print(f"Error: There should be {len(tendon_models)} force components, but you only input {len(input_forces)} components")
+            print(
+                f"Error: There should be {len(tendon_models)} force components, but you only input {len(input_forces)} components")
             return False
 
         return True
@@ -308,14 +314,16 @@ class TendonState(TendonStateBase):
                  bottom_tensionDF: np.ndarray,
                  top_tensionDF: np.ndarray):
         super().__init__(model)
-        self.bottom_tensionDF = np.array(bottom_tensionDF) if bottom_tensionDF is not None else None
-        self.top_tensionDF = np.array(top_tensionDF) if top_tensionDF is not None else None
+        self.bottom_tensionDF = np.array(
+            bottom_tensionDF) if bottom_tensionDF is not None else None
+        self.top_tensionDF = np.array(
+            top_tensionDF) if top_tensionDF is not None else None
 
     @property
     def tension_in_disk(self):
         return (np.linalg.norm(self.bottom_tensionDF)
                 if self.bottom_tensionDF is not None else
-                np.linalg.norm(self.top_tensionDF) 
+                np.linalg.norm(self.top_tensionDF)
                 if self.top_tensionDF is not None else
                 0)
 
@@ -329,8 +337,8 @@ class DiskState(BaseDataClass):
                  bottom_contact_forceDF: np.ndarray,
                  bottom_contact_pure_momentDF: np.ndarray,
                  bottom_joint_angle: float,
-                 knobbed_tendon_states: List[TendonState]=[],
-                 continuous_tendon_states: List[TendonState]=[],
+                 knobbed_tendon_states: List[TendonState] = [],
+                 continuous_tendon_states: List[TendonState] = [],
                  top_contact_forceDF: np.ndarray = None,
                  top_contact_pure_momentDF: np.ndarray = None,
                  top_joint_angle: float = None):
@@ -345,24 +353,23 @@ class DiskState(BaseDataClass):
         self.top_contact_forceDF = top_contact_forceDF
         self.top_contact_pure_momentDF = top_contact_pure_momentDF
         self.top_joint_angle = top_joint_angle
-        
+
     @property
     def has_bottom_contact(self):
         return self.bottom_contact_forceDF is not None
-    
+
     @property
     def has_top_contact(self):
         return self.top_contact_forceDF is not None
-        
+
     @property
     def bottom_contact_force_and_pure_momentDF(self):
         return list(self.bottom_contact_forceDF) + list(self.bottom_contact_pure_momentDF)
-    
-    
+
     @property
     def top_contact_force_and_pure_momentDF(self):
         return list(self.top_contact_forceDF) + list(self.top_contact_pure_momentDF)
-    
+
     @ property
     def tendon_states(self):
         """
@@ -372,37 +379,35 @@ class DiskState(BaseDataClass):
         return self.knobbed_tendon_states + self.continuous_tendon_states
 
     def local_attr_keys(self):
-        return ["disk_model", 
-                "knobbed_tendon_states", 
+        return ["disk_model",
+                "knobbed_tendon_states",
                 "continuous_tendon_states",
-                "bottom_contact_forceDF", 
-                "bottom_contact_pure_momentDF", 
+                "bottom_contact_forceDF",
+                "bottom_contact_pure_momentDF",
                 "bottom_joint_angle",
-                "top_contact_forceDF", 
-                "top_contact_pure_momentDF", 
+                "top_contact_forceDF",
+                "top_contact_pure_momentDF",
                 "top_joint_angle"]
-    
+
 
 class ManipulatorState(BaseDataClass):
-    def __init__(self, 
-                 manipulator_model:ManipulatorModel, 
-                 input_forces:List[float], 
-                 disk_states:List[DiskState]):
+    def __init__(self,
+                 manipulator_model: ManipulatorModel,
+                 input_forces: List[float],
+                 disk_states: List[DiskState]):
         self.manipulator_model = manipulator_model
         self.input_forces = input_forces
         self.disk_states = disk_states
-        
+
     @property
     def tendon_model_to_input_force_map(self):
         return self.manipulator_model.get_tendon_model_to_input_force_map(input_forces)
-    
-        
+
     def local_attr_keys(self):
         return ["manipulator_model",
-                "input_forces", 
-                "disk_states",]
-    
-    
+                "input_forces",
+                "disk_states", ]
+
     # @property
     # def tendon_guide_top_end_state_force_disp_tuple(self):
     #     return [
@@ -488,5 +493,3 @@ class ManipulatorState(BaseDataClass):
     #             top_contact_moment +
     #             np.cross(bottom_contact_disp, bottom_contact_force) +
     #             bottom_contact_moment)
-
-    
