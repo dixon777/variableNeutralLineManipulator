@@ -77,6 +77,52 @@ def _eval_bottom_tendon_guide_components(current_disk_model: DiskModel, distal_d
     return bottom_knobbed_tendon_states, bottom_continous_tendon_states, bottom_tendon_state_disp_pairs
 
 
+
+def _solve_base_disk(base_disk_model: DiskModel, distal_disk_state:DiskState):
+    # Top vectors
+    (top_contact_forceDF,
+        top_contact_pure_momentDF,
+        top_total_forceDF,
+        top_total_momentDF) = _eval_top_components(base_disk_model, distal_disk_state)
+
+    # bottom tendon states
+    (bottom_knobbed_tendon_primitive_states,
+        bottom_continous_tendon_primitive_states,
+        bottom_tendon_primitive_state_disp_pairs) = _eval_bottom_tendon_guide_components(base_disk_model, distal_disk_state, None)
+
+    knobbed_tendon_states = [
+            to_general_tension_state(ts,
+                0,
+                distal_disk_state.bottom_joint_angle,
+                base_disk_model.disk_geometry.top_orientationDF) for ts in bottom_knobbed_tendon_primitive_states
+        ]
+    continuous_tendon_states = [
+            to_general_tension_state(ts,
+                0,
+                distal_disk_state.bottom_joint_angle,
+                base_disk_model.disk_geometry.top_orientationDF) for ts in bottom_continous_tendon_primitive_states
+        ]
+    bottom_contact_forceDF = - top_total_forceDF - sum(
+        s.bottom_tensionDF for s in (knobbed_tendon_states+continuous_tendon_states)
+    )
+    bottom_contact_pure_momentDF = - top_total_momentDF - sum(
+        np.cross(r,s.bottom_tensionDF) for s, (_,r) in zip(
+            (knobbed_tendon_states+continuous_tendon_states), 
+            bottom_tendon_primitive_state_disp_pairs,
+        )
+    )
+    return DiskState(
+        disk_model=base_disk_model,
+        bottom_contact_forceDF=bottom_contact_forceDF,
+        bottom_contact_pure_momentDF=bottom_contact_pure_momentDF,
+        bottom_joint_angle=0,
+        top_contact_forceDF=top_contact_forceDF,
+        top_contact_pure_momentDF=top_contact_pure_momentDF,
+        top_joint_angle=distal_disk_state.bottom_joint_angle,
+        knobbed_tendon_states=knobbed_tendon_states,
+        continuous_tendon_states=continuous_tendon_states
+    )
+
 class _SolverBase(ABC):
     @abstractmethod
     def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> ManipulatorState:
@@ -95,7 +141,13 @@ class DirectSolver(_SolverBase):
             if last_disk_state is None:
                 break
             disk_states.insert(0, last_disk_state)
+        
+        base_disk_model = manipulator_model.get_disk_model(0)
+        disk_states.insert(0, _solve_base_disk(base_disk_model, last_disk_state))
+            
         return ManipulatorState(manipulator_model, input_forces, disk_states)
+    
+    
 
     @staticmethod
     def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float]):
@@ -173,18 +225,24 @@ class DirectSolver(_SolverBase):
         bottom_contact_forceDF = - top_forceDF - bottom_tendon_total_forceDF
         bottom_contact_pure_momentDF = (-top_momentDF - bottom_tendon_force_momentDF -
                                         np.cross(eval_bottom_contact_disp(disk_geometry.length, disk_geometry.bottom_curve_radius, bottom_joint_angle), bottom_contact_forceDF))
+        # for ts in  bottom_continous_tendon_states:
+        #     b = to_general_tension_state(ts,
+        #         bottom_joint_angle=bottom_joint_angle,
+        #         top_joint_angle=distal_disk_state.bottom_joint_angle if distal_disk_state else None,
+        #         top_orientationDF=current_disk_model.disk_geometry.top_orientationDF)
+            
 
         return DiskState(current_disk_model,
                          bottom_contact_forceDF,
                          bottom_contact_pure_momentDF,
                          bottom_joint_angle,
-                         [ts.to_general(
+                         [to_general_tension_state(ts,
                              bottom_joint_angle=bottom_joint_angle,
-                             top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
+                             top_joint_angle=distal_disk_state.bottom_joint_angle if distal_disk_state else None,
                              top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in bottom_knobbed_tendon_states],
-                         [ts.to_general(
+                         [to_general_tension_state(ts,
                              bottom_joint_angle=bottom_joint_angle,
-                             top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
+                             top_joint_angle=distal_disk_state.bottom_joint_angle if distal_disk_state else None,
                              top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in
                           bottom_continous_tendon_states],
                          top_contact_forceDF,
@@ -206,6 +264,10 @@ class IterativeSolver(_SolverBase):
             if last_disk_state is None:
                 break
             disk_states.insert(0, last_disk_state)
+            
+        base_disk_model = manipulator_model.get_disk_model(0)
+        disk_states.insert(0, _solve_base_disk(base_disk_model, last_disk_state))
+        
         return ManipulatorState(manipulator_model, input_forces, disk_states)
 
     @staticmethod
@@ -249,11 +311,11 @@ class IterativeSolver(_SolverBase):
                          bottom_contact_forceDF,
                          bottom_contact_pure_momentDF,
                          bottom_joint_angle,
-                         [ts.to_general(
+                         [to_general_tension_state(ts,
                              bottom_joint_angle=bottom_joint_angle,
                              top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
                              top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in bottom_knobbed_tendon_states],
-                         [ts.to_general(
+                         [to_general_tension_state(ts,
                              bottom_joint_angle=bottom_joint_angle,
                              top_joint_angle=distal_disk_state.top_joint_angle if distal_disk_state else None,
                              top_orientationDF=current_disk_model.disk_geometry.top_orientationDF) for ts in

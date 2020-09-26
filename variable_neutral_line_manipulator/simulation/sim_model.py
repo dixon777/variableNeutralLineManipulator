@@ -164,7 +164,8 @@ class _ManipulatorAdamSimNameGenerator():
         return [cls.measurement_tension_component_name(disk_index, orientationMF, dist_from_axis, is_top_surface, item) for item in ["Fx", "Fy", "Fz"]]
 
     measurement_base_reaaction_names = [
-        "base_Fx", "base_Fy", "base_Fz", "base_Tx", "base_Ty", "base_Tz"]
+        "base_Fx", "base_Fy", "base_Fz", "base_Tx", "base_Ty", "base_Tz"
+    ]
 
 
 class SimManipulatorAdamModel:
@@ -712,8 +713,7 @@ class SimManipulatorAdamModel:
 
         # Extract disk states
         disk_states = []
-        for i in range(1, len(self.disk_models)):
-            model = self.disk_models[i]
+        for i, model in enumerate(self.disk_models):
             if i < len(self.disk_models) - 1:
                 top_force_moment = [self._extract_one_state_from_spreadsheet(
                     contact_component,
@@ -722,12 +722,18 @@ class SimManipulatorAdamModel:
                 top_joint_angle = self._extract_one_state_from_spreadsheet(
                     self.name_gen.measurement_joint_angle_name(i))
 
-            bottom_force_moment = [self._extract_one_state_from_spreadsheet(
-                contact_component,
-            ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, False)]
+            if i > 0:
+                bottom_force_moment = [self._extract_one_state_from_spreadsheet(
+                    contact_component,
+                ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, False)]
 
-            bottom_joint_angle = self._extract_one_state_from_spreadsheet(
-                self.name_gen.measurement_joint_angle_name(i-1))
+                bottom_joint_angle = self._extract_one_state_from_spreadsheet(
+                    self.name_gen.measurement_joint_angle_name(i-1))
+            else:
+                bottom_force_moment = [self._extract_one_state_from_spreadsheet(
+                    component,
+                ) for component in self.name_gen.measurement_base_reaaction_names]
+                bottom_joint_angle = None
 
             knobbed_tendon_states = []
             continuous_tendon_states = []
@@ -744,15 +750,15 @@ class SimManipulatorAdamModel:
                     tendon_states.append(TendonState(
                         tm,
                         bottom_tension_vec if all(
-                            [c is not None for c in bottom_tension_vec]) else None,
+                            c is not None for c in bottom_tension_vec) else None,
                         top_tension_vec if all(
-                            [c is not None for c in top_tension_vec]) else None
+                            c is not None for c in top_tension_vec) else None
                     ))
 
             disk_states.append(DiskState(
                 model,
-                bottom_contact_forceDF=bottom_force_moment[:3] if i > 0 else None,
-                bottom_contact_pure_momentDF=bottom_force_moment[3:] if i > 0 else None,
+                bottom_contact_forceDF=bottom_force_moment[:3],
+                bottom_contact_pure_momentDF=bottom_force_moment[3:],
                 bottom_joint_angle=bottom_joint_angle if i > 0 else None,
 
                 top_contact_forceDF=top_force_moment[:3]
@@ -764,6 +770,58 @@ class SimManipulatorAdamModel:
                 knobbed_tendon_states=knobbed_tendon_states,
                 continuous_tendon_states=continuous_tendon_states,
             ))
+        # for i in range(1, len(self.disk_models)):
+        #     model = self.disk_models[i]
+        #     if i < len(self.disk_models) - 1:
+        #         top_force_moment = [self._extract_one_state_from_spreadsheet(
+        #             contact_component,
+        #         ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, True)]
+
+        #         top_joint_angle = self._extract_one_state_from_spreadsheet(
+        #             self.name_gen.measurement_joint_angle_name(i))
+
+        #     bottom_force_moment = [self._extract_one_state_from_spreadsheet(
+        #         contact_component,
+        #     ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, False)]
+
+        #     bottom_joint_angle = self._extract_one_state_from_spreadsheet(
+        #         self.name_gen.measurement_joint_angle_name(i-1))
+
+        #     knobbed_tendon_states = []
+        #     continuous_tendon_states = []
+        #     for tendon_models, tendon_states in [(model.knobbed_tendon_models, knobbed_tendon_states),
+        #                                          (model.continuous_tendon_models, continuous_tendon_states)]:
+        #         for tm in tendon_models:
+        #             bottom_tension_vec = [self._extract_one_state_from_spreadsheet(
+        #                 component,
+        #             ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, False)]
+        #             top_tension_vec = [self._extract_one_state_from_spreadsheet(
+        #                 component,
+        #             ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, True)]
+
+        #             tendon_states.append(TendonState(
+        #                 tm,
+        #                 bottom_tension_vec if all(
+        #                     [c is not None for c in bottom_tension_vec]) else None,
+        #                 top_tension_vec if all(
+        #                     [c is not None for c in top_tension_vec]) else None
+        #             ))
+
+        #     disk_states.append(DiskState(
+        #         model,
+        #         bottom_contact_forceDF=bottom_force_moment[:3] if i > 0 else None,
+        #         bottom_contact_pure_momentDF=bottom_force_moment[3:] if i > 0 else None,
+        #         bottom_joint_angle=bottom_joint_angle if i > 0 else None,
+
+        #         top_contact_forceDF=top_force_moment[:3]
+        #         if i < len(self.disk_models) - 1 else None,
+        #         top_contact_pure_momentDF=top_force_moment[3:]
+        #         if i < len(self.disk_models) - 1 else None,
+        #         top_joint_angle=top_joint_angle
+        #         if i < len(self.disk_models) - 1 else None,
+        #         knobbed_tendon_states=knobbed_tendon_states,
+        #         continuous_tendon_states=continuous_tendon_states,
+        #     ))
 
         return ManipulatorState(self.manipulator_model, input_forces, disk_states)
 

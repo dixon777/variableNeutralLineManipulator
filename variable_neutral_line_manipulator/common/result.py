@@ -60,7 +60,7 @@ def generate_disk_states_compare_table(manipulator_state_from_math_model: Manipu
     # Contact reaction
     res.append(["Contact reaction component:"])
     for i, (ms, ss) in enumerate(zip(math_disk_states, sim_disk_states)):
-        res.append([f"{i}-th joint:"])
+        res.append([f"{i-1}-th joint:" if i > 0 else "Base"])
         if ms.has_bottom_contact and ss.has_bottom_contact:
             res.append([f"Bottom:"])
             res.append(["Component (N or Nmm)", "Math", "Sim", "Diff"])
@@ -78,7 +78,8 @@ def generate_disk_states_compare_table(manipulator_state_from_math_model: Manipu
                                         ss.top_contact_force_and_pure_momentDF):
             
                 res.append([force_comp_str, f"{m_val}", f"{s_val}", f"{abs(m_val - s_val)}"])
-    
+        res.append([" "])
+        
     return res
 
 

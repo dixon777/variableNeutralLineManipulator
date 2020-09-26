@@ -249,7 +249,12 @@ class ManipulatorModel(BaseDataClass):
 
         self.indices_disk_model_pairs.insert(
             0, ((0,), segments[0].generate_base_disk_model(distal_disk_tendon_modelsMF)))
-
+    @property
+    def disk_models(self):
+        return indices_entity_pairs_to_ordered_list(
+            self.indices_disk_model_pairs
+        )
+        
     @property
     def num_joints(self):
         return sum(s.num_joints for s in self.segments)
@@ -257,13 +262,16 @@ class ManipulatorModel(BaseDataClass):
     @property
     def tendon_models(self):
         return sorted(set(tm for s in self.segments for tm in s.get_knobbed_tendon_modelsMF()), key=lambda x: x.orientation)
-
+    
+    def get_disk_model(self, index):
+        return self.disk_models[index]
+    
     def get_indices_disk_model_pairs(self, include_base: bool):
         return [
             ((i if include_base else i-1 for i in indices), model)
             for indices, model in self.indices_disk_model_pairs[0 if include_base else 1:]
         ]
-
+        
     def get_disk_models(self, include_base: bool):
         return indices_entity_pairs_to_ordered_list(
             indices_entity_pairs=self.get_indices_disk_model_pairs(
@@ -301,10 +309,7 @@ class TendonStateBase(BaseDataClass):
     @property
     def tension_in_disk(self):
         return 0
-
-    def to_general(self, *args, **kwargs):
-        return self
-
+    
     def local_attr_keys(self):
         return ["model", "tension_in_disk"]
 
@@ -318,7 +323,7 @@ class TendonState(TendonStateBase):
             bottom_tensionDF) if bottom_tensionDF is not None else None
         self.top_tensionDF = np.array(
             top_tensionDF) if top_tensionDF is not None else None
-
+    
     @property
     def tension_in_disk(self):
         return (np.linalg.norm(self.bottom_tensionDF)

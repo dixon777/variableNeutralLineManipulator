@@ -6,6 +6,21 @@ import numpy as np
 from ..common.entities import *
 from .calculation import *
 
+def to_general_tension_state(tension_state, bottom_joint_angle, top_joint_angle, top_orientationDF):
+    return TendonState(
+            tension_state.model,
+            eval_tendon_guide_bottom_force(
+                tension_state.tension_in_disk,
+                bottom_joint_angle
+            )if bottom_joint_angle is not None else
+            None,
+            eval_tendon_guide_top_force(
+                tension_state.tension_in_disk,
+                top_joint_angle,
+                top_orientationDF
+            ) if top_joint_angle is not None and top_orientationDF is not None else
+            None,
+        )
 
 class MathTendonPrimitiveState(TendonStateBase):
     """
@@ -19,22 +34,6 @@ class MathTendonPrimitiveState(TendonStateBase):
     def __init__(self, model, tension_in_disk):
         super().__init__(model)
         self._tension_in_disk = tension_in_disk
-
-    def to_general(self, bottom_joint_angle, top_joint_angle, top_orientationDF):
-        return TendonState(
-            self.model,
-            eval_tendon_guide_bottom_force(
-                self.tension_in_disk,
-                bottom_joint_angle
-            )if bottom_joint_angle is not None else
-            None,
-            eval_tendon_guide_top_force(
-                self.tension_in_disk,
-                top_joint_angle,
-                top_orientationDF
-            ) if top_joint_angle is not None and top_orientationDF is not None else
-            None,
-        )
 
     @property
     def tension_in_disk(self):

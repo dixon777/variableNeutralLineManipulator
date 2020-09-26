@@ -44,18 +44,18 @@ def eval_from_sim(manipulator_model, input_forces:List[float]):
     s = SimManipulatorAdamModel(manipulator_model)
     
     # # Uncomment the following lines to run the simulation, otherwise it will extract the current simulation result on Adams View
-    s.clear_model()
-    s.generate_model()
-    s.run_sim(input_forces,
-                num_steps=50,
-                max_iterations_search_eqilibrium=1500,
-                solver_translational_limit=3,
-                solver_rotational_limit=pi/10,
-                solver_stability=6e-5) # 6e-5
+    # s.clear_model()
+    # s.generate_model()
+    # s.run_sim(input_forces,
+    #             num_steps=50,
+    #             max_iterations_search_eqilibrium=1500,
+    #             solver_translational_limit=3,
+    #             solver_rotational_limit=pi/10,
+    #             solver_stability=6e-5) # 6e-5
     
     return s.extract_final_state()
  
-def eval_rom_math_model(manipulator_model: ManipulatorModel, input_forces:List[float]):   
+def eval_from_math_model(manipulator_model: ManipulatorModel, input_forces:List[float]):   
     # Math model
     return DirectSolver().solve(
         manipulator_model, input_forces
@@ -80,8 +80,8 @@ if __name__ == "__main__":
     Logger.switchLogger("manipulator")
     Logger.setLevel(logging.ERROR)
     
-    input_forces = np.array([2,3,2,2], dtype=float)
+    input_forces = np.array([3,1.5,1,2.5], dtype=float)
     model = create_manipulator_model()
     sim_state = eval_from_sim(model, input_forces)
-    math_state = eval_rom_math_model(model, input_forces)
+    math_state = eval_from_math_model(model, input_forces)
     write_results(model, input_forces, math_state, sim_state)
