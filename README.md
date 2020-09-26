@@ -31,13 +31,13 @@ conda activate vnlm_math_model
 
 # Steps to turn on Adams View command server
 1. Open Adam Views in your machine
-1. Select the tab 'Tools' and pick the item 'Command Navigator...'
-    ![Step 1](images/open_cmd_server_step1.png)
-2. Double click on item 'command_server'
-    ![Step 2](images/open_cmd_server_step2.png)
-3. Double click on item 'show' below item 'command_server'
-    ![Step 3](images/open_cmd_server_step3.png)
-4. Click on button 'Start server', and the window displays 'Server is accepting...'
+1. Select the tab 'Tools' and pick the item 'Command Navigator...'  
+    ![Step 1](images/open_cmd_server_step1.png)  
+2. Double click on item 'command_server'  
+    ![Step 2](images/open_cmd_server_step2.png)  
+3. Double click on item 'show' below item 'command_server'  
+    ![Step 3](images/open_cmd_server_step3.png)  
+4. Click on button 'Start server', and the window displays 'Server is accepting...'  
     ![Step 4](images/open_cmd_server_step4.png)
 
 More details are in:
