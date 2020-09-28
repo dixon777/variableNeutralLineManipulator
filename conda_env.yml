@@ -1,6 +1,5 @@
 name: vnlm_math_model
 channels:
-  - freecad
   - conda-forge
   - cadquery
   - defaults

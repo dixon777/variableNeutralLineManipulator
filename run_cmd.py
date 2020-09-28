@@ -44,14 +44,14 @@ def eval_from_sim(manipulator_model, input_forces:List[float]):
     s = SimManipulatorAdamModel(manipulator_model)
     
     # # Uncomment the following lines to run the simulation, otherwise it will extract the current simulation result on Adams View
-    # s.clear_model()
-    # s.generate_model()
-    # s.run_sim(input_forces,
-    #             num_steps=50,
-    #             max_iterations_search_eqilibrium=1500,
-    #             solver_translational_limit=3,
-    #             solver_rotational_limit=pi/10,
-    #             solver_stability=6e-5) # 6e-5
+    s.clear_model()
+    s.generate_model()
+    s.run_sim(input_forces,
+                num_steps=50,
+                max_iterations_search_eqilibrium=1500,
+                solver_translational_limit=3,
+                solver_rotational_limit=pi/10,
+                solver_stability=6e-5) # 6e-5
     
     return s.extract_final_state()
  
