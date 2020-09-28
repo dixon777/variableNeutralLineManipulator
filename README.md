@@ -39,6 +39,8 @@ conda activate vnlm_math_model
     ![Step 3](images/open_cmd_server_step3.png)  
 4. Click on button 'Start server', and the window displays 'Server is accepting...'  
     ![Step 4](images/open_cmd_server_step4.png)
+     - Note that if the disk CAD has not been generated before, it will be generated in STEP format,and imported into Admas View. The import takes about 75 seconds (may differ from machines) for each model. The program looks freezed during this stage. 
+     After once generation, the CAD will be cached in parasolid format, which takes less than 1 second to be imported.
 
 More details are in:
 | Language 	| Link 	|
