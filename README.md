@@ -14,6 +14,16 @@ This project is part of the research, initiated from Dec 2019, subsidised by the
     ```bash
     python run_cmd.py
     ```
+1. Wait until the simulation has completed (or fail under certain circumstance). 
+    - If the command window in Adams View shows the following line, that means the simulation fails to complete.
+    ![Simulation fail text](images/simulation_fail.png)  
+    
+    - If the command window in Adams View does not display the line above, and the console outputs the following line, then the simulation is completed.
+        ```bash
+        Progress completed
+        ``` 
+    - Remark: Some steps may each take several hundreds iterations or more to converge (depending on your solver setting, but it is proportional to the number of joints and difference in applied tensions from observation). At these steps, the program seems freezed. Please do not terminate the process if it is unnecessary. 
+    
 
 # Installation
 Run the following code in the terminal:
