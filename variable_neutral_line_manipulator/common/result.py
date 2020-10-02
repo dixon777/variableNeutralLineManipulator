@@ -13,7 +13,7 @@ def generate_manipulator_model_table(manipulator_model:ManipulatorModel, input_t
         ["Segments:"],
     ]
     for i, s in enumerate(manipulator_model.segments):
-        res.append([f"Segment {i}:"])
+        res.append([f"Segment {i+1}:"])
         for k, v in dict(s).items():
             if k == "__class_name__":
                 continue
@@ -47,12 +47,12 @@ def generate_disk_states_compare_table(manipulator_state_from_math_model: Manipu
         print("Warning, disk states lengths are not consistent")
     
     # Joint angles
-    res.append(["Joint angles:"])
-    res.append(["Joint (deg)", "Math", "Sim", "Diff"])
-    for i, (ms, ss) in enumerate(zip(math_disk_states, sim_disk_states)):
+    res.append(["Joint angles (deg):"])
+    res.append(["Joint", "Math", "Sim", "Diff"])
+    for i, (ms, ss) in enumerate(zip(math_disk_states[1:], sim_disk_states[1:])):
         m_joint_angle = degrees(ms.bottom_joint_angle if ms.bottom_joint_angle is not None else 0)
         s_joint_angle =  degrees(ss.bottom_joint_angle if ss.bottom_joint_angle is not None else 0)
-        res.append([f"{i}",f"{m_joint_angle}", f"{s_joint_angle}", f"{abs(m_joint_angle - s_joint_angle)}"])
+        res.append([f"{i+1}",f"{m_joint_angle}", f"{s_joint_angle}", f"{abs(m_joint_angle - s_joint_angle)}"])
         
     
     res.append([])
@@ -60,7 +60,7 @@ def generate_disk_states_compare_table(manipulator_state_from_math_model: Manipu
     # Contact reaction
     res.append(["Contact reaction component:"])
     for i, (ms, ss) in enumerate(zip(math_disk_states, sim_disk_states)):
-        res.append([f"{i-1}-th joint:" if i > 0 else "Base"])
+        res.append([f"{i}-th joint:" if i > 0 else "Base"])
         if ms.has_bottom_contact and ss.has_bottom_contact:
             res.append([f"Bottom:"])
             res.append(["Component (N or Nmm)", "Math", "Sim", "Diff"])
@@ -83,5 +83,24 @@ def generate_disk_states_compare_table(manipulator_state_from_math_model: Manipu
     return res
 
 
+
+def write_to_csv(path, table):
+    import csv, os,datetime
+    try:
+        with open(path, "w", newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(table)
+    except PermissionError as e:
+        base_name = os.path.basename(path)
+        all_strs = base_name.split('.')
+        all_strs[-2] += datetime.datetime.now().strftime("_%Y_%m_%d_%H_%M_%S")
+        new_base_name = '.'.join(all_strs)
+        new_path = os.path.join(os.path.dirname(path), new_base_name)
+        
+        print(f"\"{path}\" has been occupied. Result is stored in \"{new_path}\"")
+        
+        with open(new_path, "w", newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(table)
 
 

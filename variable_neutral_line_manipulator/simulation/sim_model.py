@@ -12,6 +12,10 @@ from .adam_middleware import *
 
 
 class _CadCacheManager:
+    """
+        Manages the retrival and storage of CAD cache 
+        For faster reimport of CAD into Adams View by caching them into parasolid format from STEP format
+    """
     CONSTANT_KEY_SUB_PATH = "sub_path"
     CONSTANT_KEY_GEOMETRY = "geometry"
 
@@ -99,6 +103,9 @@ class _ManipulatorAdamSimNameGenerator():
         return f"body_{cls.disk_part_name(index)}"
 
     # Marker
+    ground_base_disk_bottom_marker_name = "ground_base_disk_bottom"
+    base_disk_bottom_marker_name = "ma_base_disk_bottom"
+    
     @classmethod
     def disk_center_marker_name(cls, index):
         return f"ma_{cls.disk_part_name(index)}_center"
@@ -329,6 +336,13 @@ class SimManipulatorAdamModel:
                         location=disp,
                         orientation=(0, 0, disk_geometry.top_orientationDF)
                     )
+                    
+        # Create base disk bottom marker
+        self.socket.modify_part_rigid_body(self.name_gen.disk_part_name(0))
+        self.socket.create_marker(self.name_gen.base_disk_bottom_marker_name, 
+                                    location=(0,0,-disk_models[0].disk_geometry.length/2),
+                                  )
+        
 
     def _move_disks_to_pos(self, disk_init_loc_orientations):
         for i, pos in enumerate(disk_init_loc_orientations):
@@ -386,11 +400,12 @@ class SimManipulatorAdamModel:
 
     def _enforce_base_disk_ground_constraint(self):
         self.socket.modify_part_rigid_body("ground")
-        self.socket.create_marker("ground_center")
+        self.socket.create_marker(self.name_gen.ground_base_disk_bottom_marker_name,
+                                  location=(0,0,-self.disk_models[0].disk_geometry.length/2),
+                                  reference_marker_name=self.name_gen.disk_center_marker_name(0))
         self.socket.create_constraint_fixed(self.name_gen.ground_constraint_name,
-                                            i_marker_name=self.name_gen.disk_center_marker_name(
-                                                0),
-                                            j_marker_name="ground_center")
+                                            i_marker_name=self.name_gen.base_disk_bottom_marker_name,
+                                            j_marker_name=self.name_gen.ground_base_disk_bottom_marker_name)
 
     def _generate_contacts(self, disk_models: List[DiskModel]):
         for i in range(len(disk_models)-1):
@@ -470,7 +485,7 @@ class SimManipulatorAdamModel:
                                                       ):
             self.socket.create_measure_function(
                 measurement_name,
-                f"JOINT({self.name_gen.ground_constraint_name}, 0, {force_type_index}, {self.name_gen.disk_center_marker_name(0)})"
+                f"JOINT({self.name_gen.ground_constraint_name}, 0, {force_type_index}, {self.name_gen.base_disk_bottom_marker_name})"
             )
 
     def _final_cleanup(self):
@@ -737,22 +752,27 @@ class SimManipulatorAdamModel:
 
             knobbed_tendon_states = []
             continuous_tendon_states = []
-            for tendon_models, tendon_states in [(model.knobbed_tendon_models, knobbed_tendon_states),
+            for tendon_models, tendon_states_container in [(model.knobbed_tendon_models, knobbed_tendon_states),
                                                  (model.continuous_tendon_models, continuous_tendon_states)]:
                 for tm in tendon_models:
-                    bottom_tension_vec = [self._extract_one_state_from_spreadsheet(
-                        component,
-                    ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, False)]
-                    top_tension_vec = [self._extract_one_state_from_spreadsheet(
-                        component,
-                    ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, True)]
-
-                    tendon_states.append(TendonState(
+                    if i > 0:
+                        bottom_tension_vec = [self._extract_one_state_from_spreadsheet(
+                            component,
+                        ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, False)]
+                    else:
+                        bottom_tension_vec = None
+                        
+                    if i < len(self.disk_models) - 1:
+                        top_tension_vec = [self._extract_one_state_from_spreadsheet(
+                            component,
+                        ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, True)]
+                    else:
+                        top_tension_vec = None
+                        
+                    tendon_states_container.append(TendonState(
                         tm,
-                        bottom_tension_vec if all(
-                            c is not None for c in bottom_tension_vec) else None,
-                        top_tension_vec if all(
-                            c is not None for c in top_tension_vec) else None
+                        bottom_tension_vec,
+                        top_tension_vec
                     ))
 
             disk_states.append(DiskState(
@@ -824,113 +844,3 @@ class SimManipulatorAdamModel:
         #     ))
 
         return ManipulatorState(self.manipulator_model, input_forces, disk_states)
-
-    # def run_sim(self,
-    #             input_forces,
-    #             total_iterations=10,
-    #             step_size=1,
-    #             seconds_changing=0.5,
-    #             seconds_until_end=50,
-    #             max_iterations_search_eqilibrium=30,
-    #             initial_disk_overlap_length=DEFAULT_OVERLAPPING_LENGTH,):
-    #     # Reset disks' positions to neutral state
-    #     self._move_disks_to_pos(
-    #         self._disks_init_location_orientation(initial_disk_overlap_length))
-
-    #     # Increase static equilibrium iteration numbers
-    #     self.socket.set_sim_equilibrium_param(
-    #         self.model_name,
-    #         max_iterations=max_iterations_search_eqilibrium)
-
-    #     # Update variable
-    #     self.socket.set_variable(
-    #         self.name_gen.var_name_base_duration, 0.0001
-    #     )
-    #     self.socket.set_variable(
-    #         self.name_gen.var_name_final_duration, seconds_until_end
-    #     )
-    #     self.socket.set_variable(
-    #         self.name_gen.var_name_tension_avg, np.average(input_forces)
-    #     )
-
-    #     for tm, val in zip(self.tendon_models, input_forces):
-    #         self.socket.set_variable(
-    #             self.name_gen.final_tension_mag_var_name(
-    #                 tm.orientation),
-    #             val
-    #         )
-
-    #     last_displacements = []
-    #     for step in range(total_iterations):
-    #         actual_seconds_per_iteration = seconds_changing + seconds_until_end
-    #         actual_step_size = step_size
-    #         print(f"Progress: {step+1}/{total_iterations}")
-
-    #         while True:
-    #             # Update tension magnitudes
-    #             # for tm, prev_val, val in zip(self.tendon_models,
-    #             #                              self._eval_tension_mags_at_step(
-    #             #                                  input_forces, step, total_iterations),
-    #             #                              self._eval_tension_mags_at_step(
-    #             #                                  input_forces, step+1, total_iterations)):
-    #             #     self.socket.set_variable(
-    #             #         self.name_gen.final_tension_mag_var_name(
-    #             #             tm.orientation),
-    #             #         val
-    #             #     )
-
-    #             # Run simulation
-    #             self.socket.run_sim_reset(self.model_name)
-    #             self.socket.run_sim_equilibrium(self.model_name)
-    #             self.socket.run_sim_transient(self.model_name, step_size=actual_step_size,
-    #                                           solver_type="STATIC", duration=seconds_changing + seconds_until_end)
-
-    #             # Make the simulation generate the records the disks' positions for next iteration
-    #             self.socket.set_auto_plot_param("Last_run", True)
-
-    #             # Do not update initial position at the last step
-    #             if step == total_iterations-1:
-    #                 break
-
-    #             # Update initial position of the disks [2nd to last] from the auto-generated records
-    #             displacements = []
-    #             for i in range(1, len(self.disk_models)):
-    #                 res = self.socket.extract_spread_sheet(f"disk{i}_XFORM")
-    #                 displacements.append(
-    #                     [res["X"], res["Y"], res["Z"], res["PSI"], res["THETA"], res["PHI"]])
-    #             if displacements == last_displacements:
-    #                 print(
-    #                     "Final displacements are identical to that in initial setup, which means it fails to find the converged equilibrium solution")
-    #                 print(
-    #                     f"Increase the time step by 1.5 times from {actual_seconds_per_iteration} to {actual_seconds_per_iteration*1.5}")
-    #                 actual_seconds_per_iteration *= 1.5
-    #                 actual_step_size /= 1.5
-    #                 continue
-
-    #             last_displacements = displacements
-    #             for i, disp in enumerate(displacements):
-    #                 self.socket.modify_part_rigid_body(
-    #                     part_name=self.name_gen.disk_part_name(i+1),
-    #                     location=disp[:3],
-    #                     orientation=disp[3:],
-    #                 )
-    #             break
-
-    #     # Extract the final state from Adam
-    #     disk_states = []
-    #     for i, model in enumerate(self.disk_models[1:]):
-    #         force_moment = []
-    #         for contact_component in self._generate_measurement_all_contact_components(i+1, False):
-    #             res = self.socket.extract_spread_sheet(contact_component)
-    #             force_moment.append(res["Q"])
-
-    #         res = self.socket.extract_spread_sheet(
-    #             self.name_gen.measurement_joint_angle_name(i))
-    #         bottom_joint_angle = res["Q"]
-    #         disk_states.insert(0, DiskState(
-    #             model,
-    #             bottom_contact_forceDF=force_moment[:3],
-    #             bottom_contact_pure_momentDF=force_moment[3:],
-    #             bottom_joint_angle=bottom_joint_angle,
-    #         ))
-    #     return disk_states
