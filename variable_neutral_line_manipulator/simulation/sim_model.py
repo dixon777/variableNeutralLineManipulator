@@ -532,8 +532,11 @@ class SimManipulatorAdamModel:
                 # should_display=True
             )
 
-    def _extract_one_state_from_spreadsheet(self, result_set_name, component_name="Q"):
-        res = self.socket.extract_spread_sheet(result_set_name)
+    def _extract_steady_state_one_component_from_spreadsheet(self, result_set_name, component_name="Q") -> Union[str,List[str]]: 
+        """
+            component_name: The component name(s) defined in result set. (usually 'TIME' or 'Q' (the value))
+        """
+        res = self.socket.extract_steady_state_from_spread_sheet(result_set_name)
         if isinstance(component_name, str):
             return res.get(component_name, None)
         elif isinstance(component_name, list):
@@ -544,11 +547,11 @@ class SimManipulatorAdamModel:
     def _validate_state(self):
         res = True
         for i, distal_disk_model in enumerate(self.disk_models[1:]):
-            first_angle = self._extract_one_state_from_spreadsheet(
+            first_angle = self._extract_steady_state_one_component_from_spreadsheet(
                 self.name_gen.measurement_joint_angle_name(i)
             )
             for j, tendon_model in enumerate(distal_disk_model.tendon_models):
-                other_angle = self._extract_one_state_from_spreadsheet(
+                other_angle = self._extract_steady_state_one_component_from_spreadsheet(
                     self.name_gen.measurement_joint_angle_name(i,
                                                                tendon_model.orientation,
                                                                tendon_model.dist_from_axis))
@@ -605,21 +608,56 @@ class SimManipulatorAdamModel:
         Remove model. Meaningful only when it is followed by generate_model()
         """
         self.socket.delete_model(self.model_name)
-
+        
+    def _execute_static_sim(self, duration, num_steps, percentage_per_joint_angle_validation):
+        """
+            Execute static simulation while keeping track its progress and detecting any failure
+            @param
+            duration: Total duration between initial state and final state
+            num_steps: Total number of steps to reach the final state from the initial state
+            percentage_per_joint_angle_validation: Percentage of progress at which it checks whether the orientations of cables belonging to the same joint are the same
+        """
+        duration_per_step = duration/num_steps
+        duration_between_validation = duration*percentage_per_joint_angle_validation
+        
+        cur_end_time = 0.0
+        while cur_end_time < duration:
+            next_check_end_time = min(
+                cur_end_time + duration_between_validation, duration)
+            yield cur_end_time, next_check_end_time # Allow the caller func to display the state updates to user
+            
+            while cur_end_time < next_check_end_time:
+                next_end_time = min(cur_end_time + duration_per_step, next_check_end_time)
+                self.socket.run_sim_transient(self.model_name,
+                                            end_time=next_end_time,
+                                            number_of_steps=1,
+                                            solver_type="STATIC",)
+                cur_end_time_in_sim = self._extract_steady_state_one_component_from_spreadsheet(self.name_gen.measurement_joint_angle_name(0), component_name="TIME")
+                if cur_end_time_in_sim is None or cur_end_time_in_sim <= cur_end_time:
+                    raise RuntimeError(f"Static simulation cannot be performed {'at the start' if cur_end_time_in_sim is None else f'from {cur_end_time_in_sim} to {next_end_time}'}."
+                                       "\nIt may be solved by increasing max iterations for static simulation, or adjusting other parameters.")
+                cur_end_time = next_end_time
+                
+            if not self._validate_state():
+                raise RuntimeError(f"The joint angle of the tendons are incorrect at {next_check_end_time}")
+            cur_end_time = next_check_end_time
+            
     def run_sim(self,
                 input_forces,
                 max_iterations_search_eqilibrium=None,
                 num_steps=None,
+                percentage_per_joint_angle_validation=0.5,
                 solver_stability=None,
                 solver_translational_limit=None,
                 solver_rotational_limit=None,
                 solver_static_method=None,
                 initial_disk_overlap_length=DEFAULT_OVERLAPPING_LENGTH,):
-        duration = 1
         """
         Run simulation on the model and extract its final steady state results. 
         generate_model() should have been run.
         """
+        duration = 1 # Fixed to 1 time unit 
+        
         if len(self.tendon_models) != len(input_forces):
             raise ValueError(
                 "Num of tension inputs does not match num of tendons")
@@ -668,49 +706,10 @@ class SimManipulatorAdamModel:
         # Make the simulation generate the records the disks' positions for next iteration
         self.socket.set_auto_plot_param("Last_run", True)
 
-        # Validation the state regularly during the simulation to ensure the simulation conforms the assumption of math model, which is that
-        # the orientations of tendon sections between each pair of tendon guide ends of the same joint are identical)
-        # The errors might occurs if the potential friction at one timestep is insufficient to prevent slipping
-        # duration_between_validation = step_size*10
-        # TIMEOUT_PER_ITERATION = 10000
-        # count = 0
-        # cur_duration_end_time = 0
-        # while cur_duration_end_time < duration:
-        #     try:
-        #         self.socket.run_sim_transient(self.model_name,
-        #                                     duration=step_size,
-        #                                     number_of_steps=1,
-        #                                     solver_type="STATIC",
-        #                                     timeout=1000)
-        #     except TimeoutError as e:
-        #         temp_step_size = step_size / 2
-        #         print("Timeout")
-
-        #     if count % 1000 == 0:
-        #         next_duration_end_time = cur_duration_end_time + duration_between_validation
-        #         print(f"Progress: {cur_duration_end_time:.2f}-{next_duration_end_time:.2f}s ({cur_duration_end_time/duration*100:.2f}-{next_duration_end_time/duration*100:.2f}%)")
-        #         if not self._validate_state():
-        #             return False
-        #     cur_duration_end_time += step_size
-        #     count += 1
-
-        duration_between_validation = duration/num_steps*50
-        cur_duration_end_time = 0
-        while cur_duration_end_time < duration:
-            next_duration_end_time = min(
-                cur_duration_end_time + duration_between_validation, duration)
-            print(
-                f"Progress: {cur_duration_end_time/duration*100:.2f}-{next_duration_end_time/duration*100:.2f}%")
-            self.socket.run_sim_transient(self.model_name,
-                                          end_time=next_duration_end_time,
-                                          number_of_steps=num_steps,
-                                          solver_type="STATIC",)
-            if not self._validate_state():
-                return False
-            cur_duration_end_time = next_duration_end_time
+        for cur_end_time, next_end_time in self._execute_static_sim(duration, num_steps, percentage_per_joint_angle_validation):
+            print(f"Progress: {cur_end_time/duration*100:.2f}-{next_end_time/duration*100:.2f}%")
 
         print(f"Progress: Completed")
-        return True
 
     def extract_final_state(self):
         if not self._validate_state():
@@ -730,22 +729,22 @@ class SimManipulatorAdamModel:
         disk_states = []
         for i, model in enumerate(self.disk_models):
             if i < len(self.disk_models) - 1:
-                top_force_moment = [self._extract_one_state_from_spreadsheet(
+                top_force_moment = [self._extract_steady_state_one_component_from_spreadsheet(
                     contact_component,
                 ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, True)]
 
-                top_joint_angle = self._extract_one_state_from_spreadsheet(
+                top_joint_angle = self._extract_steady_state_one_component_from_spreadsheet(
                     self.name_gen.measurement_joint_angle_name(i))
 
             if i > 0:
-                bottom_force_moment = [self._extract_one_state_from_spreadsheet(
+                bottom_force_moment = [self._extract_steady_state_one_component_from_spreadsheet(
                     contact_component,
                 ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, False)]
 
-                bottom_joint_angle = self._extract_one_state_from_spreadsheet(
+                bottom_joint_angle = self._extract_steady_state_one_component_from_spreadsheet(
                     self.name_gen.measurement_joint_angle_name(i-1))
             else:
-                bottom_force_moment = [self._extract_one_state_from_spreadsheet(
+                bottom_force_moment = [self._extract_steady_state_one_component_from_spreadsheet(
                     component,
                 ) for component in self.name_gen.measurement_base_reaaction_names]
                 bottom_joint_angle = None
@@ -756,14 +755,14 @@ class SimManipulatorAdamModel:
                                                  (model.continuous_tendon_models, continuous_tendon_states)]:
                 for tm in tendon_models:
                     if i > 0:
-                        bottom_tension_vec = [self._extract_one_state_from_spreadsheet(
+                        bottom_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
                             component,
                         ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, False)]
                     else:
                         bottom_tension_vec = None
                         
                     if i < len(self.disk_models) - 1:
-                        top_tension_vec = [self._extract_one_state_from_spreadsheet(
+                        top_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
                             component,
                         ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, True)]
                     else:
@@ -793,18 +792,18 @@ class SimManipulatorAdamModel:
         # for i in range(1, len(self.disk_models)):
         #     model = self.disk_models[i]
         #     if i < len(self.disk_models) - 1:
-        #         top_force_moment = [self._extract_one_state_from_spreadsheet(
+        #         top_force_moment = [self._extract_steady_state_one_component_from_spreadsheet(
         #             contact_component,
         #         ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, True)]
 
-        #         top_joint_angle = self._extract_one_state_from_spreadsheet(
+        #         top_joint_angle = self._extract_steady_state_one_component_from_spreadsheet(
         #             self.name_gen.measurement_joint_angle_name(i))
 
-        #     bottom_force_moment = [self._extract_one_state_from_spreadsheet(
+        #     bottom_force_moment = [self._extract_steady_state_one_component_from_spreadsheet(
         #         contact_component,
         #     ) for contact_component in self.name_gen.measurement_all_contact_component_names(i, False)]
 
-        #     bottom_joint_angle = self._extract_one_state_from_spreadsheet(
+        #     bottom_joint_angle = self._extract_steady_state_one_component_from_spreadsheet(
         #         self.name_gen.measurement_joint_angle_name(i-1))
 
         #     knobbed_tendon_states = []
@@ -812,10 +811,10 @@ class SimManipulatorAdamModel:
         #     for tendon_models, tendon_states in [(model.knobbed_tendon_models, knobbed_tendon_states),
         #                                          (model.continuous_tendon_models, continuous_tendon_states)]:
         #         for tm in tendon_models:
-        #             bottom_tension_vec = [self._extract_one_state_from_spreadsheet(
+        #             bottom_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
         #                 component,
         #             ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, False)]
-        #             top_tension_vec = [self._extract_one_state_from_spreadsheet(
+        #             top_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
         #                 component,
         #             ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, True)]
 

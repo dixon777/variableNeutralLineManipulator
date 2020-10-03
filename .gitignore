@@ -19,6 +19,7 @@ python/venv/
 
 tmp
 .temp*
+**/test*
 .manipulator_adam_cache
 
 .vscode/

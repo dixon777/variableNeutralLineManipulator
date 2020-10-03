@@ -36,7 +36,7 @@ def _adams_construct_cmd(init, params={}, without_prefix=False):
     return s
 
 
-def _adams_read_spreadsheet_steady_state_value(path):
+def adams_read_spreadsheet_steady_state_value(path):
     '''Extract steady state value from the spreadsheet exported by Adams View'''
     res = {}
     with open(path, "r") as f:
@@ -46,10 +46,12 @@ def _adams_read_spreadsheet_steady_state_value(path):
         # read attribute
         attr_line = f.readline()
 
-        lines = f.read()
-
+        lines_list = f.read().splitlines()
+        if len(lines_list) < 3:
+            return {}
+        
         # read values at equilibrium
-        equilibrium_val_line = lines.splitlines()[-4]
+        equilibrium_val_line = lines_list[-3]
 
     attrs = [re.search("(?<=.)\w+(?=\")", s).group(0)
              for s in attr_line.split('\t')]
@@ -401,11 +403,11 @@ class AdamViewSocket:
             "result_set_name": result_names,
         })
 
-    def extract_spread_sheet(self, result_names):
+    def extract_steady_state_from_spread_sheet(self, result_names):
         path = f"{self.return_text_prefix}.tab"
         if os.path.exists(path):
             os.remove(path)
-        return _adams_read_spreadsheet_steady_state_value(path) if self.export_spread_sheet(path, result_names) else {}
+        return adams_read_spreadsheet_steady_state_value(path) if self.export_spread_sheet(path, result_names) else {}
 
     def export_sim_script(self, script_name, path):
         return self.deal_with_cmd("simulation script write_acf", {
