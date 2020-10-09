@@ -5,15 +5,7 @@ import pyrr.matrix33 as m3
 import pyrr.matrix44 as m4
 
 
-def m3_rotation(axis, radian):
-    return m3.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
-
-def m4_translation(vec):
-    return m4.create_from_translation(np.array(vec)*1.0).transpose()
-
-
-def m4_rotation(axis, radian):
-    return m4.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
+from ..util import m3_rotation
 
 
 def distal_to_proximal_frame(vec_in_distal_disk_frame: np.ndarray,
@@ -121,8 +113,4 @@ def eval_bottom_contact_disp(length: float,
 
 
 
-def eval_proximal_top_to_distal_bottom_TF(jointAngle: float, curveRadius: float):
-    rot = m4_rotation((1.0, 0, 0), jointAngle/2)
-    return np.matmul(rot,
-                     np.matmul(m4_translation((0.0, 0, 2*curveRadius*(1-cos(jointAngle/2)))),
-                               rot))  # (Wrong) Trick: m_rot * m_trans * m_rot = m_rot * (m_trans + m_rot)
+

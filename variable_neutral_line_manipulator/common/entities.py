@@ -6,6 +6,8 @@ from abc import ABC
 from typing import List, Dict, Iterable, Tuple
 import numpy as np
 
+from ..util.calculation import m4_translation, m4_rotation
+from .calculation import eval_proximal_top_to_distal_bottom_TF
 from ..util import BaseDataClass, indices_entity_pairs_to_ordered_list, normalise_angle, normalise_to_range, normalise_half_angle
 # Courtesy to dan_waterworth
 # https://stackoverflow.com/questions/4544630/automatically-growing-lists-in-python
@@ -249,12 +251,13 @@ class ManipulatorModel(BaseDataClass):
 
         self.indices_disk_model_pairs.insert(
             0, ((0,), segments[0].generate_base_disk_model(distal_disk_tendon_modelsMF)))
+
     @property
     def disk_models(self):
         return indices_entity_pairs_to_ordered_list(
             self.indices_disk_model_pairs
         )
-        
+
     @property
     def num_joints(self):
         return sum(s.num_joints for s in self.segments)
@@ -262,16 +265,16 @@ class ManipulatorModel(BaseDataClass):
     @property
     def tendon_models(self):
         return sorted(set(tm for s in self.segments for tm in s.get_knobbed_tendon_modelsMF()), key=lambda x: x.orientation)
-    
-    def get_disk_model(self, index):
+
+    def get_disk_model(self, index) -> DiskModel:
         return self.disk_models[index]
-    
+
     def get_indices_disk_model_pairs(self, include_base: bool):
         return [
             ((i if include_base else i-1 for i in indices), model)
             for indices, model in self.indices_disk_model_pairs[0 if include_base else 1:]
         ]
-        
+
     def get_disk_models(self, include_base: bool):
         return indices_entity_pairs_to_ordered_list(
             indices_entity_pairs=self.get_indices_disk_model_pairs(
@@ -309,7 +312,7 @@ class TendonStateBase(BaseDataClass):
     @property
     def tension_in_disk(self):
         return 0
-    
+
     def local_attr_keys(self):
         return ["model", "tension_in_disk"]
 
@@ -323,7 +326,7 @@ class TendonState(TendonStateBase):
             bottom_tensionDF) if bottom_tensionDF is not None else None
         self.top_tensionDF = np.array(
             top_tensionDF) if top_tensionDF is not None else None
-    
+
     @property
     def tension_in_disk(self):
         return (np.linalg.norm(self.bottom_tensionDF)
@@ -412,6 +415,25 @@ class ManipulatorState(BaseDataClass):
         return ["manipulator_model",
                 "input_forces",
                 "disk_states", ]
+
+    def get_TF(self, disk_index, pos="bottom"):
+        m = np.identity(4)
+        for i in range(disk_index):
+            disk_geometry = self.disk_states[i].disk_model.disk_geometry
+            m = np.matmul(m, m4_translation((0,0,disk_geometry.length)))
+            m = np.matmul(m, m4_rotation((0,0,1), disk_geometry.top_orientationDF))
+            m = np.matmul(m, eval_proximal_top_to_distal_bottom_TF(
+                self.disk_states[i].top_joint_angle, 
+                disk_geometry.top_curve_radius))
+            
+        if pos == "top":
+            m = np.matmul(m, m4_translation(
+                (0,0,self.disk_states[disk_index].disk_model.disk_geometry.length)))
+        elif pos == "centre":
+            m = np.matmul(m, m4_translation(
+                (0,0,self.disk_states[disk_index].disk_model.disk_geometry.length/2)))
+            
+        return m
 
     # @property
     # def tendon_guide_top_end_state_force_disp_tuple(self):

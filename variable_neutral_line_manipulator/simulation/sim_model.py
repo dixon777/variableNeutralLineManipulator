@@ -5,10 +5,10 @@ from collections.abc import Iterable
 from typing import List,  Union, Dict
 
 from .entities import *
-from ..util import Logger, normalise_angle
+from ..util import Logger, normalise_angle, remove_dec
 from ..cad.cadquery_disk_generator import generate_disk_CAD, export_CAD
 from ..math_model.calculation import eval_tendon_guide_top_end_disp, eval_tendon_guide_bottom_end_disp
-from .adam_middleware import *
+from .adam_socket import *
 
 
 class _CadCacheManager:
@@ -91,6 +91,11 @@ class _ManipulatorAdamSimNameGenerator():
     @staticmethod
     def _convert_angle(angle_in_rad):
         return int(degrees(normalise_angle(angle_in_rad)))
+    
+    @staticmethod
+    def _to_safe_float_str(val):
+        int_val, dec_count = remove_dec(val)
+        return f"{int_val}_{dec_count}"
 
     # Part
     @staticmethod
@@ -112,11 +117,11 @@ class _ManipulatorAdamSimNameGenerator():
 
     @classmethod
     def tendon_guide_end_marker_name(cls, index, orientationMF, dist_from_axis, is_top):
-        return f"ma_{cls.disk_part_name(index)}_o{cls._convert_angle(orientationMF)}_d{dist_from_axis}_{'top' if is_top else 'bottom'}"
+        return f"ma_{cls.disk_part_name(index)}_o{cls._convert_angle(orientationMF)}_d{cls._to_safe_float_str(dist_from_axis)}_{'top' if is_top else 'bottom'}"
 
     @classmethod
     def base_tendon_guide_end_floating_marker_name(cls, orientationMF, dist_from_axis):
-        return f"ma_base_o{cls._convert_angle(orientationMF)}_d{dist_from_axis}"
+        return f"ma_base_o{cls._convert_angle(orientationMF)}_d{cls._to_safe_float_str(dist_from_axis)}"
 
     # Var
     var_name_tension_avg = "v_tension_avg"
@@ -125,7 +130,7 @@ class _ManipulatorAdamSimNameGenerator():
 
     @classmethod
     def final_tension_mag_var_name(cls, orientationMF, dist_from_axis):
-        return f"v_tension_mag_o{cls._convert_angle(orientationMF)}_d{dist_from_axis}"
+        return f"v_tension_mag_o{cls._convert_angle(orientationMF)}_d{cls._to_safe_float_str(dist_from_axis)}"
 
     # Constraints
     ground_constraint_name = "ground_constraint"
@@ -137,18 +142,18 @@ class _ManipulatorAdamSimNameGenerator():
 
     @classmethod
     def force_tension_base_bottom_tendon_guide_end_name(cls, orientationMF, dist_from_axis):
-        return f"f_base_tension_o{cls._convert_angle(orientationMF)}_d{dist_from_axis}"
+        return f"f_base_tension_o{cls._convert_angle(orientationMF)}_d{cls._to_safe_float_str(dist_from_axis)}"
 
     @classmethod
     def force_tension_between_tendon_guide_ends_name(cls, joint_index, orientationMF, dist_from_axis):
-        return f"f_joint{joint_index}_tension_o{cls._convert_angle(orientationMF)}_d{dist_from_axis}"
+        return f"f_joint{joint_index}_tension_o{cls._convert_angle(orientationMF)}_d{cls._to_safe_float_str(dist_from_axis)}"
 
     # Measurements
     @classmethod
     def measurement_joint_angle_name(cls, joint_index, orientationMF=None, dist_from_axis=None):
         return (f"mm_joint{joint_index}_angle" +
                 (f'_o{cls._convert_angle(orientationMF)}' if orientationMF is not None else '') +
-                (f"_d{int(dist_from_axis)}" if dist_from_axis is not None else ''))
+                (f"_d{cls._to_safe_float_str(dist_from_axis)}" if dist_from_axis is not None else ''))
 
     # @classmethod
     # def measurement_joint_angle_validation_name(cls, joint_index, orientationMF, dist_from_axis):
@@ -164,7 +169,7 @@ class _ManipulatorAdamSimNameGenerator():
 
     @classmethod
     def measurement_tension_component_name(cls, disk_index, orientationMF, dist_from_axis, is_top_surface, item):
-        return f"mm_{cls.disk_part_name(disk_index)}_tension_o{cls._convert_angle(orientationMF)}_d{dist_from_axis}_{'top' if is_top_surface else 'bottom'}_{item}"
+        return f"mm_{cls.disk_part_name(disk_index)}_tension_o{cls._convert_angle(orientationMF)}_d{cls._to_safe_float_str(dist_from_axis)}_{'top' if is_top_surface else 'bottom'}_{item}"
 
     @classmethod
     def measurement_all_tension_component_names(cls, disk_index, orientationMF, dist_from_axis, is_top_surface):
@@ -195,9 +200,9 @@ class SimManipulatorAdamModel:
 
     # Contact
     # Stable for 10 joint 5*10**7, 2.8, 5*10**4, 0.025, 2000, 0.1, 60, 100, 200
-    CONFIG_CONTACT_STIFFNESS = 1*10**4
+    CONFIG_CONTACT_STIFFNESS = 1*10**3
     CONFIG_CONTACT_FORCE_EXPONENT = 1.5
-    CONFIG_CONTACT_DAMPING = 1*10**2
+    CONFIG_CONTACT_DAMPING = 1*10**1
     CONFIG_CONTACT_PENETRATION_DEPTH = 0.05
 
     CONFIG_CONTACT_FRICTION_COEF = 1*10**8
