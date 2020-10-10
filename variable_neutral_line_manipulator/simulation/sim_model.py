@@ -5,10 +5,11 @@ from collections.abc import Iterable
 from typing import List,  Union, Dict
 
 from .entities import *
-from ..util import Logger, normalise_angle, remove_dec
+from ..util import Logger, normalise_angle, remove_dec, Timer
 from ..cad.cadquery_disk_generator import generate_disk_CAD, export_CAD
 from ..math_model.calculation import eval_tendon_guide_top_end_disp, eval_tendon_guide_bottom_end_disp
 from .adam_socket import *
+from datetime import datetime
 
 
 class _CadCacheManager:
@@ -200,10 +201,10 @@ class SimManipulatorAdamModel:
 
     # Contact
     # Stable for 10 joint 5*10**7, 2.8, 5*10**4, 0.025, 2000, 0.1, 60, 100, 200
-    CONFIG_CONTACT_STIFFNESS = 1*10**3
+    CONFIG_CONTACT_STIFFNESS = 1*10**4
     CONFIG_CONTACT_FORCE_EXPONENT = 1.5
-    CONFIG_CONTACT_DAMPING = 1*10**1
-    CONFIG_CONTACT_PENETRATION_DEPTH = 0.05
+    CONFIG_CONTACT_DAMPING = 1*10**2
+    CONFIG_CONTACT_PENETRATION_DEPTH = 0.03 # 0.03
 
     CONFIG_CONTACT_FRICTION_COEF = 1*10**8
     CONFIG_CONTACT_FRICTION_VEL = 1
@@ -629,19 +630,21 @@ class SimManipulatorAdamModel:
         while cur_end_time < duration:
             next_check_end_time = min(
                 cur_end_time + duration_between_validation, duration)
-            yield cur_end_time, next_check_end_time # Allow the caller func to display the state updates to user
             
             while cur_end_time < next_check_end_time:
                 next_end_time = min(cur_end_time + duration_per_step, next_check_end_time)
+                yield cur_end_time, next_end_time   # Allow the caller func to display the state updates to user
                 self.socket.run_sim_transient(self.model_name,
                                             end_time=next_end_time,
                                             number_of_steps=1,
                                             solver_type="STATIC",)
                 cur_end_time_in_sim = self._extract_steady_state_one_component_from_spreadsheet(self.name_gen.measurement_joint_angle_name(0), component_name="TIME")
                 if cur_end_time_in_sim is None or cur_end_time_in_sim <= cur_end_time:
-                    raise RuntimeError(f"Static simulation cannot be performed {'at the start' if cur_end_time_in_sim is None else f'from {cur_end_time_in_sim} to {next_end_time}'}."
+                    raise RuntimeError(f"Static simulation cannot be performed {'at the start' if cur_end_time_in_sim is None else f'from {cur_end_time_in_sim:.2f} to {next_end_time:.2f}'}."
                                        "\nIt may be solved by increasing max iterations for static simulation, or adjusting other parameters.")
                 cur_end_time = next_end_time
+                
+                
                 
             if not self._validate_state():
                 raise RuntimeError(f"The joint angle of the tendons are incorrect at {next_check_end_time}")
@@ -666,13 +669,6 @@ class SimManipulatorAdamModel:
         if len(self.tendon_models) != len(input_forces):
             raise ValueError(
                 "Num of tension inputs does not match num of tendons")
-
-        # if bool(num_steps is None) == bool(step_size is None):
-        #     raise ValueError("Either and only either \'num_steps\' or \'step_size\' is a positive integer")
-
-        # # Convert num_steps to step_size if the incremental param is given as num_steps
-        # if step_size is None:
-        #     step_size = duration / num_steps
 
         # Reset state
         self.socket.run_sim_reset(self.model_name)
@@ -711,10 +707,16 @@ class SimManipulatorAdamModel:
         # Make the simulation generate the records the disks' positions for next iteration
         self.socket.set_auto_plot_param("Last_run", True)
 
+        last = 0.0
+        timer = Timer()
+        timer.start()
         for cur_end_time, next_end_time in self._execute_static_sim(duration, num_steps, percentage_per_joint_angle_validation):
-            print(f"Progress: {cur_end_time/duration*100:.2f}-{next_end_time/duration*100:.2f}%")
+            cur = timer.duration
+            print(f"Progress: {cur_end_time/duration*100:.2f}-{next_end_time/duration*100:.2f}% [{cur:.1f}s({(cur-last):.1f}s)] [{datetime.now().strftime('%H:%M:%S')}]")
+            last = cur
+        del timer
 
-        print(f"Progress: Completed")
+        print(f"Completed")
 
     def extract_final_state(self):
         if not self._validate_state():

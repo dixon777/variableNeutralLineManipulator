@@ -199,6 +199,18 @@ class AdamViewSocket:
     def create_vector_force(self, force_name, i_marker_name, j_part_name, 
                             ref_marker_name,
                             x_force_function="0",y_force_function="0", z_force_function="0"):
+        """
+            Create a force acted on the part, to which "i_marker_name" belongs, by "j_part_name" at position "i_marker_name". 
+            @params
+                force_name: Force name (Required, Must not exist)
+                i_marker_name: Position at which the force acts on both parts  (Required, Must exist)
+                    The part to which it belongs is the action body
+                j_part_name: Reaction body (Optional: Default ground, Must exist)
+                ref_marker_name: Orientation of the force vector (Optional:Default global, Must exist)
+                x_force_function: Runtime function for x component of force vector (Optional:Default 0)
+                y_force_function: Runtime function for y component of force vector (Optional:Default 0)
+                z_force_function: Runtime function for z component of force vector (Optional:Default 0)
+        """
         return self.deal_with_cmd("force create direct force_vector", {
             "force_vector_name": force_name,
             "i_marker_name": i_marker_name,
@@ -207,7 +219,6 @@ class AdamViewSocket:
             "x_force_function": x_force_function,
             "y_force_function": y_force_function,
             "z_force_function": z_force_function,
-            
         })
 
     # Contact

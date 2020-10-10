@@ -1,23 +1,25 @@
 from time import perf_counter
 class Timer:
     def __init__(self):
-        self.start = 0
-        self.end = 0
+        self.start_time = 0
+        self.end_time = 0
+        self.is_running = False
         
     def start(self):
-        self.start = perf_counter()
-        self.end = self.start
+        self.start_time = perf_counter()
+        self.is_running = True
         return self
         
-    def end(self):
-        self.end = perf_counter()
+    def stop(self):
+        self.end_time = perf_counter()
+        self.is_running = False
         
     def __enter__(self):
         return self.start()
     
     def __exit__(self, *args):
-        return self.end()
+        return self.stop()
         
     @property
     def duration(self):
-        return self.end - self.start
+        return perf_counter() - self.start_time if self.is_running else self.end_time - self.start_time
