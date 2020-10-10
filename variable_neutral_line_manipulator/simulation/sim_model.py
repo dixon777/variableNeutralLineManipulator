@@ -189,7 +189,6 @@ class SimManipulatorAdamModel:
      - manipulator_model: Manipulator model
      - port: Port listened by Adams View command server
      - cache_dir_path: Temporary file which holds all caches required for simulation
-     - configs: All model related configs (Currently it has no effect) TODO
     """
     ADAM_INFO_BUFFER_FILE_PREFIX = ".return_result"
     CAD_CACHE_SUB_DIR = "cad_cache"     # Sub directory for CAD cache
@@ -197,21 +196,34 @@ class SimManipulatorAdamModel:
 
     # Configs
     # Body
-    CONFIG_DISK_DENSITY = 0.000008  # kg/mm^3 (Typical steel)
+    DEFAULT_CONFIG_DISK_DENSITY = 0.000008  # kg/mm^3 (Typical steel)
 
-    # Contact
-    # Stable for 10 joint 5*10**7, 2.8, 5*10**4, 0.025, 2000, 0.1, 60, 100, 200
-    CONFIG_CONTACT_STIFFNESS = 1*10**4
-    CONFIG_CONTACT_FORCE_EXPONENT = 1.5
-    CONFIG_CONTACT_DAMPING = 1*10**2
-    CONFIG_CONTACT_PENETRATION_DEPTH = 0.03 # 0.03
+    # Contact    
+    class ContactConfig:
+        DEFAULT_CONFIG_CONTACT_STIFFNESS = 1*10**4
+        DEFAULT_CONFIG_CONTACT_FORCE_EXPONENT = 1.5
+        DEFAULT_CONFIG_CONTACT_DAMPING = 1*10**2
+        DEFAULT_CONFIG_CONTACT_PENETRATION_DEPTH = 0.03 # 0.03
 
-    CONFIG_CONTACT_FRICTION_COEF = 1*10**8
-    CONFIG_CONTACT_FRICTION_VEL = 1
-
-    # DEFAULT_OVERLAPPING_LENGTH = 0.005
-    DEFAULT_OVERLAPPING_LENGTH = 0.01
-    MARKER_OFFSET_FROM_CURVE = 0.011
+        DEFAULT_CONFIG_CONTACT_FRICTION_COEF = 1*10**8
+        DEFAULT_CONFIG_CONTACT_FRICTION_VEL = 1
+        def __init__(self,
+                     stiffness=DEFAULT_CONFIG_CONTACT_STIFFNESS,
+                     force_exponent=DEFAULT_CONFIG_CONTACT_FORCE_EXPONENT,
+                     damping=DEFAULT_CONFIG_CONTACT_DAMPING,
+                     penetration_depth=DEFAULT_CONFIG_CONTACT_PENETRATION_DEPTH,
+                     friction_coef=DEFAULT_CONFIG_CONTACT_FRICTION_COEF,
+                     friction_vel=DEFAULT_CONFIG_CONTACT_FRICTION_VEL,
+                     ):
+            self.stiffness = stiffness
+            self.force_exponent = force_exponent
+            self.damping = damping
+            self.penetration_depth = penetration_depth
+            self.friction_coef = friction_coef
+            self.friction_vel = friction_vel
+            
+    DEFAULT_CONFIG_OVERLAPPING_LENGTH = 0.01
+    DEFAULT_MARKER_OFFSET_FROM_CURVE = 0.011
 
     # Sim
     CONFIG_SCRIPT_NAME = "iterative_solver_script"
@@ -220,7 +232,6 @@ class SimManipulatorAdamModel:
                  manipulator_model: ManipulatorModel,
                  port=5002,  # Should be always 5002
                  cache_dir_path="./.manipulator_adam_cache",
-                 configs={}  # TODO
                  ):
         self.manipulator_model = manipulator_model
         self.disk_models: List[DiskModel] = manipulator_model.get_disk_models(
@@ -229,7 +240,6 @@ class SimManipulatorAdamModel:
         self.model_name = self.CONSTANT_MODEL_NAME_IN_ADAM
         self._cache_dir_path = os.path.abspath(cache_dir_path)
         os.makedirs(self._cache_dir_path, exist_ok=True)
-        self.configs = configs  # TODO
 
         self.socket: AdamViewSocket = AdamViewSocket(
             port, self._generate_path(self.ADAM_INFO_BUFFER_FILE_PREFIX))
@@ -293,7 +303,7 @@ class SimManipulatorAdamModel:
 
         return True
 
-    def _create_markers(self, disk_models):
+    def _create_markers(self, disk_models, marker_offset_from_curve:float):
         for i, model in enumerate(disk_models):
             disk_geometry = model.disk_geometry
             part_name = self.name_gen.disk_part_name(i)
@@ -314,7 +324,7 @@ class SimManipulatorAdamModel:
                     tendon_model.dist_from_axis,
                     tendon_model.orientation - model.bottom_orientationMF)
                 # Offset the marker away from the curve surface
-                disp[2] += self.MARKER_OFFSET_FROM_CURVE
+                disp[2] += marker_offset_from_curve
                 self.socket.create_marker(
                     self.name_gen.tendon_guide_end_marker_name(
                         i,
@@ -332,7 +342,7 @@ class SimManipulatorAdamModel:
                         tendon_model.orientation - model.bottom_orientationMF,
                         disk_geometry.top_orientationDF)
                     # Offset the marker away from the curve surface
-                    disp[2] -= self.MARKER_OFFSET_FROM_CURVE
+                    disp[2] -= marker_offset_from_curve
                     self.socket.create_marker(
                         self.name_gen.tendon_guide_end_marker_name(
                             i,
@@ -355,10 +365,10 @@ class SimManipulatorAdamModel:
             self.socket.modify_part_rigid_body(
                 self.name_gen.disk_part_name(i), **pos)
 
-    def _define_mass_properties(self, disk_models: List[DiskModel]):
+    def _define_mass_properties(self, disk_models: List[DiskModel], disk_density:float):
         for i in range(len(disk_models)):
             self.socket.create_part_rigid_body_mass_properties(
-                self.name_gen.disk_part_name(i), self.CONFIG_DISK_DENSITY)
+                self.name_gen.disk_part_name(i), disk_density)
 
     def _generate_parametric_variables(self, tendon_models: List[TendonModel]):
         self.socket.create_variable(self.name_gen.var_name_base_duration, 0.0)
@@ -413,20 +423,20 @@ class SimManipulatorAdamModel:
                                             i_marker_name=self.name_gen.base_disk_bottom_marker_name,
                                             j_marker_name=self.name_gen.ground_base_disk_bottom_marker_name)
 
-    def _generate_contacts(self, disk_models: List[DiskModel]):
+    def _generate_contacts(self, disk_models: List[DiskModel], config:ContactConfig):
         for i in range(len(disk_models)-1):
             self.socket.create_contact(
                 self.name_gen.force_contact_name(i),
                 self.name_gen.disk_body_name(i+1),
                 self.name_gen.disk_body_name(i),
-                self.CONFIG_CONTACT_STIFFNESS,
-                self.CONFIG_CONTACT_DAMPING,
-                self.CONFIG_CONTACT_PENETRATION_DEPTH,
-                self.CONFIG_CONTACT_FORCE_EXPONENT,
-                self.CONFIG_CONTACT_FRICTION_COEF,
-                self.CONFIG_CONTACT_FRICTION_COEF,
-                self.CONFIG_CONTACT_FRICTION_VEL,
-                self.CONFIG_CONTACT_FRICTION_VEL,
+                config.stiffness,
+                config.damping,
+                config.penetration_depth,
+                config.force_exponent,
+                config.friction_coef,
+                config.friction_coef,
+                config.friction_vel,
+                config.friction_vel,
             )
 
     def _generate_measurement_joint_angles(self, disk_models: List[DiskModel]):
@@ -497,7 +507,7 @@ class SimManipulatorAdamModel:
     def _final_cleanup(self):
         self.socket.modify_part_rigid_body("ground")
 
-    def _disks_init_location_orientation(self, initial_disk_overlap_length=DEFAULT_OVERLAPPING_LENGTH):
+    def _disks_init_location_orientation(self, initial_disk_overlap_length=DEFAULT_CONFIG_OVERLAPPING_LENGTH):
         yield {"location": (0, 0, 0), "orientation": (0, 0, self.disk_models[0].bottom_orientationMF)}
         disk_length_accumulate = self.disk_models[0].disk_geometry.length/2
         for model in self.disk_models[1:]:
@@ -569,7 +579,11 @@ class SimManipulatorAdamModel:
                     res = False
         return res
 
-    def generate_model(self, initial_disk_overlap_length=DEFAULT_OVERLAPPING_LENGTH):
+    def generate_model(self, 
+                       disk_density:float=DEFAULT_CONFIG_DISK_DENSITY,
+                       contact_config:ContactConfig=ContactConfig(),
+                       initial_disk_overlap_length:float=DEFAULT_CONFIG_OVERLAPPING_LENGTH,
+                       marker_offset_from_curve:float=DEFAULT_MARKER_OFFSET_FROM_CURVE):
         """
         Config and set up the simulation model
         """
@@ -592,15 +606,15 @@ class SimManipulatorAdamModel:
         if not self._import_CADs(disk_models):
             Logger.E("Fail to import CAD")
 
-        self._define_mass_properties(disk_models)
-        self._create_markers(disk_models)
+        self._define_mass_properties(disk_models, disk_density=disk_density)
+        self._create_markers(disk_models, marker_offset_from_curve=marker_offset_from_curve)
         self._move_disks_to_pos(
             self._disks_init_location_orientation(initial_disk_overlap_length))
         self._generate_parametric_variables(tendon_models)
         self._enforce_base_disk_ground_constraint()
         self._connect_forces_between_tendon_guide_ends(
             self.disk_models)
-        self._generate_contacts(disk_models)
+        self._generate_contacts(disk_models, config=contact_config)
         self._generate_measurement_joint_angles(disk_models)
         self._generate_measurement_contact_force(disk_models)
         self._generate_measurement_tension_vec(disk_models)

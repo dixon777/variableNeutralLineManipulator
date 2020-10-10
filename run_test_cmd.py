@@ -15,10 +15,13 @@ def eval_from_sim(manipulator_model, input_tensions: List[float]):
 
     # Uncomment the following lines to run the simulation, otherwise it will extract the current simulation result on Adams View
     s.clear_model()
-    s.generate_model()
+    s.generate_model(
+        initial_disk_overlap_length=0.02,
+        marker_offset_from_curve=0.02
+    )
     try:
         s.run_sim(input_tensions,
-                  num_steps=1000,
+                  num_steps=2000,
                   max_iterations_search_eqilibrium=1500,
                   num_joint_angle_validation=0,
                   solver_translational_limit=1,
@@ -80,7 +83,7 @@ def main():
     # Define manipulator model
     segments = [
         SegmentModel(
-            n_joints=10,
+            n_joints=8,
             disk_length=6,
             base_orientationMF=0,
             distal_orientationDF=pi/2,
@@ -88,20 +91,20 @@ def main():
             tendon_dist_from_axis=1.75,
             end_disk_length=None,
         ),
-        # SegmentModel(
-        #     n_joints=2,
-        #     disk_length=6,
-        #     base_orientationMF=pi/4,
-        #     distal_orientationDF=pi/2,
-        #     curve_radius=3,
-        #     tendon_dist_from_axis=1.75,
-        #     end_disk_length=None,
-        # ),
+        SegmentModel(
+            n_joints=2,
+            disk_length=6,
+            base_orientationMF=pi/4,
+            distal_orientationDF=pi/2,
+            curve_radius=3,
+            tendon_dist_from_axis=1.75,
+            end_disk_length=None,
+        ),
     ]
     model = ManipulatorModel(segments)
 
     # Define input tensions
-    input_tensions = np.array([1.5, 1.5, 1, 1], dtype=float)
+    input_tensions = np.array([1.5,1.5,1.5,1.5,1,1,1,1], dtype=float)
     # input_tensions = np.array([300,300,300,300,200,200,200,200], dtype=float)
 
     # Acquire results from simulation
