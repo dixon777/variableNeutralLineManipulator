@@ -102,10 +102,9 @@ class AdamViewSocket:
             raise e
 
         soc.send(cmd)
+        res = False
         try:
             res = soc.recv(1024)[-1] == ord('0')
-        except socket.timeout:
-            res = False
         except Exception as e:
             print(e)
         finally:
