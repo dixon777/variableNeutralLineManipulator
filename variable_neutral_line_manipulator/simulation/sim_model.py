@@ -253,7 +253,7 @@ class SimManipulatorAdamModel:
                 disk_geometry, check_existance=True)
 
             if cad_path is not None:
-                success &= self.socket.import_parasolid(
+                success = self.socket.import_parasolid(
                     path=cad_path, part_name=part_name)
 
             # Import and cache if it does not exist
@@ -615,16 +615,18 @@ class SimManipulatorAdamModel:
         """
         self.socket.delete_model(self.model_name)
         
-    def _execute_static_sim(self, duration, num_steps, percentage_per_joint_angle_validation):
+    def _execute_static_sim(self, duration, num_steps, num_joint_angle_validation):
         """
             Execute static simulation while keeping track its progress and detecting any failure
             @param
             duration: Total duration between initial state and final state
             num_steps: Total number of steps to reach the final state from the initial state
-            percentage_per_joint_angle_validation: Percentage of progress at which it checks whether the orientations of cables belonging to the same joint are the same
+            num_joint_angle_validation: Number of joint angle validation throughout the simulation
         """
         duration_per_step = duration/num_steps
-        duration_between_validation = duration*percentage_per_joint_angle_validation
+        duration_between_validation = (duration/num_joint_angle_validation
+                                       if num_joint_angle_validation else 
+                                       duration)
         
         cur_end_time = 0.0
         while cur_end_time < duration:
@@ -637,7 +639,8 @@ class SimManipulatorAdamModel:
                 self.socket.run_sim_transient(self.model_name,
                                             end_time=next_end_time,
                                             number_of_steps=1,
-                                            solver_type="STATIC",)
+                                            solver_type="STATIC")
+                
                 cur_end_time_in_sim = self._extract_steady_state_one_component_from_spreadsheet(self.name_gen.measurement_joint_angle_name(0), component_name="TIME")
                 if cur_end_time_in_sim is None or cur_end_time_in_sim <= cur_end_time:
                     raise RuntimeError(f"Static simulation cannot be performed {'at the start' if cur_end_time_in_sim is None else f'from {cur_end_time_in_sim:.2f} to {next_end_time:.2f}'}."
@@ -654,12 +657,11 @@ class SimManipulatorAdamModel:
                 input_forces,
                 max_iterations_search_eqilibrium=None,
                 num_steps=None,
-                percentage_per_joint_angle_validation=0.5,
+                num_joint_angle_validation=0,
                 solver_stability=None,
                 solver_translational_limit=None,
                 solver_rotational_limit=None,
-                solver_static_method=None,
-                initial_disk_overlap_length=DEFAULT_OVERLAPPING_LENGTH,):
+                solver_static_method=None):
         """
         Run simulation on the model and extract its final steady state results. 
         generate_model() should have been run.
@@ -710,7 +712,7 @@ class SimManipulatorAdamModel:
         last = 0.0
         timer = Timer()
         timer.start()
-        for cur_end_time, next_end_time in self._execute_static_sim(duration, num_steps, percentage_per_joint_angle_validation):
+        for cur_end_time, next_end_time in self._execute_static_sim(duration, num_steps, num_joint_angle_validation):
             cur = timer.duration
             print(f"Progress: {cur_end_time/duration*100:.2f}-{next_end_time/duration*100:.2f}% [{cur:.1f}s({(cur-last):.1f}s)] [{datetime.now().strftime('%H:%M:%S')}]")
             last = cur

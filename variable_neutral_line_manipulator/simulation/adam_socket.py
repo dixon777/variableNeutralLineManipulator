@@ -49,7 +49,7 @@ def adams_read_spreadsheet_steady_state_value(path):
         lines_list = f.read().splitlines()
         if len(lines_list) < 3:
             return {}
-        
+
         # read values at equilibrium
         equilibrium_val_line = lines_list[-3]
 
@@ -77,41 +77,48 @@ class AdamViewSocket:
         self.port = port
         self.return_text_prefix = os.path.abspath(return_text_prefix)
         self.reset_script_name = reset_script_name
-
+        
+        
     def deal_with_cmd(self,
                       cmd: str,
-                      params: Union[None, Dict[str, Union[int,
-                                                          float, str, bool, Iterable]]] = None,
+                      params: Union[None,
+                                    Dict[str, Union[int,
+                                                    float, str, bool, Iterable]]] = None,
                       timeout: float = None,):
         if params:
             cmd = _adams_construct_cmd(cmd, params)
+        if isinstance(cmd, str):
+            cmd = cmd.encode("ascii")
+            
         Logger.D(f"Send cmd: {str(cmd)}")
         # Must reconnect the server before every command is sent
-        self.soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.soc.settimeout(timeout)
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.settimeout(timeout)
         try:
-            self.soc.connect(("localhost", self.port))
+            soc.connect(("localhost", self.port))
         except ConnectionRefusedError as e:
             print(
                 f"Connection is refused. Please make sure Adam Views command server is listening to port {self.port}")
-        if isinstance(cmd, str):
-            cmd = cmd.encode("ascii")
-
-        try:
-            self.soc.send(cmd)
-        except TimeoutError as e:
-            print("Timeout!!")
             raise e
 
-        data = self.soc.recv(1024)
-        success = data[-1] == ord('0')
-        if not success:
-            Logger.D(f"cmd is not accepted")
-        return success
-
+        soc.send(cmd)
+        try:
+            res = soc.recv(1024)[-1] == ord('0')
+        except socket.timeout:
+            res = False
+        except Exception as e:
+            print(e)
+        finally:
+            soc.close()
+        return res
+    
     # Default
-
-    def set_default_units(self, force_unit=None, mass_unit=None, length_unit=None, time_unit=None, angle_unit=None):
+    def set_default_units(self, 
+                          force_unit=None, 
+                          mass_unit=None, 
+                          length_unit=None, 
+                          time_unit=None, 
+                          angle_unit=None):
         return self.deal_with_cmd("default units", {
             "force": force_unit,
             "mass": mass_unit,
@@ -195,10 +202,10 @@ class AdamViewSocket:
             "action_only": "off",
             "function": function
         })
-        
-    def create_vector_force(self, force_name, i_marker_name, j_part_name, 
+
+    def create_vector_force(self, force_name, i_marker_name, j_part_name,
                             ref_marker_name,
-                            x_force_function="0",y_force_function="0", z_force_function="0"):
+                            x_force_function="0", y_force_function="0", z_force_function="0"):
         """
             Create a force acted on the part, to which "i_marker_name" belongs, by "j_part_name" at position "i_marker_name". 
             @params
@@ -326,7 +333,7 @@ class AdamViewSocket:
         return self.deal_with_cmd("executive_control set equilibrium_parameters", {
             "model_name": model_name,
             "maxit": max_iterations,
-            "tlimit":tlimit,
+            "tlimit": tlimit,
             "alimit": alimit,
             "stability": stability,
             "static_method": static_method,
@@ -457,18 +464,19 @@ class AdamViewSocket:
             with open(path, "r") as f:
                 return f.read()
         return None
-    
+
     def get_variable_info(self, variable_name):
         return self.get_info("variable", {
             "variable_name": variable_name,
         })
-        
+
     def get_variable_real_value(self, variable_name):
         res = self.get_variable_info(variable_name)
         if res:
-            res = float(re.search(r"(?<=Real Value\(s\)\W{5})\d.\d",res).group(0))
+            res = float(
+                re.search(r"(?<=Real Value\(s\)\W{5})\d.\d", res).group(0))
         return res
-    
+
     # def get_model_info(self, model_name=None):
     #     return self.get_info("model", {
     #         "model_name": model_name,

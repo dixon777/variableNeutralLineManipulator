@@ -18,8 +18,9 @@ def eval_from_sim(manipulator_model, input_tensions:List[float]):
     s.generate_model()
     try:
         s.run_sim(input_tensions,
-                num_steps=500,
+                num_steps=1000,
                 max_iterations_search_eqilibrium=1500,
+                num_joint_angle_validation=0,
                 solver_translational_limit=5,
                 solver_rotational_limit=pi/10,
                 solver_stability=6e-5) # 6e-5s
@@ -81,7 +82,7 @@ def main():
     model = ManipulatorModel(segments)
     
     # Define input tensions
-    input_tensions = np.array([2,2,1,1], dtype=float)
+    input_tensions = np.array([2.5,2.5,1,1], dtype=float)
     # input_tensions = np.array([300,300,300,300,200,200,200,200], dtype=float)
     
     # Acquire results from simulation
