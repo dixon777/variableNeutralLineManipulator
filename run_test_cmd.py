@@ -16,8 +16,8 @@ def eval_from_sim(manipulator_model, input_tensions: List[float]):
     # Uncomment the following lines to run the simulation, otherwise it will extract the current simulation result on Adams View
     s.clear_model()
     s.generate_model(
-        initial_disk_overlap_length=0.02,
-        marker_offset_from_curve=0.02
+        initial_disk_overlap_length=0.04,
+        marker_offset_from_curve=0.03
     )
     try:
         s.run_sim(input_tensions,
@@ -104,7 +104,7 @@ def main():
     model = ManipulatorModel(segments)
 
     # Define input tensions
-    input_tensions = np.array([1.5,1.5,1.5,1.5,1,1,1,1], dtype=float)
+    input_tensions = np.array([3,3,3,3,2,2,2,2], dtype=float)
     # input_tensions = np.array([300,300,300,300,200,200,200,200], dtype=float)
 
     # Acquire results from simulation

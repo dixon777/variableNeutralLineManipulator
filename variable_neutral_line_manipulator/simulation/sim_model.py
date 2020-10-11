@@ -152,7 +152,7 @@ class _ManipulatorAdamSimNameGenerator():
     # Measurements
     @classmethod
     def measurement_joint_angle_name(cls, joint_index, orientationMF=None, dist_from_axis=None):
-        return (f"mm_joint{joint_index}_angle" +
+        return (f"mm_joint{joint_index}_angle" +    
                 (f'_o{cls._convert_angle(orientationMF)}' if orientationMF is not None else '') +
                 (f"_d{cls._to_safe_float_str(dist_from_axis)}" if dist_from_axis is not None else ''))
 
@@ -774,8 +774,8 @@ class SimManipulatorAdamModel:
 
             knobbed_tendon_states = []
             continuous_tendon_states = []
-            for tendon_models, tendon_states_container in [(model.knobbed_tendon_models, knobbed_tendon_states),
-                                                 (model.continuous_tendon_models, continuous_tendon_states)]:
+            for tendon_models, tendon_states_container, has_top_component in [(model.knobbed_tendon_models, knobbed_tendon_states, False),
+                                                 (model.continuous_tendon_models, continuous_tendon_states, True)]:
                 for tm in tendon_models:
                     if i > 0:
                         bottom_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
@@ -784,7 +784,7 @@ class SimManipulatorAdamModel:
                     else:
                         bottom_tension_vec = None
                         
-                    if i < len(self.disk_models) - 1:
+                    if has_top_component:
                         top_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
                             component,
                         ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, True)]
