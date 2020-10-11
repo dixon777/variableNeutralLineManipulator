@@ -1,3 +1,7 @@
+## TODO:
+1. [ ] Add tutorials 
+2. [ ] Fix Math model GUI after code refactoring
+
 ## Annotation:
 MF = Manipulator frame
 - located at middle of a disk's centre axis

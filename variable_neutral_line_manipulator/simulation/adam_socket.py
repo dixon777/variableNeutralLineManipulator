@@ -168,13 +168,22 @@ class AdamViewSocket:
         })
 
     # Markers
-    def create_marker(self, marker_name, location=None, orientation=None, relative_to=None, reference_marker_name=None):
+    def create_marker(self, marker_name, location=None, orientation=None, relative_to=None):
+        """
+            Create a marker named "marker_name", at "location" and it has orientation "orientation" 
+            @params
+                marker_name: Marker name [str] (Required, Must not exist) 
+                location: Position at which the marker is created, offset from "relative_to" marker.
+                            [List[3 float]] (Optional:Default [0,0,0])
+                orientation: Orientation of the reference frame of the marker, with respect to "relative_to" marker's frame .
+                            It is in Z-X-Z Euler angle rotation. [List[3 float]] (Optional:Default [0,0,0]) 
+                relative_to: Reference marker [str] (Optional:Default Global coordinate system)
+        """
         return self.deal_with_cmd("marker create", {
             "marker_name": marker_name,
             "location": location,
             "orientation": orientation,
             "relative_to": relative_to,
-            "reference_marker_name": reference_marker_name
         })
 
     def modify_marker(self, marker_name, new_marker_name=None, location=None, orientation=None, relative_to=None, reference_marker_name=None):
@@ -202,7 +211,10 @@ class AdamViewSocket:
             "function": function
         })
 
-    def create_vector_force(self, force_name, i_marker_name, j_part_name,
+    def create_vector_force(self, 
+                            force_name, 
+                            i_marker_name, 
+                            j_part_name,
                             ref_marker_name,
                             x_force_function="0", y_force_function="0", z_force_function="0"):
         """
@@ -211,8 +223,8 @@ class AdamViewSocket:
                 force_name: Force name (Required, Must not exist)
                 i_marker_name: Position at which the force acts on both parts  (Required, Must exist)
                     The part to which it belongs is the action body
-                j_part_name: Reaction body (Optional: Default ground, Must exist)
-                ref_marker_name: Orientation of the force vector (Optional:Default global, Must exist)
+                j_part_name: Reaction body (Required, Must exist)
+                ref_marker_name: Reference frame for force vector definition (Required, Must exist)
                 x_force_function: Runtime function for x component of force vector (Optional:Default 0)
                 y_force_function: Runtime function for y component of force vector (Optional:Default 0)
                 z_force_function: Runtime function for z component of force vector (Optional:Default 0)
@@ -225,6 +237,14 @@ class AdamViewSocket:
             "x_force_function": x_force_function,
             "y_force_function": y_force_function,
             "z_force_function": z_force_function,
+        })
+        
+    def create_gravity(self, gravity_field_name, x_component_gravity=0.0, y_component_gravity=0.0, z_component_gravity=0.0):
+        return self.deal_with_cmd("force create body gravitational", {
+            "gravity_field_name": gravity_field_name,
+            "x_component_gravity": x_component_gravity,
+            "y_component_gravity": y_component_gravity,
+            "z_component_gravity": z_component_gravity,
         })
 
     # Contact
