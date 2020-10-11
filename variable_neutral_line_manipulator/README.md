@@ -1,10 +1,13 @@
 ## Annotation:
-RF = ring frame
-BF = base frame
-DRF = distal ring frame
+MF = Manipulator frame
+- located at middle of a disk's centre axis
+- z-axis colinear with centre axis and towards top curved surface
+- x-axis parallel to **the base disk's** top curved surface's rotational axis
 
-comp = component
+DF = Disk frame
+- located at middle of a disk's centre axis
+- z-axis colinear with centre axis and towards top curved surface
+- x-axis parallel to **the disk's own** top curved surface's rotational axis
+
+comp = component<br>
 disp = displacement
-fricCoef = frictional coefficient
-
-capstan = Capstan Theory
