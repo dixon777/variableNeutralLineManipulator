@@ -21,7 +21,7 @@ def eval_from_sim(manipulator_model, input_tensions: List[float]):
     )
     try:
         s.run_sim(input_tensions,
-                  num_steps=2000,
+                  num_steps=10,
                   max_iterations_search_eqilibrium=1500,
                   num_joint_angle_validation=0,
                   solver_translational_limit=1,
@@ -105,7 +105,6 @@ def main():
 
     # Define input tensions
     input_tensions = np.array([3,3,3,3,2,2,2,2], dtype=float)
-    # input_tensions = np.array([300,300,300,300,200,200,200,200], dtype=float)
 
     # Acquire results from simulation
     sim_state = eval_from_sim(model, input_tensions)

@@ -51,14 +51,14 @@ class MathTendonPrimitiveState(TendonStateBase):
 #             tendon_models: math tendon models
 #     """
 
-#     def __init__(self, disk_geometry, bottom_orientationMF, knobbed_tendon_models=[], continuous_tendon_models=[]):
+#     def __init__(self, disk_geometry, bottom_orientationMF, knotted_tendon_models=[], continuous_tendon_models=[]):
 #         self.disk_geometry: DiskGeometryBase = disk_geometry
 #         self.bottom_orientationMF = bottom_orientationMF
-#         self.knobbed_tendon_models = copy.copy(knobbed_tendon_models)
+#         self.knotted_tendon_models = copy.copy(knotted_tendon_models)
 #         self.continuous_tendon_models = copy.copy(continuous_tendon_models)
 
 #     def local_attr_keys(self):
-#         return ["disk_geometry", "bottom_orientationMF", "knobbed_tendon_models", "continuous_tendon_models"]
+#         return ["disk_geometry", "bottom_orientationMF", "knotted_tendon_models", "continuous_tendon_models"]
 
 
 # class SegmentMathModel(BaseDataClass):
@@ -88,7 +88,7 @@ class MathTendonPrimitiveState(TendonStateBase):
 #         return self.curve_radius
 
 #     @property
-#     def knobbed_tendon_guide_modelsMF(self):
+#     def knotted_tendon_guide_modelsMF(self):
 #         return [TendonInDiskMathModel(orientationMF=self.orientationMF + relative_orientation, dist_from_axis=self.tendon_dist_from_axis)
 #                 for relative_orientation in ((pi/2, 3*pi/2) if not self.is_2_DoF else (0, pi/2, pi, 3*pi/2))]
 
@@ -99,8 +99,8 @@ class MathTendonPrimitiveState(TendonStateBase):
 
 #     def generate_disk_math_model_indices(self, end_top_orientationMF=0.0, end_top_curve_radius=None, distal_segment_tendon_models=[]):
 #         res = []
-#         knobbed_tendon_guide_models_at_end = self.knobbed_tendon_guide_modelsMF
-#         all_tendon_guide_models = (knobbed_tendon_guide_models_at_end +
+#         knotted_tendon_guide_models_at_end = self.knotted_tendon_guide_modelsMF
+#         all_tendon_guide_models = (knotted_tendon_guide_models_at_end +
 #                                    distal_segment_tendon_models)
 #         # 1 DoF
 #         if not self.is_2_DoF:
@@ -124,7 +124,7 @@ class MathTendonPrimitiveState(TendonStateBase):
 #                                                bottom_curve_radius=self.curve_radius,
 #                                                top_orientationDF=end_top_orientationMF,
 #                                                top_curve_radius=end_top_curve_radius,),
-#                 knobbed_tendon_models=knobbed_tendon_guide_models_at_end,
+#                 knotted_tendon_models=knotted_tendon_guide_models_at_end,
 #                 continuous_tendon_models=distal_segment_tendon_models
 #             )))
 
@@ -168,7 +168,7 @@ class MathTendonPrimitiveState(TendonStateBase):
 #                                                bottom_curve_radius=self.curve_radius,
 #                                                top_orientationDF=end_top_orientationMF - disk_orientationMF,
 #                                                top_curve_radius=end_top_curve_radius,),
-#                 knobbed_tendon_models=knobbed_tendon_guide_models_at_end,
+#                 knotted_tendon_models=knotted_tendon_guide_models_at_end,
 #                 continuous_tendon_models=distal_segment_tendon_models
 #             )
 
@@ -206,7 +206,7 @@ class MathTendonPrimitiveState(TendonStateBase):
 #                                             for indices, disk_model in disk_model_indices_start_from_segment] + self.indices_disk_model_pair
 
 #             # Update state
-#             distal_disk_tendon_guide_modelsMF += segment.knobbed_tendon_guide_modelsMF
+#             distal_disk_tendon_guide_modelsMF += segment.knotted_tendon_guide_modelsMF
 #             end_top_orientationMF = segment.bottom_orientationMF
 #             end_top_curve_radius = segment.bottom_curve_radius
 
@@ -217,7 +217,7 @@ class MathTendonPrimitiveState(TendonStateBase):
 #                 disk_model_flatten_list[i] = disk_model
 
 #         for disk_model in reversed(disk_model_flatten_list):
-#             if len(disk_model.knobbed_tendon_models) > 0:
+#             if len(disk_model.knotted_tendon_models) > 0:
 #                 input_forces = nested_input_forces[-1]
 #                 nested_input_forces = nested_input_forces[:-1]
 #                 yield disk_model, input_forces
@@ -237,7 +237,7 @@ class MathTendonPrimitiveState(TendonStateBase):
 # class DiskMathState(BaseDataClass):
 #     def __init__(self,
 #                  disk_model: DiskMathModel,
-#                  knobbed_tendon_states: List[TendonMathState],
+#                  knotted_tendon_states: List[TendonMathState],
 #                  continuous_tendon_states: List[TendonMathState],
 #                  bottom_contact_forceDF: np.ndarray,
 #                  bottom_contact_pure_momentDF: np.ndarray,
@@ -246,8 +246,8 @@ class MathTendonPrimitiveState(TendonStateBase):
 #                  top_contact_pure_momentDF: np.ndarray = None,
 #                  top_joint_angle: float = None):
 #         self.disk_model: DiskMathModel = disk_model
-#         self.knobbed_tendon_states: List[TendonMathState] = copy.copy(
-#             knobbed_tendon_states)
+#         self.knotted_tendon_states: List[TendonMathState] = copy.copy(
+#             knotted_tendon_states)
 #         self.continuous_tendon_states: List[TendonMathState] = copy.copy(
 #             continuous_tendon_states)
 #         self.bottom_contact_forceDF = bottom_contact_forceDF
@@ -349,10 +349,10 @@ class MathTendonPrimitiveState(TendonStateBase):
 #         Get all tendon states.
 #         Used for proximal disk's bottom joint angle evaluation
 #         """
-#         return self.knobbed_tendon_states + self.continuous_tendon_states
+#         return self.knotted_tendon_states + self.continuous_tendon_states
 
 #     def local_attr_keys(self):
-#         return ["disk_model", "knobbed_tendon_states", "continuous_tendon_states",
+#         return ["disk_model", "knotted_tendon_states", "continuous_tendon_states",
 #                 "bottom_contact_forceDF", "bottom_contact_pure_momentDF", "bottom_joint_angle",
 #                 "top_contact_forceDF", "top_contact_pure_momentDF", "top_joint_angle"]
 

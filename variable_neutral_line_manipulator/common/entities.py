@@ -90,18 +90,18 @@ class DiskModel(BaseDataClass):
             tendon_models: math tendon models
     """
 
-    def __init__(self, disk_geometry, bottom_orientationMF, knobbed_tendon_models=[], continuous_tendon_models=[]):
+    def __init__(self, disk_geometry, bottom_orientationMF, knotted_tendon_models=[], continuous_tendon_models=[]):
         self.disk_geometry: DiskGeometryBase = disk_geometry
         self.bottom_orientationMF = normalise_angle(bottom_orientationMF)
-        self.knobbed_tendon_models = copy.copy(knobbed_tendon_models)
+        self.knotted_tendon_models = copy.copy(knotted_tendon_models)
         self.continuous_tendon_models = copy.copy(continuous_tendon_models)
 
     @property
     def tendon_models(self):
-        return self.knobbed_tendon_models + self.continuous_tendon_models
+        return self.knotted_tendon_models + self.continuous_tendon_models
 
     def local_attr_keys(self):
-        return ["disk_geometry", "bottom_orientationMF", "knobbed_tendon_models", "continuous_tendon_models"]
+        return ["disk_geometry", "bottom_orientationMF", "knotted_tendon_models", "continuous_tendon_models"]
 
 
 class SegmentModel(BaseDataClass):
@@ -126,11 +126,11 @@ class SegmentModel(BaseDataClass):
     def bottom_curve_radius(self):
         return self.curve_radius
 
-    def get_knobbed_tendon_modelsMF(self, distal_segment_tendon_models=[]):
+    def get_knotted_tendon_modelsMF(self, distal_segment_tendon_models=[]):
         """
         Generate all the tendon models controlling this segment. 
         Note that if there is any overlapping tendon harnessing this segment and any distal segment (Same manipulator frame orientation and distance), respectively
-        both tendons are merged into one and such tendon is consideredd to be the knobbed tendon of the respective distal segment instead of this segment.
+        both tendons are merged into one and such tendon is consideredd to be the knotted tendon of the respective distal segment instead of this segment.
         """
         all_possible_tendon_models = [TendonModel(orientation=self.base_orientationMF + relative_orientation,
                                                   dist_from_axis=self.tendon_dist_from_axis)
@@ -143,7 +143,7 @@ class SegmentModel(BaseDataClass):
 
     def generate_base_disk_model(self, distal_tendon_models=[], length=None):
         disk_orientationMF = self.base_orientationMF
-        all_tendon_models = self.get_knobbed_tendon_modelsMF(
+        all_tendon_models = self.get_knotted_tendon_modelsMF(
             distal_tendon_models) + distal_tendon_models
         return DiskModel(
             bottom_orientationMF=disk_orientationMF,
@@ -167,9 +167,9 @@ class SegmentModel(BaseDataClass):
                                           end_top_curve_radius=None,
                                           distal_segment_tendon_models=[]):
         res = []
-        knobbed_tendon_modelsMF = self.get_knobbed_tendon_modelsMF(
+        knotted_tendon_modelsMF = self.get_knotted_tendon_modelsMF(
             distal_segment_tendon_models)
-        all_tendon_models = (knobbed_tendon_modelsMF +
+        all_tendon_models = (knotted_tendon_modelsMF +
                              distal_segment_tendon_models)
 
         if self.n_joints > 1:
@@ -204,7 +204,7 @@ class SegmentModel(BaseDataClass):
                                            bottom_curve_radius=self.curve_radius,
                                            top_orientationDF=end_top_orientationMF-distal_disk_base_orientationMF,
                                            top_curve_radius=end_top_curve_radius,),
-            knobbed_tendon_models=knobbed_tendon_modelsMF,
+            knotted_tendon_models=knotted_tendon_modelsMF,
             continuous_tendon_models=distal_segment_tendon_models
         )))
         return res
@@ -244,7 +244,7 @@ class ManipulatorModel(BaseDataClass):
                 break
 
             # Update state
-            distal_disk_tendon_modelsMF += segment.get_knobbed_tendon_modelsMF(
+            distal_disk_tendon_modelsMF += segment.get_knotted_tendon_modelsMF(
                 distal_disk_tendon_modelsMF)
             end_top_orientationMF = segment.bottom_orientationMF
             end_top_curve_radius = segment.bottom_curve_radius
@@ -264,7 +264,7 @@ class ManipulatorModel(BaseDataClass):
 
     @property
     def tendon_models(self):
-        return sorted(set(tm for s in self.segments for tm in s.get_knobbed_tendon_modelsMF()), key=lambda x: x.orientation)
+        return sorted(set(tm for s in self.segments for tm in s.get_knotted_tendon_modelsMF()), key=lambda x: x.orientation)
 
     def get_disk_model(self, index) -> DiskModel:
         return self.disk_models[index]
@@ -290,8 +290,8 @@ class ManipulatorModel(BaseDataClass):
         disk_models = self.get_disk_models(include_base)
 
         for disk_model in reversed(disk_models):
-            if len(disk_model.knobbed_tendon_models) > 0:
-                yield disk_model, [tendon_model_to_input_force_map[tendon_model] for tendon_model in disk_model.knobbed_tendon_models]
+            if len(disk_model.knotted_tendon_models) > 0:
+                yield disk_model, [tendon_model_to_input_force_map[tendon_model] for tendon_model in disk_model.knotted_tendon_models]
             else:
                 yield disk_model, None
 
@@ -345,14 +345,14 @@ class DiskState(BaseDataClass):
                  bottom_contact_forceDF: np.ndarray,
                  bottom_contact_pure_momentDF: np.ndarray,
                  bottom_joint_angle: float,
-                 knobbed_tendon_states: List[TendonState] = [],
+                 knotted_tendon_states: List[TendonState] = [],
                  continuous_tendon_states: List[TendonState] = [],
                  top_contact_forceDF: np.ndarray = None,
                  top_contact_pure_momentDF: np.ndarray = None,
                  top_joint_angle: float = None):
         self.disk_model: DiskModel = disk_model
-        self.knobbed_tendon_states: List[TendonState] = copy.copy(
-            knobbed_tendon_states)
+        self.knotted_tendon_states: List[TendonState] = copy.copy(
+            knotted_tendon_states)
         self.continuous_tendon_states: List[TendonState] = copy.copy(
             continuous_tendon_states)
         self.bottom_contact_forceDF = bottom_contact_forceDF
@@ -384,11 +384,11 @@ class DiskState(BaseDataClass):
         Get all tendon states.
         Used for proximal disk's bottom joint angle evaluation
         """
-        return self.knobbed_tendon_states + self.continuous_tendon_states
+        return self.knotted_tendon_states + self.continuous_tendon_states
 
     def local_attr_keys(self):
         return ["disk_model",
-                "knobbed_tendon_states",
+                "knotted_tendon_states",
                 "continuous_tendon_states",
                 "bottom_contact_forceDF",
                 "bottom_contact_pure_momentDF",

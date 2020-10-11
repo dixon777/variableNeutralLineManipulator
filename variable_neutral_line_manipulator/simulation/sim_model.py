@@ -772,9 +772,9 @@ class SimManipulatorAdamModel:
                 ) for component in self.name_gen.measurement_base_reaaction_names]
                 bottom_joint_angle = None
 
-            knobbed_tendon_states = []
+            knotted_tendon_states = []
             continuous_tendon_states = []
-            for tendon_models, tendon_states_container, has_top_component in [(model.knobbed_tendon_models, knobbed_tendon_states, False),
+            for tendon_models, tendon_states_container, has_top_component in [(model.knotted_tendon_models, knotted_tendon_states, False),
                                                  (model.continuous_tendon_models, continuous_tendon_states, True)]:
                 for tm in tendon_models:
                     if i > 0:
@@ -809,7 +809,7 @@ class SimManipulatorAdamModel:
                 if i < len(self.disk_models) - 1 else None,
                 top_joint_angle=top_joint_angle
                 if i < len(self.disk_models) - 1 else None,
-                knobbed_tendon_states=knobbed_tendon_states,
+                knotted_tendon_states=knotted_tendon_states,
                 continuous_tendon_states=continuous_tendon_states,
             ))
         # for i in range(1, len(self.disk_models)):
@@ -829,9 +829,9 @@ class SimManipulatorAdamModel:
         #     bottom_joint_angle = self._extract_steady_state_one_component_from_spreadsheet(
         #         self.name_gen.measurement_joint_angle_name(i-1))
 
-        #     knobbed_tendon_states = []
+        #     knotted_tendon_states = []
         #     continuous_tendon_states = []
-        #     for tendon_models, tendon_states in [(model.knobbed_tendon_models, knobbed_tendon_states),
+        #     for tendon_models, tendon_states in [(model.knotted_tendon_models, knotted_tendon_states),
         #                                          (model.continuous_tendon_models, continuous_tendon_states)]:
         #         for tm in tendon_models:
         #             bottom_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
@@ -861,7 +861,7 @@ class SimManipulatorAdamModel:
         #         if i < len(self.disk_models) - 1 else None,
         #         top_joint_angle=top_joint_angle
         #         if i < len(self.disk_models) - 1 else None,
-        #         knobbed_tendon_states=knobbed_tendon_states,
+        #         knotted_tendon_states=knotted_tendon_states,
         #         continuous_tendon_states=continuous_tendon_states,
         #     ))
 
