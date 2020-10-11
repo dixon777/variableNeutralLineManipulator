@@ -427,7 +427,7 @@ class SimManipulatorAdamModel:
         self.socket.modify_part_rigid_body("ground")
         self.socket.create_marker(self.name_gen.ground_base_disk_bottom_marker_name,
                                   location=(0,0,-self.disk_models[0].disk_geometry.length/2),
-                                  reference_marker_name=self.name_gen.disk_center_marker_name(0))
+                                  relative_to=self.name_gen.disk_center_marker_name(0))
         self.socket.create_constraint_fixed(self.name_gen.ground_constraint_name,
                                             i_marker_name=self.name_gen.base_disk_bottom_marker_name,
                                             j_marker_name=self.name_gen.ground_base_disk_bottom_marker_name)
@@ -517,12 +517,18 @@ class SimManipulatorAdamModel:
         self.socket.modify_part_rigid_body("ground")
 
     def _disks_init_location_orientation(self, initial_disk_overlap_length=DEFAULT_CONFIG_OVERLAPPING_LENGTH):
-        yield {"location": (0, 0, 0), "orientation": (0, 0, self.disk_models[0].bottom_orientationMF)}
-        disk_length_accumulate = self.disk_models[0].disk_geometry.length/2
+        yield {"location": (0, 0, self.disk_models[0].disk_geometry.length/2), "orientation": (0, 0, self.disk_models[0].bottom_orientationMF)}
+        disk_length_accumulate = self.disk_models[0].disk_geometry.length
         for model in self.disk_models[1:]:
             disk_length_accumulate += model.disk_geometry.length/2 - initial_disk_overlap_length
             yield {"location": (0, 0, disk_length_accumulate), "orientation": (0, 0, model.bottom_orientationMF)}
             disk_length_accumulate += model.disk_geometry.length/2
+        # yield {"location": (0, 0, 0), "orientation": (0, 0, self.disk_models[0].bottom_orientationMF)}
+        # disk_length_accumulate = self.disk_models[0].disk_geometry.length/2
+        # for model in self.disk_models[1:]:
+        #     disk_length_accumulate += model.disk_geometry.length/2 - initial_disk_overlap_length
+        #     yield {"location": (0, 0, disk_length_accumulate), "orientation": (0, 0, model.bottom_orientationMF)}
+        #     disk_length_accumulate += model.disk_geometry.length/2
 
     def _eval_tension_mags_at_step(self, final_values, current_step, total_step_until_final):
         res = []
