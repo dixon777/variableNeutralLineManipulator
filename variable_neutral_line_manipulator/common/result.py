@@ -43,20 +43,34 @@ def generate_input_tensions_table(manipulator_model: ManipulatorModel, input_ten
 def generate_final_state_TF_table(math_manipulator_state: ManipulatorState,
                                   sim_manipulator_state: ManipulatorState):
 
-    math_tf = math_manipulator_state.get_TF(
-        math_manipulator_state.manipulator_model.num_joints, 'top')
-    sim_tf = sim_manipulator_state.get_TF(
-        sim_manipulator_state.manipulator_model.num_joints, 'top')
+    # math_tf = math_manipulator_state.get_TF(
+    #     math_manipulator_state.manipulator_model.num_joints, 'top')
+    # sim_tf = sim_manipulator_state.get_TF(
+    #     sim_manipulator_state.manipulator_model.num_joints, 'top')
+    
+    math_disp = math_manipulator_state.tip_disp
+    sim_disp = sim_manipulator_state.tip_disp
+    # res = [
+    #     ["Disp (End effector):"],
+    #     ["Math:"],
+    #     *[list(r) for r in math_tf],
+    #     [],
+    #     ["Sim:"],
+    #     *[list(r) for r in sim_tf],
+    #     [],
+    #     ["Diff:"],
+    #     *[list(r) for r in abs(math_tf-sim_tf)],
+    # ]
     res = [
-        ["TF (End effector):"],
+        ["Disp (End effector):"],
         ["Math:"],
-        *[list(r) for r in math_tf],
+        [r for r in math_disp],
         [],
         ["Sim:"],
-        *[list(r) for r in sim_tf],
+        [r for r in sim_disp],
         [],
         ["Diff:"],
-        *[list(r) for r in abs(math_tf-sim_tf)],
+        [r for r in  abs(math_disp-sim_disp)],
     ]
     return res
 

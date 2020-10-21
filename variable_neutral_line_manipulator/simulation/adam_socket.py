@@ -348,12 +348,14 @@ class AdamViewSocket:
             "choice_for_solver": server_choice
         })
 
-    def set_sim_equilibrium_param(self, model_name, max_iterations=None, stability=None, tlimit=None, alimit=None, static_method=None):
+    def set_sim_equilibrium_param(self, model_name, max_iterations=None, stability=None, tlimit=None, alimit=None, error=None, imbalance=None, static_method=None):
         return self.deal_with_cmd("executive_control set equilibrium_parameters", {
             "model_name": model_name,
             "maxit": max_iterations,
             "tlimit": tlimit,
             "alimit": alimit,
+            "error": error,
+            "imbalance": imbalance,
             "stability": stability,
             "static_method": static_method,
         })
@@ -493,7 +495,7 @@ class AdamViewSocket:
         res = self.get_variable_info(variable_name)
         if res:
             res = float(
-                re.search(r"(?<=Real Value\(s\)\W{5})\d.\d", res).group(0))
+                re.search(r"(?<=Real Value\(s\)\W{5})\d+.\d+", res).group(0))
         return res
 
     # def get_model_info(self, model_name=None):

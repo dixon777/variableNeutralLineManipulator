@@ -26,19 +26,25 @@ def write_to_csv(path, table):
     import csv
     import os
     import datetime
-    try:
-        with open(path, "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(table)
-    except PermissionError as e:
-        base_name = os.path.basename(path)
-        all_strs = base_name.split('.')
-        all_strs[-2] += datetime.datetime.now().strftime("_%Y_%m_%d_%H_%M_%S")
-        new_base_name = '.'.join(all_strs)
-        new_path = os.path.join(os.path.dirname(path), new_base_name)
 
-        print(f"\"{path}\" has been occupied. Result is stored in \"{new_path}\"")
+    if not os.path.exists(path):
+        try:
+            with open(path, "w", newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(table)
+                
+            return
+        except PermissionError as e:
+            pass
+    
+    base_name = os.path.basename(path)
+    all_strs = base_name.split('.')
+    all_strs[-2] += datetime.datetime.now().strftime("_%Y_%m_%d_%H_%M_%S")
+    new_base_name = '.'.join(all_strs)
+    new_path = os.path.join(os.path.dirname(path), new_base_name)
 
-        with open(new_path, "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(table)
+    print(f"\"{path}\" has been occupied. Result is stored in \"{new_path}\"")
+
+    with open(new_path, "w", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(table)

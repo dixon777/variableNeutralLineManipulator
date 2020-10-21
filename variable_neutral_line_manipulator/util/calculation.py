@@ -29,3 +29,5 @@ def m4_translation(vec):
 def m4_rotation(axis, radian):
     return m4.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
     
+def m4_rotation(axis, radian):
+    return m4.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()

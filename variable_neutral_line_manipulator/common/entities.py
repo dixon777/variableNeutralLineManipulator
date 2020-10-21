@@ -402,10 +402,12 @@ class ManipulatorState(BaseDataClass):
     def __init__(self,
                  manipulator_model: ManipulatorModel,
                  input_forces: List[float],
-                 disk_states: List[DiskState]):
+                 disk_states: List[DiskState],
+                 tip_disp: np.ndarray = None):
         self.manipulator_model = manipulator_model
         self.input_forces = input_forces
         self.disk_states = disk_states
+        self._tip_disp = tip_disp
 
     @property
     def tendon_model_to_input_force_map(self):
@@ -417,23 +419,32 @@ class ManipulatorState(BaseDataClass):
                 "disk_states", ]
 
     def get_TF(self, disk_index, pos="bottom"):
+        """
+            Get TF generated from joint angles
+            (The model adheres to rigid body assumption)
+        """
         m = np.identity(4)
         for i in range(disk_index):
             disk_geometry = self.disk_states[i].disk_model.disk_geometry
-            m = np.matmul(m, m4_translation((0,0,disk_geometry.length)))
-            m = np.matmul(m, m4_rotation((0,0,1), disk_geometry.top_orientationDF))
+            m = np.matmul(m, m4_translation((0, 0, disk_geometry.length)))
+            m = np.matmul(m, m4_rotation(
+                (0, 0, 1), disk_geometry.top_orientationDF))
             m = np.matmul(m, eval_proximal_top_to_distal_bottom_TF(
-                self.disk_states[i].top_joint_angle, 
+                self.disk_states[i].top_joint_angle,
                 disk_geometry.top_curve_radius))
-            
+
         if pos == "top":
             m = np.matmul(m, m4_translation(
-                (0,0,self.disk_states[disk_index].disk_model.disk_geometry.length)))
+                (0, 0, self.disk_states[disk_index].disk_model.disk_geometry.length)))
         elif pos == "centre":
             m = np.matmul(m, m4_translation(
-                (0,0,self.disk_states[disk_index].disk_model.disk_geometry.length/2)))
-            
+                (0, 0, self.disk_states[disk_index].disk_model.disk_geometry.length/2)))
+
         return m
+
+    @property
+    def tip_disp(self):
+        return (self._tip_disp if self._tip_disp is not None else self.get_TF(self.manipulator_model.num_joints, "top")[:3,3])
 
     # @property
     # def tendon_guide_top_end_state_force_disp_tuple(self):

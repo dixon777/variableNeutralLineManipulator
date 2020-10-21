@@ -92,7 +92,7 @@ class _ManipulatorAdamSimNameGenerator():
     @staticmethod
     def _convert_angle(angle_in_rad):
         return int(degrees(normalise_angle(angle_in_rad)))
-    
+
     @staticmethod
     def _to_safe_float_str(val):
         int_val, dec_count = remove_dec(val)
@@ -109,9 +109,10 @@ class _ManipulatorAdamSimNameGenerator():
         return f"body_{cls.disk_part_name(index)}"
 
     # Marker
-    ground_base_disk_bottom_marker_name = "ground_base_disk_bottom"
+    ground_base_disk_bottom_marker_name = "ma_ground_base_disk_bottom"
     base_disk_bottom_marker_name = "ma_base_disk_bottom"
-    
+    tip_marker_name = "ma_tip"
+
     @classmethod
     def disk_center_marker_name(cls, index):
         return f"ma_{cls.disk_part_name(index)}_center"
@@ -138,6 +139,7 @@ class _ManipulatorAdamSimNameGenerator():
 
     # Forces
     gravity_field_name = "gravity_field"
+
     @classmethod
     def force_contact_name(cls, index):
         return f"f_contact{index}"
@@ -153,7 +155,7 @@ class _ManipulatorAdamSimNameGenerator():
     # Measurements
     @classmethod
     def measurement_joint_angle_name(cls, joint_index, orientationMF=None, dist_from_axis=None):
-        return (f"mm_joint{joint_index}_angle" +    
+        return (f"mm_joint{joint_index}_angle" +
                 (f'_o{cls._convert_angle(orientationMF)}' if orientationMF is not None else '') +
                 (f"_d{cls._to_safe_float_str(dist_from_axis)}" if dist_from_axis is not None else ''))
 
@@ -177,8 +179,12 @@ class _ManipulatorAdamSimNameGenerator():
     def measurement_all_tension_component_names(cls, disk_index, orientationMF, dist_from_axis, is_top_surface):
         return [cls.measurement_tension_component_name(disk_index, orientationMF, dist_from_axis, is_top_surface, item) for item in ["Fx", "Fy", "Fz"]]
 
-    measurement_base_reaaction_names = [
+    measurement_base_reaction_names = [
         "base_Fx", "base_Fy", "base_Fz", "base_Tx", "base_Ty", "base_Tz"
+    ]
+    
+    measurement_tip_disp_names = [
+        "tip_x", "tip_y", "tip_z"
     ]
 
 
@@ -199,15 +205,16 @@ class SimManipulatorAdamModel:
     # Body
     DEFAULT_CONFIG_DISK_DENSITY = 0.000008  # kg/mm^3 (Typical steel)
 
-    # Contact    
+    # Contact
     class ContactConfig:
         DEFAULT_CONFIG_CONTACT_STIFFNESS = 1*10**4
         DEFAULT_CONFIG_CONTACT_FORCE_EXPONENT = 1.5
         DEFAULT_CONFIG_CONTACT_DAMPING = 1*10**2
-        DEFAULT_CONFIG_CONTACT_PENETRATION_DEPTH = 0.03 # 0.03
+        DEFAULT_CONFIG_CONTACT_PENETRATION_DEPTH = 0.01  # 0.03
 
         DEFAULT_CONFIG_CONTACT_FRICTION_COEF = 1*10**8
         DEFAULT_CONFIG_CONTACT_FRICTION_VEL = 1
+
         def __init__(self,
                      stiffness=DEFAULT_CONFIG_CONTACT_STIFFNESS,
                      force_exponent=DEFAULT_CONFIG_CONTACT_FORCE_EXPONENT,
@@ -222,7 +229,7 @@ class SimManipulatorAdamModel:
             self.penetration_depth = penetration_depth
             self.friction_coef = friction_coef
             self.friction_vel = friction_vel
-            
+
     DEFAULT_CONFIG_OVERLAPPING_LENGTH = 0.01
     DEFAULT_MARKER_OFFSET_FROM_CURVE = 0.011
 
@@ -305,14 +312,14 @@ class SimManipulatorAdamModel:
             return False
 
         return True
-    
+
     def _define_gravity(self, z_acc=0.0):
         return self.socket.create_gravity(
             self.name_gen.gravity_field_name,
             z_component_gravity=z_acc
         )
 
-    def _create_markers(self, disk_models, marker_offset_from_curve:float):
+    def _create_markers(self, disk_models, marker_offset_from_curve: float):
         for i, model in enumerate(disk_models):
             disk_geometry = model.disk_geometry
             part_name = self.name_gen.disk_part_name(i)
@@ -361,20 +368,26 @@ class SimManipulatorAdamModel:
                         location=disp,
                         orientation=(0, 0, disk_geometry.top_orientationDF)
                     )
-                    
+
         # Create base disk bottom marker
         self.socket.modify_part_rigid_body(self.name_gen.disk_part_name(0))
-        self.socket.create_marker(self.name_gen.base_disk_bottom_marker_name, 
-                                    location=(0,0,-disk_models[0].disk_geometry.length/2),
+        self.socket.create_marker(self.name_gen.base_disk_bottom_marker_name,
+                                  location=(
+                                      0, 0, -disk_models[0].disk_geometry.length/2),
                                   )
-        
+
+        # Create tip marker
+        self.socket.modify_part_rigid_body(
+            self.name_gen.disk_part_name(self.manipulator_model.num_joints))
+        self.socket.create_marker(self.name_gen.tip_marker_name,
+                                  location=(0, 0, disk_models[-1].disk_geometry.length/2))
 
     def _move_disks_to_pos(self, disk_init_loc_orientations):
         for i, pos in enumerate(disk_init_loc_orientations):
             self.socket.modify_part_rigid_body(
                 self.name_gen.disk_part_name(i), **pos)
 
-    def _define_mass_properties(self, disk_models: List[DiskModel], disk_density:float):
+    def _define_mass_properties(self, disk_models: List[DiskModel], disk_density: float):
         for i in range(len(disk_models)):
             self.socket.create_part_rigid_body_mass_properties(
                 self.name_gen.disk_part_name(i), disk_density)
@@ -418,21 +431,22 @@ class SimManipulatorAdamModel:
                 "ground",
                 tendon_guide_end_marker_name,
                 z_force_function=f"-({self.name_gen.var_name_tension_avg}+"
-                    f"({self.name_gen.final_tension_mag_var_name(tm.orientation, tm.dist_from_axis)}-{self.name_gen.var_name_tension_avg})*"
-                    # f"STEP(TIME, {self.name_gen.var_name_base_duration}, 0, {self.name_gen.var_name_final_duration}, 1))"
-                    f"MIN(MAX((TIME-{self.name_gen.var_name_base_duration})/{self.name_gen.var_name_final_duration},0), 1))"
+                f"({self.name_gen.final_tension_mag_var_name(tm.orientation, tm.dist_from_axis)}-{self.name_gen.var_name_tension_avg})*"
+                # f"STEP(TIME, {self.name_gen.var_name_base_duration}, 0, {self.name_gen.var_name_final_duration}, 1))"
+                f"MIN(MAX((TIME-{self.name_gen.var_name_base_duration})/{self.name_gen.var_name_final_duration},0), 1))"
             )
 
     def _enforce_base_disk_ground_constraint(self):
         self.socket.modify_part_rigid_body("ground")
         self.socket.create_marker(self.name_gen.ground_base_disk_bottom_marker_name,
-                                  location=(0,0,-self.disk_models[0].disk_geometry.length/2),
+                                  location=(
+                                      0, 0, -self.disk_models[0].disk_geometry.length/2),
                                   relative_to=self.name_gen.disk_center_marker_name(0))
         self.socket.create_constraint_fixed(self.name_gen.ground_constraint_name,
                                             i_marker_name=self.name_gen.base_disk_bottom_marker_name,
                                             j_marker_name=self.name_gen.ground_base_disk_bottom_marker_name)
 
-    def _generate_contacts(self, disk_models: List[DiskModel], config:ContactConfig):
+    def _generate_contacts(self, disk_models: List[DiskModel], config: ContactConfig):
         for i in range(len(disk_models)-1):
             self.socket.create_contact(
                 self.name_gen.force_contact_name(i),
@@ -506,11 +520,20 @@ class SimManipulatorAdamModel:
 
     def _generate_measurement_base_reaction(self):
         for force_type_index, measurement_name in zip((2, 3, 4, 6, 7, 8),
-                                                      self.name_gen.measurement_base_reaaction_names,
+                                                      self.name_gen.measurement_base_reaction_names,
                                                       ):
             self.socket.create_measure_function(
                 measurement_name,
                 f"JOINT({self.name_gen.ground_constraint_name}, 0, {force_type_index}, {self.name_gen.base_disk_bottom_marker_name})"
+            )
+            
+    def _generate_measurement_tip_disp(self):
+        for func_str, measurement_name in zip(("DX", "DY", "DZ"),
+                                                      self.name_gen.measurement_tip_disp_names,
+                                                      ):
+            self.socket.create_measure_function(
+                measurement_name,
+                f"{func_str}({self.name_gen.tip_marker_name}, {self.name_gen.base_disk_bottom_marker_name}, {self.name_gen.base_disk_bottom_marker_name})"
             )
 
     def _final_cleanup(self):
@@ -544,11 +567,12 @@ class SimManipulatorAdamModel:
             # res.append((final_val-avg)*ratio + avg)
         return res
 
-    def _extract_steady_state_one_component_from_spreadsheet(self, result_set_name, component_name="Q") -> Union[str,List[str]]: 
+    def _extract_steady_state_one_component_from_spreadsheet(self, result_set_name, component_name="Q") -> Union[str, List[str]]:
         """
             component_name: The component name(s) defined in result set. (usually 'TIME' or 'Q' (the value))
         """
-        res = self.socket.extract_steady_state_from_spread_sheet(result_set_name)
+        res = self.socket.extract_steady_state_from_spread_sheet(
+            result_set_name)
         if isinstance(component_name, str):
             return res.get(component_name, None)
         elif isinstance(component_name, list):
@@ -575,11 +599,11 @@ class SimManipulatorAdamModel:
                     res = False
         return res
 
-    def generate_model(self, 
-                       disk_density:float=DEFAULT_CONFIG_DISK_DENSITY,
-                       contact_config:ContactConfig=ContactConfig(),
-                       initial_disk_overlap_length:float=DEFAULT_CONFIG_OVERLAPPING_LENGTH,
-                       marker_offset_from_curve:float=DEFAULT_MARKER_OFFSET_FROM_CURVE,
+    def generate_model(self,
+                       disk_density: float = DEFAULT_CONFIG_DISK_DENSITY,
+                       contact_config: ContactConfig = ContactConfig(),
+                       initial_disk_overlap_length: float = DEFAULT_CONFIG_OVERLAPPING_LENGTH,
+                       marker_offset_from_curve: float = DEFAULT_MARKER_OFFSET_FROM_CURVE,
                        z_acc=0.0):
         """
         Config and set up the simulation model
@@ -597,7 +621,6 @@ class SimManipulatorAdamModel:
 
         self.socket.create_model(self.model_name)
         self._define_gravity(z_acc=z_acc)
-        
 
         disk_models = self.disk_models
         tendon_models = self.tendon_models
@@ -606,7 +629,8 @@ class SimManipulatorAdamModel:
             Logger.E("Fail to import CAD")
 
         self._define_mass_properties(disk_models, disk_density=disk_density)
-        self._create_markers(disk_models, marker_offset_from_curve=marker_offset_from_curve)
+        self._create_markers(
+            disk_models, marker_offset_from_curve=marker_offset_from_curve)
         self._move_disks_to_pos(
             self._disks_init_location_orientation(initial_disk_overlap_length))
         self._generate_parametric_variables(tendon_models)
@@ -618,6 +642,7 @@ class SimManipulatorAdamModel:
         self._generate_measurement_contact_force(disk_models)
         self._generate_measurement_tension_vec(disk_models)
         self._generate_measurement_base_reaction()
+        self._generate_measurement_tip_disp()
 
         # self._create_debug_measurements()
         self._final_cleanup()
@@ -627,7 +652,7 @@ class SimManipulatorAdamModel:
         Remove model. Meaningful only when it is followed by generate_model()
         """
         self.socket.delete_model(self.model_name)
-        
+
     def _execute_static_sim(self, duration, num_steps, num_joint_angle_validation):
         """
             Execute static simulation while keeping track its progress and detecting any failure
@@ -638,40 +663,44 @@ class SimManipulatorAdamModel:
         """
         duration_per_step = duration/num_steps
         duration_between_validation = (duration/num_joint_angle_validation
-                                       if num_joint_angle_validation else 
+                                       if num_joint_angle_validation else
                                        duration)
-        
+
         cur_end_time = 0.0
         while cur_end_time < duration:
             next_check_end_time = min(
                 cur_end_time + duration_between_validation, duration)
-            
+
             while cur_end_time < next_check_end_time:
-                next_end_time = min(cur_end_time + duration_per_step, next_check_end_time)
-                yield cur_end_time, next_end_time   # Allow the caller func to display the state updates to user
+                next_end_time = min(
+                    cur_end_time + duration_per_step, next_check_end_time)
+                # Allow the caller func to display the state updates to user
+                yield cur_end_time, next_end_time
                 self.socket.run_sim_transient(self.model_name,
-                                            end_time=next_end_time,
-                                            number_of_steps=1,
-                                            solver_type="STATIC")
-                
-                cur_end_time_in_sim = self._extract_steady_state_one_component_from_spreadsheet(self.name_gen.measurement_joint_angle_name(0), component_name="TIME")
+                                              end_time=next_end_time,
+                                              number_of_steps=1,
+                                              solver_type="STATIC")
+
+                cur_end_time_in_sim = self._extract_steady_state_one_component_from_spreadsheet(
+                    self.name_gen.measurement_joint_angle_name(0), component_name="TIME")
                 if cur_end_time_in_sim is None or cur_end_time_in_sim <= cur_end_time:
                     raise RuntimeError(f"Static simulation cannot be performed {'at the start' if cur_end_time_in_sim is None else f'from {cur_end_time_in_sim:.2f} to {next_end_time:.2f}'}."
                                        "\nIt may be solved by increasing max iterations for static simulation, or adjusting other parameters.")
                 cur_end_time = next_end_time
-                
-                
-                
+
             if not self._validate_state():
-                raise RuntimeError(f"The joint angle of the tendons are incorrect at {next_check_end_time}")
+                raise RuntimeError(
+                    f"The joint angle of the tendons are incorrect at {next_check_end_time}")
             cur_end_time = next_check_end_time
-            
+
     def run_sim(self,
                 input_forces,
                 max_iterations_search_eqilibrium=None,
                 num_steps=None,
                 num_joint_angle_validation=0,
                 solver_stability=None,
+                solver_imbalance=None,
+                solver_error_threshold=None,
                 solver_translational_limit=None,
                 solver_rotational_limit=None,
                 solver_static_method=None):
@@ -679,8 +708,8 @@ class SimManipulatorAdamModel:
         Run simulation on the model and extract its final steady state results. 
         generate_model() should have been run.
         """
-        duration = 1 # Fixed to 1 time unit 
-        
+        duration = 1  # Fixed to 1 time unit
+
         if len(self.tendon_models) != len(input_forces):
             raise ValueError(
                 "Num of tension inputs does not match num of tendons")
@@ -694,6 +723,8 @@ class SimManipulatorAdamModel:
             max_iterations=max_iterations_search_eqilibrium,
             tlimit=solver_translational_limit,
             alimit=solver_rotational_limit,
+            error=solver_error_threshold,
+            imbalance=solver_imbalance,
             stability=solver_stability,
             static_method=solver_static_method)
 
@@ -727,10 +758,12 @@ class SimManipulatorAdamModel:
         timer.start()
         for cur_end_time, next_end_time in self._execute_static_sim(duration, num_steps, num_joint_angle_validation):
             cur = timer.duration_sec
-            print(f"Progress: {cur_end_time/duration*100:.2f}-{next_end_time/duration*100:.2f}% [{cur:.1f}s({(cur-last):.1f}s)] [{datetime.now().strftime('%H:%M:%S')}]")
+            print(
+                f"Progress: {cur_end_time/duration*100:.2f}-{next_end_time/duration*100:.2f}% [{cur:.1f}s({(cur-last):.1f}s)] [{datetime.now().strftime('%H:%M:%S')}]")
             last = cur
         timer.stop()
-        print(f"Completed: From {timer.real_start_time.strftime('%H:%M:%S')} to {timer.real_end_time.strftime('%H:%M:%S')}")
+        print(
+            f"Completed: From {timer.real_start_time.strftime('%H:%M:%S')} to {timer.real_end_time.strftime('%H:%M:%S')}")
 
     def extract_final_state(self):
         if not self._validate_state():
@@ -767,13 +800,13 @@ class SimManipulatorAdamModel:
             else:
                 bottom_force_moment = [self._extract_steady_state_one_component_from_spreadsheet(
                     component,
-                ) for component in self.name_gen.measurement_base_reaaction_names]
+                ) for component in self.name_gen.measurement_base_reaction_names]
                 bottom_joint_angle = None
 
             knotted_tendon_states = []
             continuous_tendon_states = []
             for tendon_models, tendon_states_container, has_top_component in [(model.knotted_tendon_models, knotted_tendon_states, False),
-                                                 (model.continuous_tendon_models, continuous_tendon_states, True)]:
+                                                                              (model.continuous_tendon_models, continuous_tendon_states, True)]:
                 for tm in tendon_models:
                     if i > 0:
                         bottom_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
@@ -781,14 +814,14 @@ class SimManipulatorAdamModel:
                         ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, False)]
                     else:
                         bottom_tension_vec = None
-                        
+
                     if has_top_component:
                         top_tension_vec = [self._extract_steady_state_one_component_from_spreadsheet(
                             component,
                         ) for component in self.name_gen.measurement_all_tension_component_names(i, tm.orientation, tm.dist_from_axis, True)]
                     else:
                         top_tension_vec = None
-                        
+
                     tendon_states_container.append(TendonState(
                         tm,
                         bottom_tension_vec,
@@ -810,5 +843,12 @@ class SimManipulatorAdamModel:
                 knotted_tendon_states=knotted_tendon_states,
                 continuous_tendon_states=continuous_tendon_states,
             ))
+            
+        # Extract tip displacement from base
+        tip_disp = []
+        for measurement_name in self.name_gen.measurement_tip_disp_names:
+            tip_disp.append(self._extract_steady_state_one_component_from_spreadsheet(
+                measurement_name,
+            ))
 
-        return ManipulatorState(self.manipulator_model, input_forces, disk_states)
+        return ManipulatorState(self.manipulator_model, input_forces, disk_states, np.array(tip_disp))
