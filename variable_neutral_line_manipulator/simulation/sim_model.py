@@ -6,7 +6,6 @@ from typing import List,  Union, Dict
 
 from .entities import *
 from ..util import Logger, normalise_angle, remove_dec, Timer
-from ..cad.cadquery_disk_generator import generate_disk_CAD, export_CAD
 from ..math_model.calculation import eval_tendon_guide_top_end_disp, eval_tendon_guide_bottom_end_disp
 from .adam_socket import *
 from datetime import datetime
@@ -278,6 +277,7 @@ class SimManipulatorAdamModel:
             # Import it to Adams View
             # Export it to Parasolid format and cache it
             else:
+                from ..cad.cadquery_disk_generator import generate_disk_CAD, export_CAD
                 disk_cad_obj = generate_disk_CAD(length=disk_geometry.length,
                                                  outer_diameter=disk_geometry.outer_diameter,
                                                  bottom_curve_radius=disk_geometry.bottom_curve_radius,
@@ -684,7 +684,7 @@ class SimManipulatorAdamModel:
                 cur_end_time_in_sim = self._extract_steady_state_one_component_from_spreadsheet(
                     self.name_gen.measurement_joint_angle_name(0), component_name="TIME")
                 if cur_end_time_in_sim is None or cur_end_time_in_sim <= cur_end_time:
-                    raise RuntimeError(f"Static simulation cannot be performed {'at the start' if cur_end_time_in_sim is None else f'from {cur_end_time_in_sim:.2f} to {next_end_time:.2f}'}."
+                    raise RuntimeError(f"Equilibrium state cannot be found {'at the start' if cur_end_time_in_sim is None else f'from {cur_end_time_in_sim:.2f} to {next_end_time:.2f}'}."
                                        "\nIt may be solved by increasing max iterations for static simulation, or adjusting other parameters.")
                 cur_end_time = next_end_time
 
@@ -749,6 +749,8 @@ class SimManipulatorAdamModel:
 
         # Run simulation
         self.socket.run_sim_equilibrium(self.model_name)
+        
+        print("Equilibrium state has either found or not (Cannot be confirmed. If fails, please stop the simulation)")
 
         # Make the simulation generate the records the disks' positions for next iteration
         self.socket.set_auto_plot_param("Last_run", True)

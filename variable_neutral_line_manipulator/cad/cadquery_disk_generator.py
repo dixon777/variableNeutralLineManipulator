@@ -1,5 +1,4 @@
 from math import sqrt, cos, sin, degrees
-import cadquery as cq
 from ..common.entities import *
 from typing import Union
 
@@ -14,6 +13,8 @@ def generate_disk_CAD(
     # centre_hole_diameter=None,
     # tendon_guide_geometries=None
 ):
+    
+    import cadquery as cq
     # outer_diameter = disk_geometry.outer_diameter
     # length = disk_geometry.length
     # bottom_curve_radius = disk_geometry.bottom_curve_radius
@@ -79,7 +80,8 @@ def generate_disk_CAD(
     return disk_object
 
 
-def export_CAD(obj, path=None, export_type="step", override=True, tolerance=0.001):
+def export_CAD(obj, path=None, export_type="step", override=True, tolerance=0.0000001):
+    import cadquery as cq
     import os    
     
     export_type_conversion_dict = {
