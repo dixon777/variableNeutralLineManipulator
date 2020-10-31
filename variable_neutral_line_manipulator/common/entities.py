@@ -104,7 +104,120 @@ class DiskModel(BaseDataClass):
         return ["disk_geometry", "bottom_orientationMF", "knotted_tendon_models", "continuous_tendon_models"]
 
 
-class SegmentModel(BaseDataClass):
+class BaseSegmentModel(BaseDataClass):
+    @property
+    def num_joints(self):
+        return 0
+
+    @property
+    def bottom_orientationMF(self):
+        return 0.0
+
+    @property
+    def bottom_curve_radius(self):
+        return None
+    
+    
+    def generate_base_disk_model(self, distal_tendon_models=[], length=None):
+        pass
+    
+    def generate_indices_disk_model_pairs(self,
+                                          end_top_orientationMF=0.0,
+                                          end_top_curve_radius=None,
+                                          distal_segment_tendon_models=[]):
+        return []
+    
+    def get_knotted_tendon_modelsMF(self, distal_segment_tendon_models=[]):
+        return []
+    
+class TwoDoFSegmentModel(BaseSegmentModel):
+    def __init__(self, n_joints, disk_length, curve_radius, end_disk_length, base_orientationMF=0.0, distal_orientationDF=0.0, tendon_models:List[TendonModel]=[]):
+        self.n_joints = n_joints
+        self.disk_length = disk_length
+        self.curve_radius = curve_radius
+        self.end_disk_length = end_disk_length
+        self.base_orientationMF = normalise_angle(base_orientationMF)
+        self.distal_orientationDF = normalise_angle(distal_orientationDF)
+        self.tendon_models = tendon_models
+        
+    @property
+    def num_joints(self):
+        return self.n_joints
+
+    @property
+    def bottom_orientationMF(self):
+        return self.base_orientationMF
+
+    @property
+    def bottom_curve_radius(self):
+        return self.curve_radius
+    
+    def get_knotted_tendon_modelsMF(self, distal_segment_tendon_models=[]):
+        return sorted([t for t in self.tendon_models if t not in distal_segment_tendon_models],
+                      key=lambda x: x.orientation)
+        
+    def generate_base_disk_model(self, distal_tendon_models=[], length=None):
+        all_tendon_models = self.get_knotted_tendon_modelsMF(
+            distal_tendon_models) + distal_tendon_models
+        return DiskModel(
+            bottom_orientationMF=self.base_orientationMF,
+            disk_geometry=DiskGeometryBase(length=length if length else self.disk_length,
+                                           bottom_curve_radius=None,
+                                           top_orientationDF=0,
+                                           top_curve_radius=self.curve_radius),
+            continuous_tendon_models=all_tendon_models,)
+        
+    def generate_indices_disk_model_pairs(self,
+                                          end_top_orientationMF=0.0,
+                                          end_top_curve_radius=None,
+                                          distal_segment_tendon_models=[]):
+        res = []
+        knotted_tendon_modelsMF = self.get_knotted_tendon_modelsMF(
+            distal_segment_tendon_models)
+        all_tendon_models = (knotted_tendon_modelsMF +
+                             distal_segment_tendon_models)
+        if self.n_joints > 1:
+            res.append((tuple(i for i in range(0, self.n_joints - 1, 1 if self.distal_orientationDF == 0 else 2)),
+                        DiskModel(
+                bottom_orientationMF=self.base_orientationMF,
+                disk_geometry=DiskGeometryBase(length=self.disk_length,
+                                               bottom_curve_radius=self.curve_radius,
+                                               top_orientationDF=self.distal_orientationDF,
+                                               top_curve_radius=self.curve_radius,
+                                               ),
+                continuous_tendon_models=all_tendon_models
+            )))
+
+            if self.distal_orientationDF != 0:
+                res.append((tuple(i for i in range(1, self.n_joints - 1, 2)),
+                            DiskModel(
+                    bottom_orientationMF=self.base_orientationMF+self.distal_orientationDF,
+                    disk_geometry=DiskGeometryBase(length=self.disk_length,
+                                                   bottom_curve_radius=self.curve_radius,
+                                                   top_orientationDF=-self.distal_orientationDF,
+                                                   top_curve_radius=self.curve_radius,
+                                                   ),
+                    continuous_tendon_models=all_tendon_models
+                ))) 
+                
+        distal_disk_base_orientationMF = (self.base_orientationMF +
+                                          (self.distal_orientationDF if self.n_joints % 2 == 0 else 0))
+        res.append(((self.n_joints-1, ), DiskModel(
+            bottom_orientationMF=distal_disk_base_orientationMF,
+            disk_geometry=DiskGeometryBase(length=self.end_disk_length if self.end_disk_length else self.disk_length,
+                                           bottom_curve_radius=self.curve_radius,
+                                           top_orientationDF=end_top_orientationMF-distal_disk_base_orientationMF,
+                                           top_curve_radius=end_top_curve_radius,),
+            knotted_tendon_models=knotted_tendon_modelsMF,
+            continuous_tendon_models=distal_segment_tendon_models
+        )))
+        return res
+    
+    def local_attr_keys(self):
+        return ["n_joints", "disk_length", "curve_radius",
+                "end_disk_length", "base_orientationMF", "distal_orientationDF"]
+        
+class TwoDOFParallelSegmentModel(BaseSegmentModel):
     def __init__(self, n_joints, disk_length, curve_radius, tendon_dist_from_axis, end_disk_length, base_orientationMF=0.0, distal_orientationDF=0.0):
         self.n_joints = n_joints
         self.disk_length = disk_length
