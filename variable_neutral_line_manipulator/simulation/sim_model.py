@@ -126,7 +126,6 @@ class _ManipulatorAdamSimNameGenerator():
 
     # Var
     var_name_tension_avg = "v_tension_avg"
-    var_name_base_duration = "v_base_duration"
     var_name_final_duration = "v_final_duration"
 
     @classmethod
@@ -138,6 +137,9 @@ class _ManipulatorAdamSimNameGenerator():
 
     # Forces
     gravity_field_name = "gravity_field"
+    
+    external_force_prefix = "external_force_"
+    external_moment_prefix = "external_moment_"
 
     @classmethod
     def force_contact_name(cls, index):
@@ -393,7 +395,6 @@ class SimManipulatorAdamModel:
                 self.name_gen.disk_part_name(i), disk_density)
 
     def _generate_parametric_variables(self, tendon_models: List[TendonModel]):
-        self.socket.create_variable(self.name_gen.var_name_base_duration, 0.0)
         self.socket.create_variable(self.name_gen.var_name_final_duration, 1.0)
         self.socket.create_variable(self.name_gen.var_name_tension_avg, 1.0)
         for tm in tendon_models:
@@ -413,8 +414,7 @@ class SimManipulatorAdamModel:
 
                     function=f"-({self.name_gen.var_name_tension_avg}+"
                     f"({self.name_gen.final_tension_mag_var_name(tm.orientation, tm.dist_from_axis)}-{self.name_gen.var_name_tension_avg})*"
-                    # f"STEP(TIME, {self.name_gen.var_name_base_duration}, 0, {self.name_gen.var_name_final_duration}, 1))"
-                    f"MIN(MAX((TIME-{self.name_gen.var_name_base_duration})/{self.name_gen.var_name_final_duration},0), 1))"
+                    f"MIN(MAX(TIME/{self.name_gen.var_name_final_duration},0), 1))"
                 )
         for tm in distal_disk_model.tendon_models:
             floating_marker_name = self.name_gen.base_tendon_guide_end_floating_marker_name(
@@ -432,8 +432,7 @@ class SimManipulatorAdamModel:
                 tendon_guide_end_marker_name,
                 z_force_function=f"-({self.name_gen.var_name_tension_avg}+"
                 f"({self.name_gen.final_tension_mag_var_name(tm.orientation, tm.dist_from_axis)}-{self.name_gen.var_name_tension_avg})*"
-                # f"STEP(TIME, {self.name_gen.var_name_base_duration}, 0, {self.name_gen.var_name_final_duration}, 1))"
-                f"MIN(MAX((TIME-{self.name_gen.var_name_base_duration})/{self.name_gen.var_name_final_duration},0), 1))"
+                f"MIN(MAX(TIME/{self.name_gen.var_name_final_duration},0), 1))"
             )
 
     def _enforce_base_disk_ground_constraint(self):
@@ -546,26 +545,6 @@ class SimManipulatorAdamModel:
             disk_length_accumulate += model.disk_geometry.length/2 - initial_disk_overlap_length
             yield {"location": (0, 0, disk_length_accumulate), "orientation": (0, 0, model.bottom_orientationMF)}
             disk_length_accumulate += model.disk_geometry.length/2
-        # yield {"location": (0, 0, 0), "orientation": (0, 0, self.disk_models[0].bottom_orientationMF)}
-        # disk_length_accumulate = self.disk_models[0].disk_geometry.length/2
-        # for model in self.disk_models[1:]:
-        #     disk_length_accumulate += model.disk_geometry.length/2 - initial_disk_overlap_length
-        #     yield {"location": (0, 0, disk_length_accumulate), "orientation": (0, 0, model.bottom_orientationMF)}
-        #     disk_length_accumulate += model.disk_geometry.length/2
-
-    def _eval_tension_mags_at_step(self, final_values, current_step, total_step_until_final):
-        res = []
-        avg = np.average(final_values)
-        for final_val in final_values:
-            ratio = current_step / total_step_until_final
-            slope = 1.1*(final_val - avg)
-            a = slope - 2*final_val + 2*avg
-            b = final_val - avg - a
-            res.append(a*ratio**3+b*ratio**2+avg)
-
-            # Linear
-            # res.append((final_val-avg)*ratio + avg)
-        return res
 
     def _extract_steady_state_one_component_from_spreadsheet(self, result_set_name, component_name="Q") -> Union[str, List[str]]:
         """
@@ -598,6 +577,12 @@ class SimManipulatorAdamModel:
                     print(f" This angle = {degrees(other_angle)}\n")
                     res = False
         return res
+    
+    def clear_model(self):
+        """
+        Remove model. Meaningful only there exist the simulation model name
+        """
+        self.socket.delete_model(self.model_name)
 
     def generate_model(self,
                        disk_density: float = DEFAULT_CONFIG_DISK_DENSITY,
@@ -608,8 +593,7 @@ class SimManipulatorAdamModel:
         """
         Config and set up the simulation model
         """
-        # Pick c++ implementation solver
-        self.socket.config_sim_general("cplusplus")
+        self.clear_model()
 
         # set default unit
         self.socket.set_default_units(
@@ -619,7 +603,10 @@ class SimManipulatorAdamModel:
             time_unit="second",
             angle_unit="radian")
 
+        # Create simulation model
         self.socket.create_model(self.model_name)
+        
+        # Define gravity
         self._define_gravity(z_acc=z_acc)
 
         disk_models = self.disk_models
@@ -647,11 +634,7 @@ class SimManipulatorAdamModel:
         # self._create_debug_measurements()
         self._final_cleanup()
 
-    def clear_model(self):
-        """
-        Remove model. Meaningful only when it is followed by generate_model()
-        """
-        self.socket.delete_model(self.model_name)
+    
 
     def _execute_static_sim(self, duration, num_steps, num_joint_angle_validation):
         """
@@ -703,11 +686,18 @@ class SimManipulatorAdamModel:
                 solver_error_threshold=None,
                 solver_translational_limit=None,
                 solver_rotational_limit=None,
-                solver_static_method=None):
+                solver_static_method=None,
+                use_cpp_solver=True):
         """
         Run simulation on the model and extract its final steady state results. 
         generate_model() should have been run.
         """
+        # Pick c++ implementation solver
+        if use_cpp_solver:
+            self.socket.config_sim_general(solver_choice="cplusplus")
+        else:
+            self.socket.config_sim_general(solver_choice="Fortran")
+        
         duration = 1  # Fixed to 1 time unit
 
         if len(self.tendon_models) != len(input_forces):
@@ -729,9 +719,6 @@ class SimManipulatorAdamModel:
             static_method=solver_static_method)
 
         # Update variable
-        self.socket.set_variable(
-            self.name_gen.var_name_base_duration, 0
-        )
         self.socket.set_variable(
             self.name_gen.var_name_final_duration, duration
         )

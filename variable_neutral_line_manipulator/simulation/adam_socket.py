@@ -343,9 +343,9 @@ class AdamViewSocket:
             "reset_before_and_after": False,
         })
 
-    def config_sim_general(self, server_choice=None):
+    def config_sim_general(self, solver_choice=None):
         return self.deal_with_cmd("simulation set", {
-            "choice_for_solver": server_choice
+            "choice_for_solver": solver_choice
         })
 
     def set_sim_equilibrium_param(self, model_name, max_iterations=None, stability=None, tlimit=None, alimit=None, error=None, imbalance=None, static_method=None):
