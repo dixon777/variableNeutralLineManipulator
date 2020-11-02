@@ -1,4 +1,4 @@
-from math import floor, pi
+from math import floor, pi, acos, atan2
 import numpy as np
 
 import pyrr.matrix33 as m3
@@ -31,3 +31,10 @@ def m4_rotation(axis, radian):
     
 def m4_rotation(axis, radian):
     return m4.create_from_axis_rotation(np.array(axis)*1.0, radian).transpose()
+
+
+def rot_mat_to_zxz_euler(mat):
+    if mat[2,2] -1 < 1e-6 or mat[2,2] + 1 < 1e-6:
+        return (acos(mat[0,0]), acos(mat[2,2]), 0.0)
+    
+    return (atan2(mat[0,2], -mat[1,2]), acos(mat[2,2]), atan2(mat[2,0],mat[2,1]))

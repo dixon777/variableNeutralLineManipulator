@@ -239,6 +239,41 @@ class AdamViewSocket:
             "z_force_function": z_force_function,
         })
         
+    def create_general_force(self, 
+                            name, 
+                            i_marker_name, 
+                            j_part_name,
+                            ref_marker_name,
+                            x_force_function="0", y_force_function="0", z_force_function="0",
+                            x_torque_function="0", y_torque_function="0", z_torque_function="0"):
+        """
+            Create a force and a torque acted on the part, to which "i_marker_name" belongs, by "j_part_name" at position "i_marker_name". 
+            @params
+                name: Component name (Required, Must not exist)
+                i_marker_name: Position at which the force acts on both parts  (Required, Must exist)
+                    The part to which it belongs is the action body
+                j_part_name: Reaction body (Required, Must exist)
+                ref_marker_name: Reference frame for force vector definition (Required, Must exist)
+                x_force_function: Runtime function for x component of force vector (Optional:Default 0)
+                y_force_function: Runtime function for y component of force vector (Optional:Default 0)
+                z_force_function: Runtime function for z component of force vector (Optional:Default 0)
+                x_torque_function: Runtime function for x component of torque vector (Optional:Default 0)
+                y_torque_function: Runtime function for y component of torque vector (Optional:Default 0)
+                z_torque_function: Runtime function for z component of torque vector (Optional:Default 0)
+        """
+        return self.deal_with_cmd("force create direct general_force", {
+            "general_force_name": name,
+            "i_marker_name": i_marker_name,
+            "j_part_name": j_part_name,
+            "ref_marker_name": ref_marker_name,
+            "x_force_function": x_force_function,
+            "y_force_function": y_force_function,
+            "z_force_function": z_force_function,
+            "x_torque_function": x_torque_function,
+            "y_torque_function": y_torque_function,
+            "z_torque_function": z_torque_function,
+        })
+        
     def create_gravity(self, gravity_field_name, x_component_gravity=0.0, y_component_gravity=0.0, z_component_gravity=0.0):
         return self.deal_with_cmd("force create body gravitational", {
             "gravity_field_name": gravity_field_name,

@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from ..common.entities import *
+from ..common.external_load import *
 from .entities import *
 from .calculation import *
 
@@ -125,22 +126,29 @@ def _solve_base_disk(base_disk_model: DiskModel, distal_disk_state:DiskState):
 
 class _SolverBase(ABC):
     @abstractmethod
-    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> ManipulatorState:
+    def solve(self, manipulator_model: ManipulatorModel, 
+              input_forces: Iterable[List[float]],
+              external_comps: List[GlobalExternalLoad]=[]) -> ManipulatorState:
         if len(manipulator_model.tendon_models) != len(input_forces):
             raise ValueError("Num of tension inputs does not match num of tendons")
 
 
 class DirectSolver(_SolverBase):
-    def solve(self, manipulator_model: ManipulatorModel, input_forces: Iterable[List[float]]) -> ManipulatorState:
+    def solve(self, manipulator_model: ManipulatorModel, 
+              input_forces: Iterable[List[float]],
+              external_comps: List[GlobalExternalLoad]=[]) -> ManipulatorState:
         super().solve(manipulator_model, input_forces)
         disk_states = []
         last_disk_state = None
+        
+        disk_index = manipulator_model.num_joints
         for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(input_forces, include_base=False):
             last_disk_state = DirectSolver.solve_single_disk(
-                disk_model, last_disk_state, input_forces)
+                disk_model, last_disk_state, input_forces, [comp for comp in external_comps if comp.disk_index == disk_index])
             if last_disk_state is None:
                 break
             disk_states.insert(0, last_disk_state)
+            disk_index -= 1
         
         base_disk_model = manipulator_model.get_disk_model(0)
         disk_states.insert(0, _solve_base_disk(base_disk_model, last_disk_state))
@@ -150,7 +158,10 @@ class DirectSolver(_SolverBase):
     
 
     @staticmethod
-    def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float]):
+    def solve_single_disk(current_disk_model: DiskModel, 
+                          distal_disk_state: DiskState, 
+                          input_forces: List[float],
+                          external_comps:List[GlobalExternalLoad]):
         disk_geometry = current_disk_model.disk_geometry
         top_tendon_states = distal_disk_state.tendon_states if distal_disk_state else []
         top_contact_joint_angle = distal_disk_state.bottom_joint_angle if distal_disk_state is not None else None

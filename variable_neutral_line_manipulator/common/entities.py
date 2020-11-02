@@ -349,7 +349,7 @@ class ManipulatorModel(BaseDataClass):
                 end_top_orientationMF, end_top_curve_radius, distal_disk_tendon_modelsMF)
             n_joints_count -= segment.num_joints
             self.indices_disk_model_pairs = (
-                [(tuple((i + n_joints_count + 1) for i in indices), disk_model)  # +1 to ensure base disk
+                [(tuple((i + n_joints_count + 1) for i in indices), disk_model)  # +1 due to base disk
                  for indices, disk_model in segment_only_indices_disk_model_pairs]
                 + self.indices_disk_model_pairs)
 
@@ -416,6 +416,9 @@ class ManipulatorModel(BaseDataClass):
             return False
 
         return True
+    
+    def local_attr_keys(self):
+        return ["segments", ]
 
 
 class TendonStateBase(BaseDataClass):
@@ -545,6 +548,7 @@ class ManipulatorState(BaseDataClass):
             m = np.matmul(m, eval_proximal_top_to_distal_bottom_TF(
                 self.disk_states[i].top_joint_angle,
                 disk_geometry.top_curve_radius))
+            
 
         if pos == "top":
             m = np.matmul(m, m4_translation(
@@ -644,3 +648,4 @@ class ManipulatorState(BaseDataClass):
     #             top_contact_moment +
     #             np.cross(bottom_contact_disp, bottom_contact_force) +
     #             bottom_contact_moment)
+
