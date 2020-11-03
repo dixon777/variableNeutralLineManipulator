@@ -2,7 +2,7 @@ import numpy as np
 from .entities import BaseDataClass
 
 
-class GlobalExternalLoad(BaseDataClass):
+class ExternalLoad(BaseDataClass):
     def __init__(self,
                  disk_index: int,
                  force: np.ndarray = np.zeros(3),

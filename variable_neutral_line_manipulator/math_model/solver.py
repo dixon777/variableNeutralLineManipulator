@@ -128,7 +128,7 @@ class _SolverBase(ABC):
     @abstractmethod
     def solve(self, manipulator_model: ManipulatorModel, 
               input_forces: Iterable[List[float]],
-              external_comps: List[GlobalExternalLoad]=[]) -> ManipulatorState:
+              external_comps: List[ExternalLoad]=[]) -> ManipulatorState:
         if len(manipulator_model.tendon_models) != len(input_forces):
             raise ValueError("Num of tension inputs does not match num of tendons")
 
@@ -136,7 +136,7 @@ class _SolverBase(ABC):
 class DirectSolver(_SolverBase):
     def solve(self, manipulator_model: ManipulatorModel, 
               input_forces: Iterable[List[float]],
-              external_comps: List[GlobalExternalLoad]=[]) -> ManipulatorState:
+              external_comps: List[ExternalLoad]=[]) -> ManipulatorState:
         super().solve(manipulator_model, input_forces)
         disk_states = []
         last_disk_state = None
@@ -161,7 +161,7 @@ class DirectSolver(_SolverBase):
     def solve_single_disk(current_disk_model: DiskModel, 
                           distal_disk_state: DiskState, 
                           input_forces: List[float],
-                          external_comps:List[GlobalExternalLoad]):
+                          external_comps:List[ExternalLoad]):
         disk_geometry = current_disk_model.disk_geometry
         top_tendon_states = distal_disk_state.tendon_states if distal_disk_state else []
         top_contact_joint_angle = distal_disk_state.bottom_joint_angle if distal_disk_state is not None else None

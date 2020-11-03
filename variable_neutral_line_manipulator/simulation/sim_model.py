@@ -472,7 +472,7 @@ class SimManipulatorAdamModel:
             
     def _generate_external_loads(self, 
                                  disk_models: List[DiskModel], 
-                                 external_loads: List[GlobalExternalLoad]):
+                                 external_loads: List[ExternalLoad]):
         for i, el in enumerate(external_loads):
             if el.is_attached_to_disk:
                 self.socket.modify_part_rigid_body(self.name_gen.disk_part_name(el.disk_index))
@@ -661,7 +661,7 @@ class SimManipulatorAdamModel:
 
     def run_sim(self,
                 applied_tensions: List[float],
-                external_loads: List[GlobalExternalLoad]=[],
+                external_loads: List[ExternalLoad]=[],
                 z_acc:float=0.0,
                 disk_density: float = DEFAULT_CONFIG_DISK_DENSITY,
                 contact_config: ContactConfig = ContactConfig(),

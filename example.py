@@ -9,7 +9,7 @@ from variable_neutral_line_manipulator.math_model.solver import DirectSolver, It
 from math import degrees
 
 
-def eval_from_sim(manipulator_model, input_tensions: List[float]):
+def eval_from_sim(manipulator_model, input_tensions: List[float], external_loads: List[ExternalLoad]):
     """ Acquire the result from Adams View simulation """
     # Simulation
     s = SimManipulatorAdamModel(manipulator_model)
@@ -31,11 +31,7 @@ def eval_from_sim(manipulator_model, input_tensions: List[float]):
                   solver_error_threshold=1e-4,
                   solver_imbalance=1e-4,
                   solver_stability=4e-5,
-                  external_loads=[
-                      GlobalExternalLoad(
-                          1, np.array((0.5, 0, 0)), np.array((0.01, 0.02, 0.01)), np.array((7, 0, 18.0)), is_attached_to_disk=False
-                      )
-                  ])
+                  external_loads=external_loads)
     except RuntimeError as e:
         print(e)
         return None
@@ -106,8 +102,15 @@ def main():
     # Define input tensions
     input_tensions = np.array([2.5, 2, 1.5, 1], dtype=float)
 
+    # Define external loads
+    external_loads = [
+        ExternalLoad(
+            1, np.array((0.5, 0, 0)), np.array((0.01, 0.02, 0.01)), np.array((7, 0, 18.0)), is_attached_to_disk=False
+        )
+    ]
+
     # Acquire results from simulation
-    sim_state = eval_from_sim(model, input_tensions)
+    sim_state = eval_from_sim(model, input_tensions, external_loads)
 
     # sim_state = SimManipulatorAdamModel(model).extract_final_state()
 
