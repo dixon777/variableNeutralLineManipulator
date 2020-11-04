@@ -10,7 +10,7 @@ from ..common.entities import *
 from ..util import normalise_angle, normalise_to_range
 
 
-class SimDiskGeometry(DiskGeometryBase):
+class SimDiskGeometry(BaseDiskGeometry):
     def __init__(self,
                  length,
                  bottom_curve_radius,
@@ -21,7 +21,7 @@ class SimDiskGeometry(DiskGeometryBase):
         self.outer_diameter = outer_diameter
     
     @staticmethod
-    def from_base_geometry(disk_geometry: DiskGeometryBase, tendon_models:List[TendonModel]):
+    def from_base_geometry(disk_geometry: BaseDiskGeometry, tendon_models:List[TendonModel]):
         max_tendon_dist_from_axis = max((ts.dist_from_axis
                                         for ts in
                                         tendon_models), default=0.0)

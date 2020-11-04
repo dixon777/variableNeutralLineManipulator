@@ -13,7 +13,7 @@ from ..util import BaseDataClass, indices_entity_pairs_to_ordered_list, normalis
 # https://stackoverflow.com/questions/4544630/automatically-growing-lists-in-python
 
 
-class DiskGeometryBase(BaseDataClass):
+class BaseDiskGeometry(BaseDataClass):
     """
         Basic definition of the disk model (wihtout tendon) for mathemtaic model computation
         @param:
@@ -91,7 +91,7 @@ class DiskModel(BaseDataClass):
     """
 
     def __init__(self, disk_geometry, bottom_orientationMF, knotted_tendon_models=[], continuous_tendon_models=[]):
-        self.disk_geometry: DiskGeometryBase = disk_geometry
+        self.disk_geometry: BaseDiskGeometry = disk_geometry
         self.bottom_orientationMF = normalise_angle(bottom_orientationMF)
         self.knotted_tendon_models = copy.copy(knotted_tendon_models)
         self.continuous_tendon_models = copy.copy(continuous_tendon_models)
@@ -161,7 +161,7 @@ class TwoDoFSegmentModel(BaseSegmentModel):
             distal_tendon_models) + distal_tendon_models
         return DiskModel(
             bottom_orientationMF=self.base_orientationMF,
-            disk_geometry=DiskGeometryBase(length=length if length else self.disk_length,
+            disk_geometry=BaseDiskGeometry(length=length if length else self.disk_length,
                                            bottom_curve_radius=None,
                                            top_orientationDF=0,
                                            top_curve_radius=self.curve_radius),
@@ -180,7 +180,7 @@ class TwoDoFSegmentModel(BaseSegmentModel):
             res.append((tuple(i for i in range(0, self.n_joints - 1, 1 if self.distal_orientationDF == 0 else 2)),
                         DiskModel(
                 bottom_orientationMF=self.base_orientationMF,
-                disk_geometry=DiskGeometryBase(length=self.disk_length,
+                disk_geometry=BaseDiskGeometry(length=self.disk_length,
                                                bottom_curve_radius=self.curve_radius,
                                                top_orientationDF=self.distal_orientationDF,
                                                top_curve_radius=self.curve_radius,
@@ -192,7 +192,7 @@ class TwoDoFSegmentModel(BaseSegmentModel):
                 res.append((tuple(i for i in range(1, self.n_joints - 1, 2)),
                             DiskModel(
                     bottom_orientationMF=self.base_orientationMF+self.distal_orientationDF,
-                    disk_geometry=DiskGeometryBase(length=self.disk_length,
+                    disk_geometry=BaseDiskGeometry(length=self.disk_length,
                                                    bottom_curve_radius=self.curve_radius,
                                                    top_orientationDF=-self.distal_orientationDF,
                                                    top_curve_radius=self.curve_radius,
@@ -204,7 +204,7 @@ class TwoDoFSegmentModel(BaseSegmentModel):
                                           (self.distal_orientationDF if self.n_joints % 2 == 0 else 0))
         res.append(((self.n_joints-1, ), DiskModel(
             bottom_orientationMF=distal_disk_base_orientationMF,
-            disk_geometry=DiskGeometryBase(length=self.end_disk_length if self.end_disk_length else self.disk_length,
+            disk_geometry=BaseDiskGeometry(length=self.end_disk_length if self.end_disk_length else self.disk_length,
                                            bottom_curve_radius=self.curve_radius,
                                            top_orientationDF=end_top_orientationMF-distal_disk_base_orientationMF,
                                            top_curve_radius=end_top_curve_radius,),
@@ -260,7 +260,7 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
             distal_tendon_models) + distal_tendon_models
         return DiskModel(
             bottom_orientationMF=disk_orientationMF,
-            disk_geometry=DiskGeometryBase(length=length if length else self.disk_length,
+            disk_geometry=BaseDiskGeometry(length=length if length else self.disk_length,
                                            bottom_curve_radius=None,
                                            top_orientationDF=0,
                                            top_curve_radius=self.curve_radius),
@@ -289,7 +289,7 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
             res.append((tuple(i for i in range(0, self.n_joints - 1, 1 if self.distal_orientationDF == 0 else 2)),
                         DiskModel(
                 bottom_orientationMF=self.base_orientationMF,
-                disk_geometry=DiskGeometryBase(length=self.disk_length,
+                disk_geometry=BaseDiskGeometry(length=self.disk_length,
                                                bottom_curve_radius=self.curve_radius,
                                                top_orientationDF=self.distal_orientationDF,
                                                top_curve_radius=self.curve_radius,
@@ -301,7 +301,7 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
                 res.append((tuple(i for i in range(1, self.n_joints - 1, 2)),
                             DiskModel(
                     bottom_orientationMF=self.base_orientationMF+self.distal_orientationDF,
-                    disk_geometry=DiskGeometryBase(length=self.disk_length,
+                    disk_geometry=BaseDiskGeometry(length=self.disk_length,
                                                    bottom_curve_radius=self.curve_radius,
                                                    top_orientationDF=-self.distal_orientationDF,
                                                    top_curve_radius=self.curve_radius,
@@ -313,7 +313,7 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
                                           (self.distal_orientationDF if self.n_joints % 2 == 0 else 0))
         res.append(((self.n_joints-1, ), DiskModel(
             bottom_orientationMF=distal_disk_base_orientationMF,
-            disk_geometry=DiskGeometryBase(length=self.end_disk_length if self.end_disk_length else self.disk_length,
+            disk_geometry=BaseDiskGeometry(length=self.end_disk_length if self.end_disk_length else self.disk_length,
                                            bottom_curve_radius=self.curve_radius,
                                            top_orientationDF=end_top_orientationMF-distal_disk_base_orientationMF,
                                            top_curve_radius=end_top_curve_radius,),
