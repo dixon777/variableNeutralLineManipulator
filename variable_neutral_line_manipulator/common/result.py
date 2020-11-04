@@ -2,13 +2,15 @@ from math import degrees
 from typing import List, Iterable
 from .entities import ManipulatorModel, DiskState, ManipulatorState
 from .external_load import *
+from ..util.table_operation import *
 import numpy as np
 
 
 def generate_manipulator_model_table(manipulator_model: ManipulatorModel):
     res = [
         ["Manipulator model:"],
-        ["Num joints", f"{manipulator_model.num_joints}"]
+        ["Num joints", f"{manipulator_model.num_joints}"],
+        []
     ]
     # Segments
     res += [
@@ -41,16 +43,20 @@ def generate_input_tensions_table(manipulator_model: ManipulatorModel, input_ten
 def generate_external_load_table(external_loads: List[ExternalLoad]):
     res = [
         ["External loads:"],
+        ["Index"]
     ]
     for i, el in enumerate(external_loads):
-        res.append([f"{i+1}."])
+        data_table = []
         for k, v in el.get_data_pairs():
             if isinstance(v, Iterable):
-                res.append([k, *v])
+                data_table.append([ k, *v])
             elif isinstance(v, bool):
-                res.append([k, 1 if v else 0])
+                data_table.append([ k, 1 if v else 0])
             else:
-                res.append([k,v])
+                data_table.append([ k,v])
+        res += combine_tables(
+            [[f"{i+1}"]], data_table, space_between=0
+        ).tolist()
         res.append([])
     
     return res
@@ -122,7 +128,10 @@ def generate_final_state_reaction(math_manipulator_state: ManipulatorState,
 
     # Contact reaction
     for i, (ms, ss) in enumerate(zip(math_disk_states, sim_disk_states)):
-        res.append([f"{i}-th joint:" if i > 0 else "Base"])
+        res += [
+            [],
+            [f"{i}-th joint:" if i > 0 else "Base"],
+        ]
         if ms.has_bottom_contact and ss.has_bottom_contact:
             res.append([f"Bottom:"])
             res.append(["Component (N or Nmm)", "Math", "Sim", "Diff"])

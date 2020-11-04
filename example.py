@@ -13,27 +13,27 @@ def eval_from_sim(manipulator_model, input_tensions: List[float], external_loads
     """ Acquire the result from Adams View simulation """
     s = SimManipulatorAdamModel(manipulator_model)
 
-    try:
-        s.run_sim(input_tensions,
-                  initial_disk_overlap_length=0.05,
-                  marker_offset_from_contact=0.2,
-                  contact_config=SimManipulatorAdamModel.ContactConfig(
-                      stiffness=6e6,
-                      force_exponent=3.4,
-                      damping=6e4,
-                  ),
-                  num_steps=50,
-                  max_iterations_search_eqilibrium=10000,
-                  num_joint_angle_validation=0,
-                  solver_translational_limit=1,
-                  solver_rotational_limit=pi/10,
-                  solver_error_threshold=1e-4,
-                  solver_imbalance=1e-4,
-                  solver_stability=4e-5,
-                  external_loads=external_loads)
-    except RuntimeError as e:
-        print(e)
-        return None
+    # try:
+    #     s.run_sim(input_tensions,
+    #               initial_disk_overlap_length=0.05,
+    #               marker_offset_from_contact=0.2,
+    #               contact_config=SimManipulatorAdamModel.ContactConfig(
+    #                   stiffness=6e6,
+    #                   force_exponent=3.4,
+    #                   damping=6e4,
+    #               ),
+    #               num_steps=50,
+    #               max_iterations_search_eqilibrium=10000,
+    #               num_joint_angle_validation=0,
+    #               solver_translational_limit=1,
+    #               solver_rotational_limit=pi/10,
+    #               solver_error_threshold=1e-4,
+    #               solver_imbalance=1e-4,
+    #               solver_stability=4e-5,
+    #               external_loads=external_loads)
+    # except RuntimeError as e:
+    #     print(e)
+    #     return None
 
     return s.extract_final_state()
 

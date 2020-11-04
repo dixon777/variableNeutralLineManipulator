@@ -11,14 +11,17 @@ def ensure_equal_num_rows(tables):
         tables[i] += [[""]*len(tables[i][0]) for _ in range(max_rows - len(tables[i]))]
     return tables
 
-def combine_tables(*tables):
+def combine_tables(*tables, space_between=1):
     tables = [ensure_equal_num_cells_per_row(t) for t in tables]
     tables = ensure_equal_num_rows(tables)
     tables = [np.array(t) for t in tables]
     combined_table = tables[0]
     
     for t in tables[1:]:
-        combined_table = np.hstack((combined_table, np.array([""]*len(t)).reshape((-1,1)), t))
+        if space_between == 0:
+            combined_table = np.hstack((combined_table,t))
+        else:
+            combined_table = np.hstack((combined_table, np.array([""]*len(t)*space_between).reshape((-1,space_between)), t))
     return combined_table
 
 
