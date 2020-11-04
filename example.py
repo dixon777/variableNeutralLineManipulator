@@ -11,7 +11,6 @@ from math import degrees
 
 def eval_from_sim(manipulator_model, input_tensions: List[float], external_loads: List[ExternalLoad]):
     """ Acquire the result from Adams View simulation """
-    # Simulation
     s = SimManipulatorAdamModel(manipulator_model)
 
     try:
@@ -51,7 +50,7 @@ def write_results(manipulator_model,
                   external_loads,
                   math_manipulator_state,
                   sim_manipulator_state,
-                  output_path="result.csv"):
+                  output_path):
     """ Write results in CSV format"""
     model_table = generate_manipulator_model_table(
         manipulator_model,
@@ -109,9 +108,9 @@ def main():
     model = ManipulatorModel(segments)
 
     # Define input tensions
-    input_tensions = np.array([1,1,1,1], dtype=float)
+    input_tensions = np.array([2,2,1,1], dtype=float)
 
-    # Define external loads
+    # Define external loads (if there is any)
     external_loads = [
         ExternalLoad(
             1, np.array((0.5, 0, 0)), np.array((0.01, 0.02, 0.01)), np.array((7, 0, 18.0)), is_attached_to_disk=False
@@ -121,17 +120,16 @@ def main():
     # Acquire results from simulation
     sim_state = eval_from_sim(model, input_tensions, external_loads)
 
-    # sim_state = SimManipulatorAdamModel(model).extract_final_state()
-
+    # Terminate the program if simulation result fails
     if sim_state is None:
         print("Terminate program")
         return
 
-    # Compute results from math model
+    # Compute results from math model (Currently external loads are not supported for math model)
     math_state = eval_from_math_model(model, input_tensions)
 
     # Write results
-    write_results(model, input_tensions, external_loads, math_state, sim_state)
+    write_results(model, input_tensions, external_loads, math_state, sim_state, "results.csv")
 
 
 if __name__ == "__main__":

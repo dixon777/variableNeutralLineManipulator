@@ -12,7 +12,7 @@ This project is part of the research, initiated from Dec 2019, subsidised by the
 2. Turn on the Adams View command server ([Tutorial](#steps-to-turn-on-adams-view-command-server))
 2. Run the following:
     ```bash
-    python run_cmd.py
+    python example.py
     ```
 1. Wait until the simulation has completed (or fail under certain circumstance). 
     - If the command window in Adams View shows the following line, that means the simulation fails to complete.
