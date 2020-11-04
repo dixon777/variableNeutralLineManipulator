@@ -48,6 +48,7 @@ def eval_from_math_model(manipulator_model: ManipulatorModel, input_tensions: Li
 
 def write_results(manipulator_model,
                   input_tensions,
+                  external_loads,
                   math_manipulator_state,
                   sim_manipulator_state,
                   output_path="result.csv"):
@@ -56,9 +57,13 @@ def write_results(manipulator_model,
         manipulator_model,
     )
 
-    input_table = generate_input_tensions_table(
+    input_tensions_table = generate_input_tensions_table(
         manipulator_model,
         input_tensions
+    )
+
+    external_loads_table = generate_external_load_table(
+        external_loads=external_loads
     )
 
     joint_angle_table = generate_final_state_joint_angle_table(
@@ -77,7 +82,11 @@ def write_results(manipulator_model,
     )
 
     write_to_csv(output_path, combine_tables(
-        model_table, input_table, joint_angle_table, reaction_table, tf_table))
+        model_table,
+        input_tensions_table + [[]] + external_loads_table, # Add an empty row in between
+        joint_angle_table,
+        reaction_table,
+        tf_table))
 
 
 def main():
@@ -100,7 +109,7 @@ def main():
     model = ManipulatorModel(segments)
 
     # Define input tensions
-    input_tensions = np.array([2.5, 2, 1.5, 1], dtype=float)
+    input_tensions = np.array([1,1,1,1], dtype=float)
 
     # Define external loads
     external_loads = [
@@ -122,7 +131,7 @@ def main():
     math_state = eval_from_math_model(model, input_tensions)
 
     # Write results
-    write_results(model, input_tensions, math_state, sim_state)
+    write_results(model, input_tensions, external_loads, math_state, sim_state)
 
 
 if __name__ == "__main__":

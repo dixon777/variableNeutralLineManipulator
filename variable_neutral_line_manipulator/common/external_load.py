@@ -24,7 +24,7 @@ class ExternalLoad(BaseDataClass):
         location : np.ndarry[float,float,float]
             Initial location at which the force and torque are acted (Default: np.zeros(3))
         is_attached_to_disk : bool (Default: True)
-            Whether the force vector's location is fixed to the disk or the ground
+            Whether the force vector's location is fixed to the disk （or the ground
         is_force_vector_global : bool (Default: True)
             Whether the "force" and "torque" are defined according to the global or the disk coordinate systems
         is_location_global : bool (Default: True)

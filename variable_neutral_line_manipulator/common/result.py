@@ -1,6 +1,7 @@
 from math import degrees
-from typing import List
+from typing import List, Iterable
 from .entities import ManipulatorModel, DiskState, ManipulatorState
+from .external_load import *
 import numpy as np
 
 
@@ -15,10 +16,8 @@ def generate_manipulator_model_table(manipulator_model: ManipulatorModel):
     ]
     for i, s in enumerate(manipulator_model.segments):
         res.append([f"Segment {i+1}:"])
-        for k, v in dict(s).items():
-            if k == "__class_name__":
-                continue
-            elif k == "base_orientationMF" or k == "distal_orientationDF":
+        for k, v in s.get_data_pairs():
+            if k == "base_orientationMF" or k == "distal_orientationDF":
                 res.append([k, f"{degrees(v):.2f}"])
             else:
                 res.append([k, f"{v:.2f}" if isinstance(v, float) else f"{v}"])
@@ -37,6 +36,23 @@ def generate_input_tensions_table(manipulator_model: ManipulatorModel, input_ten
             [i, f"{tm.dist_from_axis:.2f}",
                 f"{degrees(tm.orientation):.2f}", f"{tension:.2f}"]
         )
+    return res
+
+def generate_external_load_table(external_loads: List[ExternalLoad]):
+    res = [
+        ["External loads:"],
+    ]
+    for i, el in enumerate(external_loads):
+        res.append([f"{i+1}."])
+        for k, v in el.get_data_pairs():
+            if isinstance(v, Iterable):
+                res.append([k, *v])
+            elif isinstance(v, bool):
+                res.append([k, 1 if v else 0])
+            else:
+                res.append([k,v])
+        res.append([])
+    
     return res
 
 

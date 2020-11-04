@@ -39,6 +39,16 @@ class BaseDataClass(ABC):
             if hasattr(self, k):
                 j = getattr(self, k)
                 yield k, j
+                
+    def get_data_pairs(self, include_meta=False):
+        if include_meta:
+            return dict(self).items()
+        
+        for k,v in dict(self).items():
+            if k == "__class_name__":
+                continue
+            yield k,v
+                
 
     def __repr__(self):
         return str(dict(self))
