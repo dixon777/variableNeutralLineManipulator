@@ -168,7 +168,7 @@ class _ManipulatorAdamSimNameGenerator():
     # Measurements
     @classmethod
     def measurement_joint_angle_name(cls, joint_index, orientationMF=None, dist_from_axis=None):
-        return (f"mm_joint{joint_index}_angle" +
+        return (f"Joint_{joint_index}_angle" +
                 (f'_o{cls._convert_angle(orientationMF)}' if orientationMF is not None else '') +
                 (f"_d{cls._to_safe_float_str(dist_from_axis)}" if dist_from_axis is not None else ''))
 
@@ -503,12 +503,12 @@ class SimManipulatorAdamModel:
                     i, tendon_model.orientation, tendon_model.dist_from_axis, True)
                 distal_bottom_marker_name = self.name_gen.tendon_guide_end_marker_name(
                     i+1, tendon_model.orientation, tendon_model.dist_from_axis, False)
-                self.socket.create_measure_function(
-                    self.name_gen.measurement_joint_angle_name(
-                        i, tendon_model.orientation, tendon_model.dist_from_axis),
-                    function=f"AX({distal_bottom_marker_name}, {proximal_top_marker_name})",
-                    unit="angle",
-                )
+                # self.socket.create_measure_function(
+                #     self.name_gen.measurement_joint_angle_name(
+                #         i, tendon_model.orientation, tendon_model.dist_from_axis),
+                #     function=f"AX({distal_bottom_marker_name}, {proximal_top_marker_name})",
+                #     unit="angle",
+                # )
 
                 if j == 0:
                     self.socket.create_measure_function(
@@ -716,10 +716,16 @@ class SimManipulatorAdamModel:
         
         self._generate_external_loads(disk_models, external_loads)
         self._generate_measurement_joint_angles(disk_models)
-        self._generate_measurement_contact_force(disk_models)
-        self._generate_measurement_tension_vec(disk_models)
-        self._generate_measurement_base_reaction()
-        self._generate_measurement_tip_disp()
+        # for t, tm in zip(applied_tensions, self.manipulator_model.tendon_models):
+        #     self.socket.create_measure_function(
+        #         f"tension_at_{self.name_gen._convert_angle(tm.orientation)}_deg",
+        #         f"SFORCE({self.name_gen.force_tension_between_tendon_guide_ends_name(0, tm.orientation, tm.dist_from_axis)} , 0 , 1, 0)",
+        #         unit="force",
+        #     )
+        # self._generate_measurement_contact_force(disk_models)
+        # self._generate_measurement_tension_vec(disk_models)
+        # self._generate_measurement_base_reaction()
+        # self._generate_measurement_tip_disp()
         self._final_cleanup()
         
         

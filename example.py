@@ -13,27 +13,27 @@ def eval_from_sim(manipulator_model, input_tensions: List[float], external_loads
     """ Acquire the result from Adams View simulation """
     s = SimManipulatorAdamModel(manipulator_model)
 
-    # try:
-    #     s.run_sim(input_tensions,
-    #               initial_disk_overlap_length=0.05,
-    #               marker_offset_from_contact=0.2,
-    #               contact_config=SimManipulatorAdamModel.ContactConfig(
-    #                   stiffness=6e6,
-    #                   force_exponent=3.4,
-    #                   damping=6e4,
-    #               ),
-    #               num_steps=50,
-    #               max_iterations_search_eqilibrium=10000,
-    #               num_joint_angle_validation=0,
-    #               solver_translational_limit=1,
-    #               solver_rotational_limit=pi/10,
-    #               solver_error_threshold=1e-4,
-    #               solver_imbalance=1e-4,
-    #               solver_stability=4e-5,
-    #               external_loads=external_loads)
-    # except RuntimeError as e:
-    #     print(e)
-    #     return None
+    try:
+        s.run_sim(input_tensions,
+                  initial_disk_overlap_length=0.05,
+                  marker_offset_from_contact=0.2,
+                  contact_config=SimManipulatorAdamModel.ContactConfig(
+                      stiffness=6e6,
+                      force_exponent=3.4,
+                      damping=6e4,
+                  ),
+                  num_steps=1000,
+                  max_iterations_search_eqilibrium=10000,
+                  num_joint_angle_validation=0,
+                  solver_translational_limit=1,
+                  solver_rotational_limit=pi/10,
+                  solver_error_threshold=1e-4,
+                  solver_imbalance=1e-4,
+                  solver_stability=4e-5,
+                  external_loads=external_loads)
+    except RuntimeError as e:
+        print(e)
+        return None
 
     return s.extract_final_state()
 
@@ -96,9 +96,18 @@ def main():
     # Define manipulator model
     segments = [
         TwoDOFParallelSegmentModel(
-            n_joints=1,
+            n_joints=4,
             disk_length=12,
             base_orientationMF=0,
+            distal_orientationDF=pi/2,
+            curve_radius=6,
+            tendon_dist_from_axis=3.5,
+            end_disk_length=None,
+        ),
+        TwoDOFParallelSegmentModel(
+            n_joints=4,
+            disk_length=12,
+            base_orientationMF=pi/4,
             distal_orientationDF=pi/2,
             curve_radius=6,
             tendon_dist_from_axis=3.5,
@@ -108,14 +117,15 @@ def main():
     model = ManipulatorModel(segments)
 
     # Define input tensions
-    input_tensions = np.array([2,2,1,1], dtype=float)
+    input_tensions = np.array([2.5,2,1.5,1,1,2.5,2,1.5], dtype=float)
 
     # Define external loads (if there is any)
-    external_loads = [
-        ExternalLoad(
-            1, np.array((0.5, 0, 0)), np.array((0.01, 0.02, 0.01)), np.array((7, 0, 18.0)), is_attached_to_disk=False
-        )
-    ]
+    external_loads = []
+    # external_loads = [
+    #     ExternalLoad(
+    #         1, np.array((0.5, 0, 0)), np.array((0.01, 0.02, 0.01)), np.array((7, 0, 18.0)), is_attached_to_disk=False
+    #     )
+    # ]
 
     # Acquire results from simulation
     sim_state = eval_from_sim(model, input_tensions, external_loads)
