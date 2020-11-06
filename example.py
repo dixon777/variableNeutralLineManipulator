@@ -16,10 +16,10 @@ def eval_from_sim(manipulator_model, input_tensions: List[float], external_loads
     try:
         s.run_sim(input_tensions,
                   initial_disk_overlap_length=0.05,
-                  marker_offset_from_contact=0.2,
+                  marker_offset_from_contact=0.1,
                   contact_config=SimManipulatorAdamModel.ContactConfig(
                       stiffness=6e6,
-                      force_exponent=3.4,
+                      force_exponent=3.5,
                       damping=6e4,
                   ),
                   num_steps=1000,
@@ -30,7 +30,8 @@ def eval_from_sim(manipulator_model, input_tensions: List[float], external_loads
                   solver_error_threshold=1e-4,
                   solver_imbalance=1e-4,
                   solver_stability=4e-5,
-                  external_loads=external_loads)
+                  external_loads=external_loads,
+                  use_cpp_solver=True)
     except RuntimeError as e:
         print(e)
         return None
@@ -96,28 +97,81 @@ def main():
     # Define manipulator model
     segments = [
         TwoDOFParallelSegmentModel(
-            n_joints=4,
+            n_joints=9,
             disk_length=12,
             base_orientationMF=0,
-            distal_orientationDF=pi/2,
+            distal_orientationDF=0,
             curve_radius=6,
             tendon_dist_from_axis=3.5,
             end_disk_length=None,
         ),
-        TwoDOFParallelSegmentModel(
-            n_joints=4,
-            disk_length=12,
-            base_orientationMF=pi/4,
-            distal_orientationDF=pi/2,
-            curve_radius=6,
-            tendon_dist_from_axis=3.5,
-            end_disk_length=None,
-        ),
+        # TwoDOFParallelSegmentModel(
+        #     n_joints=4,
+        #     disk_length=12,
+        #     base_orientationMF=0,
+        #     distal_orientationDF=pi/2,
+        #     curve_radius=6,
+        #     tendon_dist_from_axis=3.5,
+        #     end_disk_length=None,
+        # ),
+        # TwoDOFParallelSegmentModel(
+        #     n_joints=4,
+        #     disk_length=12,
+        #     base_orientationMF=pi/4,
+        #     distal_orientationDF=pi/2,
+        #     curve_radius=6,
+        #     tendon_dist_from_axis=3.5,
+        #     end_disk_length=None,
+        # ),
+        # TwoDoFSegmentModel(
+        #     n_joints=4,
+        #     disk_length=12,
+        #     base_orientationMF=pi/4,
+        #     distal_orientationDF=pi/2,
+        #     curve_radius=6,
+        #     end_disk_length=None,
+        #     tendon_models=[
+        #         TendonModel(
+        #             dist_from_axis=3.5,
+        #             orientation=0,
+        #         ),
+        #         TendonModel(
+        #             dist_from_axis=3.5,
+        #             orientation=2*pi/3,
+        #         ),TendonModel(
+        #             dist_from_axis=3.5,
+        #             orientation=4*pi/3,
+        #         )
+        #     ]
+            
+        # ),
+        # TwoDoFSegmentModel(
+        #     n_joints=4,
+        #     disk_length=12,
+        #     base_orientationMF=pi/4,
+        #     distal_orientationDF=pi/2,
+        #     curve_radius=6,
+        #     end_disk_length=None,
+        #     tendon_models=[
+        #         TendonModel(
+        #             dist_from_axis=3.5,
+        #             orientation=pi/3,
+        #         ),
+        #         TendonModel(
+        #             dist_from_axis=3.5,
+        #             orientation=3*pi/3,
+        #         ),TendonModel(
+        #             dist_from_axis=3.5,
+        #             orientation=5*pi/3,
+        #         )
+        #     ]
+        # )
     ]
     model = ManipulatorModel(segments)
 
     # Define input tensions
-    input_tensions = np.array([2.5,2,1.5,1,1,2.5,2,1.5], dtype=float)
+    input_tensions = np.array([2,1], dtype=float)
+    # input_tensions = np.array([2.5,2,1.5,1,1,2.5,2,1.5], dtype=float)
 
     # Define external loads (if there is any)
     external_loads = []

@@ -681,69 +681,69 @@ class SimManipulatorAdamModel:
         Run simulation on the model and extract its final steady state results. 
         generate_model() should have been run.
         """
-        self._clear_model()
+        # self._clear_model()
 
-        # set default unit
-        self.socket.set_default_units(
-            force_unit="newton",
-            mass_unit="kg",
-            length_unit="mm",
-            time_unit="second",
-            angle_unit="radian")
+        # # set default unit
+        # self.socket.set_default_units(
+        #     force_unit="newton",
+        #     mass_unit="kg",
+        #     length_unit="mm",
+        #     time_unit="second",
+        #     angle_unit="radian")
 
-        # Create simulation model
-        self.socket.create_model(self.model_name)
+        # # Create simulation model
+        # self.socket.create_model(self.model_name)
         
-        # Define gravity
-        self._define_gravity(z_acc=z_acc)
+        # # Define gravity
+        # self._define_gravity(z_acc=z_acc)
 
-        disk_models = self.disk_models
-        tendon_models = self.tendon_models
+        # disk_models = self.disk_models
+        # tendon_models = self.tendon_models
 
-        if not self._import_CADs(disk_models):
-            Logger.E("Fail to import CAD")
+        # if not self._import_CADs(disk_models):
+        #     Logger.E("Fail to import CAD")
 
-        self._define_mass_properties(disk_models, disk_density=disk_density)
-        self._create_markers(
-            disk_models, marker_offset_from_contact=marker_offset_from_contact)
-        self._move_disks_to_pos(
-            self._disks_init_location_orientation(initial_disk_overlap_length))
-        self._generate_parametric_variables(tendon_models)
-        self._enforce_base_disk_ground_constraint()
-        self._connect_forces_between_tendon_guide_ends(
-            self.disk_models)
-        self._generate_contacts(disk_models, config=contact_config)
+        # self._define_mass_properties(disk_models, disk_density=disk_density)
+        # self._create_markers(
+        #     disk_models, marker_offset_from_contact=marker_offset_from_contact)
+        # self._move_disks_to_pos(
+        #     self._disks_init_location_orientation(initial_disk_overlap_length))
+        # self._generate_parametric_variables(tendon_models)
+        # self._enforce_base_disk_ground_constraint()
+        # self._connect_forces_between_tendon_guide_ends(
+        #     self.disk_models)
+        # self._generate_contacts(disk_models, config=contact_config)
         
-        self._generate_external_loads(disk_models, external_loads)
-        self._generate_measurement_joint_angles(disk_models)
-        # for t, tm in zip(applied_tensions, self.manipulator_model.tendon_models):
-        #     self.socket.create_measure_function(
-        #         f"tension_at_{self.name_gen._convert_angle(tm.orientation)}_deg",
-        #         f"SFORCE({self.name_gen.force_tension_between_tendon_guide_ends_name(0, tm.orientation, tm.dist_from_axis)} , 0 , 1, 0)",
-        #         unit="force",
-        #     )
-        # self._generate_measurement_contact_force(disk_models)
-        # self._generate_measurement_tension_vec(disk_models)
-        # self._generate_measurement_base_reaction()
-        # self._generate_measurement_tip_disp()
-        self._final_cleanup()
+        # self._generate_external_loads(disk_models, external_loads)
+        # self._generate_measurement_joint_angles(disk_models)
+        # # for t, tm in zip(applied_tensions, self.manipulator_model.tendon_models):
+        # #     self.socket.create_measure_function(
+        # #         f"tension_at_{self.name_gen._convert_angle(tm.orientation)}_deg",
+        # #         f"SFORCE({self.name_gen.force_tension_between_tendon_guide_ends_name(0, tm.orientation, tm.dist_from_axis)} , 0 , 1, 0)",
+        # #         unit="force",
+        # #     )
+        # # self._generate_measurement_contact_force(disk_models)
+        # # self._generate_measurement_tension_vec(disk_models)
+        # # self._generate_measurement_base_reaction()
+        # # self._generate_measurement_tip_disp()
+        # self._final_cleanup()
         
         
-        # Decide solvers
-        if use_cpp_solver:
-            self.socket.config_sim_general(solver_choice="cplusplus")
-        else:
-            self.socket.config_sim_general(solver_choice="Fortran")
+        # # Decide solvers
+        # if use_cpp_solver:
+        #     self.socket.config_sim_general(solver_choice="cplusplus")
+        # else:
+        #     self.socket.config_sim_general(solver_choice="Fortran")
         
         duration = 1  # Fixed to 1 time unit
 
-        if len(self.tendon_models) != len(applied_tensions):
-            raise ValueError(
-                "Num of tension inputs does not match num of tendons")
+        # if len(self.tendon_models) != len(applied_tensions):
+        #     raise ValueError(
+        #         "Num of tension inputs does not match num of tendons")
             
-        for el in external_loads:
-            if el.disk_index > self.manipulator_model.num_joints:
-                raise ValueError("External load is applied on non-existing disk")
+        # for el in external_loads:
+        #     if el.disk_index > self.manipulator_model.num_joints:
+        #         raise ValueError("External load is applied on non-existing disk")
 
         # Reset state
         self.socket.run_sim_reset(self.model_name)
