@@ -9,44 +9,44 @@ from variable_neutral_line_manipulator.math_model.solver import DirectSolver, It
 from math import degrees
 
 
-def eval_from_sim(manipulator_model, input_tensions: List[float], external_loads: List[ExternalLoad]):
+def eval_from_sim(manipulator_model, applied_tensions: List[float], external_loads: List[ExternalLoad]):
     """ Acquire the result from Adams View simulation """
     s = SimManipulatorAdamModel(manipulator_model)
 
-    # try:
-    #     s.run_sim(input_tensions,
-    #               initial_disk_overlap_length=0.05,
-    #               marker_offset_from_contact=0.2,
-    #               contact_config=SimManipulatorAdamModel.ContactConfig(
-    #                   stiffness=6e6,
-    #                   force_exponent=3.4,
-    #                   damping=6e4,
-    #               ),
-    #               num_steps=50,
-    #               max_iterations_search_eqilibrium=10000,
-    #               num_joint_angle_validation=0,
-    #               solver_translational_limit=1,
-    #               solver_rotational_limit=pi/10,
-    #               solver_error_threshold=1e-4,
-    #               solver_imbalance=1e-4,
-    #               solver_stability=4e-5,
-    #               external_loads=external_loads)
-    # except RuntimeError as e:
-    #     print(e)
-    #     return None
+    try:
+        s.run_sim(applied_tensions,
+                  initial_disk_overlap_length=0.05,
+                  marker_offset_from_contact=0.2,
+                  contact_config=SimManipulatorAdamModel.ContactConfig(
+                      stiffness=6e6,
+                      force_exponent=3.4,
+                      damping=6e4,
+                  ),
+                  num_steps=50,
+                  max_iterations_search_eqilibrium=10000,
+                  num_joint_angle_validation=0,
+                  solver_translational_limit=1,
+                  solver_rotational_limit=pi/10,
+                  solver_error_threshold=1e-4,
+                  solver_imbalance=1e-4,
+                  solver_stability=4e-5,
+                  external_loads=external_loads)
+    except RuntimeError as e:
+        print(e)
+        return None
 
     return s.extract_final_state()
 
 
-def eval_from_math_model(manipulator_model: ManipulatorModel, input_tensions: List[float]):
+def eval_from_math_model(manipulator_model: ManipulatorModel, applied_tensions: List[float]):
     """ Evaluate the result from math model """
     return DirectSolver().solve(
-        manipulator_model, input_tensions
+        manipulator_model, applied_tensions
     )
 
 
 def write_results(manipulator_model,
-                  input_tensions,
+                  applied_tensions,
                   external_loads,
                   math_manipulator_state,
                   sim_manipulator_state,
@@ -56,9 +56,9 @@ def write_results(manipulator_model,
         manipulator_model,
     )
 
-    input_tensions_table = generate_input_tensions_table(
+    applied_tensions_table = generate_applied_tensions_table(
         manipulator_model,
-        input_tensions
+        applied_tensions
     )
 
     external_loads_table = generate_external_load_table(
@@ -82,7 +82,7 @@ def write_results(manipulator_model,
 
     write_to_csv(output_path, combine_tables(
         model_table,
-        input_tensions_table + [[]] + external_loads_table, # Add an empty row in between
+        applied_tensions_table + [[]] + external_loads_table, # Add an empty row in between
         joint_angle_table,
         reaction_table,
         tf_table))
@@ -108,7 +108,7 @@ def main():
     model = ManipulatorModel(segments)
 
     # Define input tensions
-    input_tensions = np.array([2,2,1,1], dtype=float)
+    applied_tensions = np.array([2,2,1,1], dtype=float)
 
     # Define external loads (if there is any)
     external_loads = [
@@ -118,7 +118,7 @@ def main():
     ]
 
     # Acquire results from simulation
-    sim_state = eval_from_sim(model, input_tensions, external_loads)
+    sim_state = eval_from_sim(model, applied_tensions, external_loads)
 
     # Terminate the program if simulation result fails
     if sim_state is None:
@@ -126,10 +126,10 @@ def main():
         return
 
     # Compute results from math model (Currently external loads are not supported for math model)
-    math_state = eval_from_math_model(model, input_tensions)
+    math_state = eval_from_math_model(model, applied_tensions)
 
     # Write results
-    write_results(model, input_tensions, external_loads, math_state, sim_state, "results.csv")
+    write_results(model, applied_tensions, external_loads, math_state, sim_state, "results.csv")
 
 
 if __name__ == "__main__":

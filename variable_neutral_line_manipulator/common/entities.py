@@ -394,12 +394,12 @@ class ManipulatorModel(BaseDataClass):
                 include_base)
         )
 
-    def get_tendon_model_to_input_force_map(self, input_forces: List[float]):
-        return {tendon_model: input_force for tendon_model, input_force in zip(self.tendon_models, input_forces)}
+    def get_tendon_model_to_input_force_map(self, applied_tensions: List[float]):
+        return {tendon_model: input_force for tendon_model, input_force in zip(self.tendon_models, applied_tensions)}
 
-    def get_reversed_disk_model_input_forces_iterable(self, input_forces: List[float], include_base: bool):
+    def get_reversed_disk_model_applied_tensions_iterable(self, applied_tensions: List[float], include_base: bool):
         tendon_model_to_input_force_map = self.get_tendon_model_to_input_force_map(
-            input_forces)
+            applied_tensions)
         disk_models = self.get_disk_models(include_base)
 
         for disk_model in reversed(disk_models):
@@ -408,11 +408,11 @@ class ManipulatorModel(BaseDataClass):
             else:
                 yield disk_model, None
 
-    def is_input_force_valid(self, input_forces):
+    def is_input_force_valid(self, applied_tensions):
         tendon_models = self.tendon_models
-        if len(input_forces) != len(tendon_models):
+        if len(applied_tensions) != len(tendon_models):
             print(
-                f"Error: There should be {len(tendon_models)} force components, but you only input {len(input_forces)} components")
+                f"Error: There should be {len(tendon_models)} force components, but you only input {len(applied_tensions)} components")
             return False
 
         return True
@@ -517,21 +517,21 @@ class DiskState(BaseDataClass):
 class ManipulatorState(BaseDataClass):
     def __init__(self,
                  manipulator_model: ManipulatorModel,
-                 input_forces: List[float],
+                 applied_tensions: List[float],
                  disk_states: List[DiskState],
                  tip_disp: np.ndarray = None):
         self.manipulator_model = manipulator_model
-        self.input_forces = input_forces
+        self.applied_tensions = applied_tensions
         self.disk_states = disk_states
         self._tip_disp = tip_disp
 
     @property
     def tendon_model_to_input_force_map(self):
-        return self.manipulator_model.get_tendon_model_to_input_force_map(input_forces)
+        return self.manipulator_model.get_tendon_model_to_input_force_map(applied_tensions)
 
     def local_attr_keys(self):
         return ["manipulator_model",
-                "input_forces",
+                "applied_tensions",
                 "disk_states", ]
 
     def get_TF(self, disk_index, pos="bottom"):

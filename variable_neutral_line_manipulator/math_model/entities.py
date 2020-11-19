@@ -210,7 +210,7 @@ class MathTendonPrimitiveState(TendonStateBase):
 #             end_top_orientationMF = segment.bottom_orientationMF
 #             end_top_curve_radius = segment.bottom_curve_radius
 
-#     def get_reversed_disk_model_input_forces_iterable(self, nested_input_forces):
+#     def get_reversed_disk_model_applied_tensions_iterable(self, nested_applied_tensions):
 #         disk_model_flatten_list = [0]*self.n_joints
 #         for indices, disk_model in self.indices_disk_model_pair:
 #             for i in indices:
@@ -218,9 +218,9 @@ class MathTendonPrimitiveState(TendonStateBase):
 
 #         for disk_model in reversed(disk_model_flatten_list):
 #             if len(disk_model.knotted_tendon_models) > 0:
-#                 input_forces = nested_input_forces[-1]
-#                 nested_input_forces = nested_input_forces[:-1]
-#                 yield disk_model, input_forces
+#                 applied_tensions = nested_applied_tensions[-1]
+#                 nested_applied_tensions = nested_applied_tensions[:-1]
+#                 yield disk_model, applied_tensions
 #             else:
 #                 yield disk_model, None
 

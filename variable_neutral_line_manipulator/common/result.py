@@ -28,12 +28,12 @@ def generate_manipulator_model_table(manipulator_model: ManipulatorModel):
     return res
 
 
-def generate_input_tensions_table(manipulator_model: ManipulatorModel, input_tensions: List[float]):
+def generate_applied_tensions_table(manipulator_model: ManipulatorModel, applied_tensions: List[float]):
     res = [
-        ["Input tensions:"],
+        ["Applied tensions:"],
         ["Index", "Dist from axis", "Orientation (deg)", "Tension"],
     ]
-    for i, (tm, tension) in enumerate(zip(manipulator_model.tendon_models, input_tensions)):
+    for i, (tm, tension) in enumerate(zip(manipulator_model.tendon_models, applied_tensions)):
         res.append(
             [i, f"{tm.dist_from_axis:.2f}",
                 f"{degrees(tm.orientation):.2f}", f"{tension:.2f}"]

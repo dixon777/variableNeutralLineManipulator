@@ -56,7 +56,7 @@ def _eval_top_components(current_disk_model: DiskModel, distal_disk_state: DiskS
     return top_contact_forceDF, top_contact_pure_momentDF, top_total_forceDF, top_total_momentDF
 
 
-def _eval_bottom_tendon_guide_components(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float]):
+def _eval_bottom_tendon_guide_components(current_disk_model: DiskModel, distal_disk_state: DiskState, applied_tensions: List[float]):
     disk_geometry = current_disk_model.disk_geometry
 
     bottom_knotted_tendon_states = ([MathTendonPrimitiveState(
@@ -64,8 +64,8 @@ def _eval_bottom_tendon_guide_components(current_disk_model: DiskModel, distal_d
         tension,
     )
         for model, tension in zip(
-        current_disk_model.knotted_tendon_models, input_forces)]
-        if input_forces is not None and len(input_forces) > 0 else [])
+        current_disk_model.knotted_tendon_models, applied_tensions)]
+        if applied_tensions is not None and len(applied_tensions) > 0 else [])
 
     bottom_continous_tendon_states = distal_disk_state.tendon_states if distal_disk_state is not None else []
     bottom_tendon_states: List[MathTendonPrimitiveState] = (
@@ -127,24 +127,24 @@ def _solve_base_disk(base_disk_model: DiskModel, distal_disk_state:DiskState):
 class _SolverBase(ABC):
     @abstractmethod
     def solve(self, manipulator_model: ManipulatorModel, 
-              input_forces: Iterable[List[float]],
+              applied_tensions: Iterable[List[float]],
               external_comps: List[ExternalLoad]=[]) -> ManipulatorState:
-        if len(manipulator_model.tendon_models) != len(input_forces):
+        if len(manipulator_model.tendon_models) != len(applied_tensions):
             raise ValueError("Num of tension inputs does not match num of tendons")
 
 
 class DirectSolver(_SolverBase):
     def solve(self, manipulator_model: ManipulatorModel, 
-              input_forces: Iterable[List[float]],
+              applied_tensions: Iterable[List[float]],
               external_comps: List[ExternalLoad]=[]) -> ManipulatorState:
-        super().solve(manipulator_model, input_forces)
+        super().solve(manipulator_model, applied_tensions)
         disk_states = []
         last_disk_state = None
         
         disk_index = manipulator_model.num_joints
-        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(input_forces, include_base=False):
+        for disk_model, applied_tensions in manipulator_model.get_reversed_disk_model_applied_tensions_iterable(applied_tensions, include_base=False):
             last_disk_state = DirectSolver.solve_single_disk(
-                disk_model, last_disk_state, input_forces, [comp for comp in external_comps if comp.disk_index == disk_index])
+                disk_model, last_disk_state, applied_tensions, [comp for comp in external_comps if comp.disk_index == disk_index])
             if last_disk_state is None:
                 break
             disk_states.insert(0, last_disk_state)
@@ -153,14 +153,14 @@ class DirectSolver(_SolverBase):
         base_disk_model = manipulator_model.get_disk_model(0)
         disk_states.insert(0, _solve_base_disk(base_disk_model, last_disk_state))
             
-        return ManipulatorState(manipulator_model, input_forces, disk_states)
+        return ManipulatorState(manipulator_model, applied_tensions, disk_states)
     
     
 
     @staticmethod
     def solve_single_disk(current_disk_model: DiskModel, 
                           distal_disk_state: DiskState, 
-                          input_forces: List[float],
+                          applied_tensions: List[float],
                           external_comps:List[ExternalLoad]):
         disk_geometry = current_disk_model.disk_geometry
         top_tendon_states = distal_disk_state.tendon_states if distal_disk_state else []
@@ -175,7 +175,7 @@ class DirectSolver(_SolverBase):
         # bottom tendon states
         (bottom_knotted_tendon_states,
          bottom_continous_tendon_states,
-         bottom_tendon_state_disp_pairs) = _eval_bottom_tendon_guide_components(current_disk_model, distal_disk_state, input_forces)
+         bottom_tendon_state_disp_pairs) = _eval_bottom_tendon_guide_components(current_disk_model, distal_disk_state, applied_tensions)
 
         # Other constants' computation
         sum_tensions = sum((ts.tension_in_disk)
@@ -265,13 +265,13 @@ class IterativeSolver(_SolverBase):
     def __init__(self, precision=0.0000000001):
         self.precision = precision
 
-    def solve(self, manipulator_model: ManipulatorModel, input_forces: List[float]) -> ManipulatorState:
-        super().solve(manipulator_model, input_forces)
+    def solve(self, manipulator_model: ManipulatorModel, applied_tensions: List[float]) -> ManipulatorState:
+        super().solve(manipulator_model, applied_tensions)
         disk_states = []
         last_disk_state = None
-        for disk_model, input_forces in manipulator_model.get_reversed_disk_model_input_forces_iterable(input_forces, include_base=False):
+        for disk_model, applied_tensions in manipulator_model.get_reversed_disk_model_applied_tensions_iterable(applied_tensions, include_base=False):
             last_disk_state = IterativeSolver.solve_single_disk(
-                disk_model, last_disk_state, input_forces, self.precision)
+                disk_model, last_disk_state, applied_tensions, self.precision)
             if last_disk_state is None:
                 break
             disk_states.insert(0, last_disk_state)
@@ -279,10 +279,10 @@ class IterativeSolver(_SolverBase):
         base_disk_model = manipulator_model.get_disk_model(0)
         disk_states.insert(0, _solve_base_disk(base_disk_model, last_disk_state))
         
-        return ManipulatorState(manipulator_model, input_forces, disk_states)
+        return ManipulatorState(manipulator_model, applied_tensions, disk_states)
 
     @staticmethod
-    def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, input_forces: List[float], precision: float):
+    def solve_single_disk(current_disk_model: DiskModel, distal_disk_state: DiskState, applied_tensions: List[float], precision: float):
         disk_geometry = current_disk_model.disk_geometry
         top_tendon_states = distal_disk_state.tendon_states if distal_disk_state else []
         top_contact_joint_angle = distal_disk_state.bottom_joint_angle if distal_disk_state is not None else None
@@ -296,7 +296,7 @@ class IterativeSolver(_SolverBase):
         # bottom tendon states
         (bottom_knotted_tendon_states,
          bottom_continous_tendon_states,
-         bottom_tendon_state_disp_pairs) = _eval_bottom_tendon_guide_components(current_disk_model, distal_disk_state, input_forces)
+         bottom_tendon_state_disp_pairs) = _eval_bottom_tendon_guide_components(current_disk_model, distal_disk_state, applied_tensions)
 
         def __equilibrium(bottom_joint_angle):
             bottom_tendon_force_disp_pairs = [(eval_tendon_guide_bottom_force(
