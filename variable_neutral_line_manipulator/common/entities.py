@@ -328,8 +328,9 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
 
 
 class ManipulatorModel(BaseDataClass):
-    def __init__(self, segments):
+    def __init__(self, segments:List[BaseSegmentModel], outer_diameter:float=None):
         self.segments = segments
+        self.outer_diameter = outer_diameter
         self.n_joints = sum(segment.num_joints for segment in segments)
         self.indices_disk_model_pairs = []
         self.generate()
@@ -494,7 +495,7 @@ class DiskState(BaseDataClass):
     def top_contact_force_and_pure_momentDF(self):
         return list(self.top_contact_forceDF) + list(self.top_contact_pure_momentDF)
 
-    @ property
+    @property
     def tendon_states(self):
         """
         Get all tendon states.

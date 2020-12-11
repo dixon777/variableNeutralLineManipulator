@@ -105,7 +105,7 @@ def main():
             end_disk_length=None,
         ),
     ]
-    model = ManipulatorModel(segments)
+    model = ManipulatorModel(segments, outer_diameter=10)
 
     # Define input tensions
     applied_tensions = np.array([2,2,1,1], dtype=float)

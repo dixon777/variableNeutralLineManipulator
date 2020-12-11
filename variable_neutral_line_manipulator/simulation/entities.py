@@ -21,23 +21,38 @@ class SimDiskGeometry(BaseDiskGeometry):
         self.outer_diameter = outer_diameter
     
     @staticmethod
-    def from_base_geometry(disk_geometry: BaseDiskGeometry, tendon_models:List[TendonModel]):
+    def from_base_geometry(base_disk_geometry: BaseDiskGeometry, 
+                           tendon_models:List[TendonModel],
+                           outer_diameter:float=None):
+        """
+        Define SimDiskGeometry from BaseDiskGeometry and tendon_models
+        If disk_geometry.outer_diameter is None, it will be the sum of:
+            1. 0.7 times of the minimum of top and bottom curve diameters
+            2. 0.3 times of the maximum among the doubled distances between tendon centers and the disk's center axis
+        """
         max_tendon_dist_from_axis = max((ts.dist_from_axis
                                         for ts in
                                         tendon_models), default=0.0)
         min_curve_radius = 0
-        if disk_geometry.bottom_curve_radius is None:
-            min_curve_radius = disk_geometry.top_curve_radius
-        elif disk_geometry.top_curve_radius is None:
-            min_curve_radius = disk_geometry.bottom_curve_radius
+        if outer_diameter is not None:
+            return SimDiskGeometry(
+                outer_diameter=outer_diameter,
+                **{
+                    key: base_disk_geometry.__getattribute__(key) for key in base_disk_geometry.attr_keys
+                }
+            )
+        if base_disk_geometry.bottom_curve_radius is None:
+            min_curve_radius = base_disk_geometry.top_curve_radius
+        elif base_disk_geometry.top_curve_radius is None:
+            min_curve_radius = base_disk_geometry.bottom_curve_radius
         else:
-            min_curve_radius = min(disk_geometry.bottom_curve_radius, disk_geometry.top_curve_radius)
+            min_curve_radius = min(base_disk_geometry.bottom_curve_radius, base_disk_geometry.top_curve_radius)
         
         assert(min_curve_radius > max_tendon_dist_from_axis)
         return SimDiskGeometry(
             outer_diameter=(0.7*min_curve_radius + 0.3*max_tendon_dist_from_axis)*2,
             **{
-                key: disk_geometry.__getattribute__(key) for key in disk_geometry.attr_keys
+                key: base_disk_geometry.__getattribute__(key) for key in base_disk_geometry.attr_keys
             }
         )
     
