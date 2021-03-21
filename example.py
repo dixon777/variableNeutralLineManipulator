@@ -9,7 +9,7 @@ from variable_neutral_line_manipulator.math_model.solver import DirectSolver, It
 from math import degrees
 
 
-def eval_from_sim(manipulator_model, applied_tensions: List[float], external_loads: List[ExternalLoad]):
+def eval_from_sim(manipulator_model:ManipulatorModel, applied_tensions: List[float], external_loads: List[ExternalLoad]):
     """ Acquire the result from Adams View simulation """
     s = SimManipulatorAdamModel(manipulator_model)
 
@@ -105,7 +105,10 @@ def main():
             end_disk_length=None,
         ),
     ]
-    model = ManipulatorModel(segments, outer_diameter=10)
+    model = ManipulatorModel(segments, 
+                             outer_diameter=10,
+                             has_distal_end_curve=True,
+                             )
 
     # Define input tensions
     applied_tensions = np.array([2,2,1,1], dtype=float)

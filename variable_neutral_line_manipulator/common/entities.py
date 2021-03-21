@@ -116,22 +116,30 @@ class BaseSegmentModel(BaseDataClass):
     @property
     def bottom_curve_radius(self):
         return None
-    
-    
+
+    @property
+    def distal_end_top_orientationMF_if_has_curve(self):
+        return 0.0
+
+    @property
+    def distal_end_top_radius_if_has_curve(self):
+        return None
+
     def generate_base_disk_model(self, distal_tendon_models=[], length=None):
         pass
-    
+
     def generate_indices_disk_model_pairs(self,
                                           end_top_orientationMF=0.0,
                                           end_top_curve_radius=None,
                                           distal_segment_tendon_models=[]):
         return []
-    
+
     def get_knotted_tendon_modelsMF(self, distal_segment_tendon_models=[]):
         return []
-    
+
+
 class TwoDoFSegmentModel(BaseSegmentModel):
-    def __init__(self, n_joints, disk_length, curve_radius, end_disk_length, base_orientationMF=0.0, distal_orientationDF=0.0, tendon_models:List[TendonModel]=[]):
+    def __init__(self, n_joints, disk_length, curve_radius, end_disk_length, base_orientationMF=0.0, distal_orientationDF=0.0, tendon_models: List[TendonModel] = []):
         self.n_joints = n_joints
         self.disk_length = disk_length
         self.curve_radius = curve_radius
@@ -139,7 +147,7 @@ class TwoDoFSegmentModel(BaseSegmentModel):
         self.base_orientationMF = normalise_angle(base_orientationMF)
         self.distal_orientationDF = normalise_angle(distal_orientationDF)
         self.tendon_models = tendon_models
-        
+
     @property
     def num_joints(self):
         return self.n_joints
@@ -151,11 +159,20 @@ class TwoDoFSegmentModel(BaseSegmentModel):
     @property
     def bottom_curve_radius(self):
         return self.curve_radius
-    
+
+    @property
+    def distal_end_top_orientationMF_if_has_curve(self):
+        return (self.base_orientationMF +
+                (self.distal_orientationDF if self.n_joints % 2 == 1 else 0))
+
+    @property
+    def distal_end_top_radius_if_has_curve(self):
+        return self.curve_radius
+
     def get_knotted_tendon_modelsMF(self, distal_segment_tendon_models=[]):
         return sorted([t for t in self.tendon_models if t not in distal_segment_tendon_models],
                       key=lambda x: x.orientation)
-        
+
     def generate_base_disk_model(self, distal_tendon_models=[], length=None):
         all_tendon_models = self.get_knotted_tendon_modelsMF(
             distal_tendon_models) + distal_tendon_models
@@ -166,16 +183,17 @@ class TwoDoFSegmentModel(BaseSegmentModel):
                                            top_orientationDF=0,
                                            top_curve_radius=self.curve_radius),
             continuous_tendon_models=all_tendon_models,)
-        
+
     def generate_indices_disk_model_pairs(self,
                                           end_top_orientationMF=0.0,
                                           end_top_curve_radius=None,
                                           distal_segment_tendon_models=[]):
         res = []
         knotted_tendon_modelsMF = self.get_knotted_tendon_modelsMF(
-            distal_segment_tendon_models)
-        all_tendon_models = (knotted_tendon_modelsMF +
-                             distal_segment_tendon_models)
+            distal_segment_tendon_models
+        )
+        all_tendon_models = knotted_tendon_modelsMF + distal_segment_tendon_models
+
         if self.n_joints > 1:
             res.append((tuple(i for i in range(0, self.n_joints - 1, 1 if self.distal_orientationDF == 0 else 2)),
                         DiskModel(
@@ -198,8 +216,8 @@ class TwoDoFSegmentModel(BaseSegmentModel):
                                                    top_curve_radius=self.curve_radius,
                                                    ),
                     continuous_tendon_models=all_tendon_models
-                ))) 
-                
+                )))
+
         distal_disk_base_orientationMF = (self.base_orientationMF +
                                           (self.distal_orientationDF if self.n_joints % 2 == 0 else 0))
         res.append(((self.n_joints-1, ), DiskModel(
@@ -212,11 +230,12 @@ class TwoDoFSegmentModel(BaseSegmentModel):
             continuous_tendon_models=distal_segment_tendon_models
         )))
         return res
-    
+
     def local_attr_keys(self):
         return ["n_joints", "disk_length", "curve_radius",
                 "end_disk_length", "base_orientationMF", "distal_orientationDF"]
-        
+
+
 class TwoDOFParallelSegmentModel(BaseSegmentModel):
     def __init__(self, n_joints, disk_length, curve_radius, tendon_dist_from_axis, end_disk_length, base_orientationMF=0.0, distal_orientationDF=0.0):
         self.n_joints = n_joints
@@ -238,6 +257,15 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
     @property
     def bottom_curve_radius(self):
         return self.curve_radius
+    
+    @property
+    def distal_end_top_orientationMF_if_has_curve(self):
+        return (self.base_orientationMF +
+                (self.distal_orientationDF if self.n_joints % 2 == 1 else 0))
+
+    @property
+    def distal_end_top_radius_if_has_curve(self):
+        return self.curve_radius
 
     def get_knotted_tendon_modelsMF(self, distal_segment_tendon_models=[]):
         """
@@ -255,11 +283,10 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
                       key=lambda x: x.orientation)
 
     def generate_base_disk_model(self, distal_tendon_models=[], length=None):
-        disk_orientationMF = self.base_orientationMF
         all_tendon_models = self.get_knotted_tendon_modelsMF(
             distal_tendon_models) + distal_tendon_models
         return DiskModel(
-            bottom_orientationMF=disk_orientationMF,
+            bottom_orientationMF=self.base_orientationMF,
             disk_geometry=BaseDiskGeometry(length=length if length else self.disk_length,
                                            bottom_curve_radius=None,
                                            top_orientationDF=0,
@@ -281,9 +308,9 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
                                           distal_segment_tendon_models=[]):
         res = []
         knotted_tendon_modelsMF = self.get_knotted_tendon_modelsMF(
-            distal_segment_tendon_models)
-        all_tendon_models = (knotted_tendon_modelsMF +
-                             distal_segment_tendon_models)
+            distal_segment_tendon_models
+        )
+        all_tendon_models = knotted_tendon_modelsMF + distal_segment_tendon_models
 
         if self.n_joints > 1:
             res.append((tuple(i for i in range(0, self.n_joints - 1, 1 if self.distal_orientationDF == 0 else 2)),
@@ -328,31 +355,49 @@ class TwoDOFParallelSegmentModel(BaseSegmentModel):
 
 
 class ManipulatorModel(BaseDataClass):
-    def __init__(self, segments:List[BaseSegmentModel], outer_diameter:float=None):
+    def __init__(self, segments: List[BaseSegmentModel], outer_diameter: float = None, has_distal_end_curve: bool = False):
+        """
+        Parameters
+        ----------
+        segments : List[BaseSegmentModel]
+            Ordered list of segments (starts from base to distal)
+        outer_diameter : float
+            Outer diameter of the manipulator. Currently the diameters of every disk can only be set to one constant.
+        has_distal_end_curve: bool
+            Whether the distal end disk of the manipulator has a curved surface at its top
+        """
         self.segments = segments
         self.outer_diameter = outer_diameter
+        self.has_distal_end_curve = has_distal_end_curve
         self.n_joints = sum(segment.num_joints for segment in segments)
         self.indices_disk_model_pairs = []
         self.generate()
 
     def generate(self):
-        segments = self.segments
+        segments: List[BaseSegmentModel] = self.segments
         self.indices_disk_model_pairs = []
 
         n_joints_count = self.n_joints
+        if n_joints_count <= 0:
+            return
 
-        end_top_orientationMF = 0
-        end_top_curve_radius = None
+        end_top_orientationMF = segments[-1].distal_end_top_orientationMF_if_has_curve if self.has_distal_end_curve else 0.0
+        end_top_curve_radius = segments[-1].distal_end_top_radius_if_has_curve if self.has_distal_end_curve else None        
         distal_disk_tendon_modelsMF = []
-
         for i, segment in enumerate(reversed(segments)):
-            segment_only_indices_disk_model_pairs = segment.generate_indices_disk_model_pairs(
-                end_top_orientationMF, end_top_curve_radius, distal_disk_tendon_modelsMF)
+            indices_disk_model_pairs_segment_only = segment.generate_indices_disk_model_pairs(
+                end_top_orientationMF, end_top_curve_radius, distal_disk_tendon_modelsMF
+            )
+            
+            # Update some state
             n_joints_count -= segment.num_joints
+
+            # Append proximal segments' disk models to the front
             self.indices_disk_model_pairs = (
                 [(tuple((i + n_joints_count + 1) for i in indices), disk_model)  # +1 due to base disk
-                 for indices, disk_model in segment_only_indices_disk_model_pairs]
-                + self.indices_disk_model_pairs)
+                 for indices, disk_model in indices_disk_model_pairs_segment_only]
+                + self.indices_disk_model_pairs
+            )
 
             if i == len(segments)-1:
                 break
@@ -417,7 +462,7 @@ class ManipulatorModel(BaseDataClass):
             return False
 
         return True
-    
+
     def local_attr_keys(self):
         return ["segments", ]
 
@@ -549,7 +594,6 @@ class ManipulatorState(BaseDataClass):
             m = np.matmul(m, eval_proximal_top_to_distal_bottom_TF(
                 self.disk_states[i].top_joint_angle,
                 disk_geometry.top_curve_radius))
-            
 
         if pos == "top":
             m = np.matmul(m, m4_translation(
@@ -562,7 +606,7 @@ class ManipulatorState(BaseDataClass):
 
     @property
     def tip_disp(self):
-        return (self._tip_disp if self._tip_disp is not None else self.get_TF(self.manipulator_model.num_joints, "top")[:3,3])
+        return (self._tip_disp if self._tip_disp is not None else self.get_TF(self.manipulator_model.num_joints, "top")[:3, 3])
 
     # @property
     # def tendon_guide_top_end_state_force_disp_tuple(self):
@@ -649,4 +693,3 @@ class ManipulatorState(BaseDataClass):
     #             top_contact_moment +
     #             np.cross(bottom_contact_disp, bottom_contact_force) +
     #             bottom_contact_moment)
-
