@@ -335,7 +335,7 @@ class SimManipulatorAdamModel:
 
         return True
 
-    def _define_gravity(self, z_acc=0.0):
+    def _define_acceleration(self, z_acc=0.0):
         return self.socket.create_gravity(
             self.name_gen.gravity_field_name,
             z_component_gravity=z_acc
@@ -711,7 +711,7 @@ class SimManipulatorAdamModel:
         self.socket.create_model(self.model_name)
 
         # Define gravity
-        self._define_gravity(z_acc=z_acc)
+        self._define_acceleration(z_acc=z_acc)
 
         disk_models = self.disk_models
         tendon_models = self.tendon_models
