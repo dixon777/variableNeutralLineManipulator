@@ -9,28 +9,40 @@ from variable_neutral_line_manipulator.math_model.solver import DirectSolver, It
 from math import degrees
 
 
-def eval_from_sim(manipulator_model:ManipulatorModel, applied_tensions: List[float], external_loads: List[ExternalLoad]):
+def eval_from_sim(manipulator_model: ManipulatorModel, applied_tensions: List[float], external_loads: List[ExternalLoad]):
     """ Acquire the result from Adams View simulation """
     s = SimManipulatorAdamModel(manipulator_model)
 
     try:
-        s.run_sim(applied_tensions,
-                  initial_disk_overlap_length=0.05,
-                  marker_offset_from_contact=0.2,
-                  contact_config=SimManipulatorAdamModel.ContactConfig(
-                      stiffness=6e6,
-                      force_exponent=3.4,
-                      damping=6e4,
-                  ),
-                  num_steps=50,
-                  max_iterations_search_eqilibrium=10000,
-                  num_joint_angle_validation=0,
-                  solver_translational_limit=1,
-                  solver_rotational_limit=pi/10,
-                  solver_error_threshold=1e-4,
-                  solver_imbalance=1e-4,
-                  solver_stability=4e-5,
-                  external_loads=external_loads)
+        s.run_sim(
+            # Loads
+            applied_tensions,
+            external_loads=external_loads,
+
+            # Simulation conditions config
+            initial_disk_overlap_length=0.05,
+            marker_offset_from_contact=0.2,
+            contact_config=SimManipulatorAdamModel.ContactConfig(
+                stiffness=6e6,
+                force_exponent=3.4,
+                damping=6e4,
+            ),
+            
+            # Solver config
+            num_steps=50,
+            max_iterations_search_eqilibrium=10000,
+            num_joint_angle_validation=0,
+            solver_translational_limit=1,
+            solver_rotational_limit=pi/10,
+            solver_error_threshold=1e-4,
+            solver_imbalance=1e-4,
+            solver_stability=4e-5,
+
+            # Add gravity
+            x_acc=0.0,
+            y_acc=0.0,
+            z_acc=0.0
+        )
     except RuntimeError as e:
         print(e)
         return None
@@ -82,7 +94,8 @@ def write_results(manipulator_model,
 
     write_to_csv(output_path, combine_tables(
         model_table,
-        applied_tensions_table + [[]] + external_loads_table, # Add an empty row in between
+        # Add an empty row in between
+        applied_tensions_table + [[]] + external_loads_table,
         joint_angle_table,
         reaction_table,
         tf_table))
@@ -105,13 +118,13 @@ def main():
             end_disk_length=None,
         ),
     ]
-    model = ManipulatorModel(segments, 
+    model = ManipulatorModel(segments,
                              outer_diameter=10,
                              has_distal_end_curve=True,
                              )
 
     # Define input tensions
-    applied_tensions = np.array([2,2,1,1], dtype=float)
+    applied_tensions = np.array([2, 2, 1, 1], dtype=float)
 
     # Define external loads (if there is any)
     external_loads = [
@@ -132,7 +145,8 @@ def main():
     math_state = eval_from_math_model(model, applied_tensions)
 
     # Write results
-    write_results(model, applied_tensions, external_loads, math_state, sim_state, "results.csv")
+    write_results(model, applied_tensions, external_loads,
+                  math_state, sim_state, "results.csv")
 
 
 if __name__ == "__main__":

@@ -335,9 +335,11 @@ class SimManipulatorAdamModel:
 
         return True
 
-    def _define_acceleration(self, z_acc=0.0):
+    def _define_acceleration(self, x_acc=0.0, y_acc=0.0, z_acc=0.0):
         return self.socket.create_gravity(
             self.name_gen.gravity_field_name,
+            x_component_gravity=x_acc,
+            y_component_gravity=y_acc,
             z_component_gravity=z_acc
         )
 
@@ -678,6 +680,8 @@ class SimManipulatorAdamModel:
     def run_sim(self,
                 applied_tensions: List[float],
                 external_loads: List[ExternalLoad] = [],
+                x_acc: float = 0.0,
+                y_acc: float = 0.0,
                 z_acc: float = 0.0,
                 disk_density: float = DEFAULT_CONFIG_DISK_DENSITY,
                 contact_config: ContactConfig = ContactConfig(),
@@ -711,7 +715,7 @@ class SimManipulatorAdamModel:
         self.socket.create_model(self.model_name)
 
         # Define gravity
-        self._define_acceleration(z_acc=z_acc)
+        self._define_acceleration(x_acc=x_acc, y_acc = y_acc, z_acc=z_acc)
 
         disk_models = self.disk_models
         tendon_models = self.tendon_models
